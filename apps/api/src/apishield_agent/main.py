@@ -1,38 +1,103 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
 import threading
-import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Path as PathParam, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from apishield_agent.domain.analysis import deterministic_openapi_diff
-from apishield_agent.infrastructure.store import Store
-from apishield_agent.presentation.auth import claims, require_scope
+from apishield_agent.infrastructure.store import Store, stable_uuid
+from apishield_agent.presentation.auth import require_scope
 
 ROOT = Path(__file__).resolve().parents[4]
 
 
-class CreateAnalysis(BaseModel):
+class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class CreateAnalysis(StrictModel):
     base_sha: str = Field(pattern=r"^[0-9a-fA-F]{40,64}$")
     head_sha: str = Field(pattern=r"^[0-9a-fA-F]{40,64}$")
     capability_profile: str = Field(min_length=1)
 
 
-def _iso(v): return v
+class CreateProposal(StrictModel):
+    analysis_id: UUID
+    target_language: str = Field(min_length=1)
+
+
+class ApproveProposal(StrictModel):
+    patch_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    base_sha: str = Field(pattern=r"^[0-9a-fA-F]{40,64}$")
+    decision: str = Field(pattern=r"^(approve|reject)$")
+    expected_version: int = Field(ge=1)
+
+
+class CreatePullRequest(StrictModel):
+    approval_id: UUID
+    target_branch: str = Field(min_length=1)
+
+
+class CreateUploadIntent(StrictModel):
+    kind: str = Field(min_length=1)
+    filename: str = Field(min_length=1)
+    size_bytes: int = Field(ge=1)
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    declared_media_type: str | None = None
+
+
+class CommitUpload(StrictModel):
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    size_bytes: int = Field(ge=1)
+    object_generation: str = Field(min_length=1)
+
 
 def _problem(status: int, code: str, detail: str):
-    return JSONResponse(status_code=status, content={"type":"about:blank","title":"Request rejected","status":status,"code":code,"detail":detail,"request_id":"runtime"})
+    return JSONResponse(status_code=status, content={"type": "about:blank", "title": "Request rejected", "status": status, "code": code, "detail": detail, "request_id": "runtime"})
+
+
+def _key(key: str | None):
+    if not key or not 16 <= len(key) <= 128:
+        return _problem(400, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key must be 16-128 characters")
+    return None
+
+
+def _sha(payload) -> str:
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def _analysis(row):
+    return {"id": row["id"], "status": row["status"], "created_at": row["created_at"], "repository_id": row["repository_id"], "base_sha": row["base_sha"], "head_sha": row["head_sha"], "capability_profile": row["capability_profile"], "job_id": row["job_id"]}
+
+
+def _artifact(row):
+    return {"id": row["id"], "status": row["status"], "kind": row["kind"], "sha256": row["sha256"], "size_bytes": row["size_bytes"], "created_at": row["created_at"], "rejected_reason": row["rejected_reason"]}
+
+
+def _proposal(row):
+    return {"id": row["id"], "status": row["status"], "created_at": row["created_at"], "analysis_id": row["analysis_id"], "base_sha": row["base_sha"], "patch_sha256": row["patch_sha256"], "sandbox_status": row["sandbox_status"], "approval_status": row["approval_status"], "version": row["version"]}
+
+
+def _approval(row):
+    return {"id": row["id"], "status": row["status"], "created_at": row["created_at"], "proposal_id": row["proposal_id"], "patch_sha256": row["patch_sha256"], "base_sha": row["base_sha"], "reviewer_id": row["reviewer_id"], "expires_at": row["expires_at"]}
+
+
+def _reviewer(value: str) -> str:
+    try:
+        return str(UUID(value))
+    except (ValueError, AttributeError):
+        return stable_uuid(f"reviewer:{value}")
 
 
 def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
@@ -44,67 +109,183 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
 
     def worker():
         while not stop.is_set():
-            for row in store.pending():
+            row = store.claim_pending()
+            if row:
                 repo = store.get_repo(row["tenant_id"], 1, row["repository_id"])
                 findings = deterministic_openapi_diff(repo["before_contract"], repo["after_contract"]) if repo else []
                 store.finish(row["tenant_id"], row["id"], findings)
-            stop.wait(0.05)
+            else:
+                stop.wait(0.05)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        t = threading.Thread(target=worker, name="apishield-worker", daemon=True); t.start()
+        t = threading.Thread(target=worker, name="apishield-worker", daemon=True)
+        t.start()
         yield
-        stop.set(); t.join(timeout=1)
+        stop.set()
+        t.join(timeout=1)
 
-    app = FastAPI(title="APIShield Agent MVP", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="APIShield Agent MVP", version="0.2.0", lifespan=lifespan)
     app.state.store = store
 
     @app.exception_handler(HTTPException)
     async def http_error(_, exc: HTTPException):
-        if isinstance(exc.detail, dict): return JSONResponse(status_code=exc.status_code, content=exc.detail)
+        if isinstance(exc.detail, dict):
+            return JSONResponse(status_code=exc.status_code, content=exc.detail)
         return _problem(exc.status_code, "REQUEST_REJECTED", str(exc.detail))
 
     @app.get("/healthz")
-    def health(): return {"status":"ok","service":"apishield-agent"}
+    def health():
+        return {"status": "ok", "service": "apishield-agent"}
 
     @app.post("/v1/installations/{installation_id}/repositories/{repository_id}/analyses", status_code=202)
     def start_analysis(installation_id: int, repository_id: UUID, body: CreateAnalysis, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("repo:analyze", store))):
-        if not idempotency_key or not 16 <= len(idempotency_key) <= 128:
-            return _problem(400, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key must be 16-128 characters")
+        bad = _key(idempotency_key)
+        if bad:
+            return bad
         repo = store.get_repo(c["tenant_id"], installation_id, str(repository_id))
         if repo is None:
             return _problem(404, "RESOURCE_NOT_FOUND", "Repository is not visible")
-        payload = body.model_dump(); request_sha = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+        request_sha = _sha(body.model_dump())
         previous = store.get_idempotent(c["tenant_id"], c["sub"], idempotency_key)
         if previous:
-            if previous["request_sha"] != request_sha: return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
+            if previous["request_sha"] != request_sha:
+                return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
             row = store.get_analysis(c["tenant_id"], previous["analysis_id"])
         else:
             row = store.create_analysis(c["tenant_id"], c["sub"], str(repository_id), body.base_sha, body.head_sha, body.capability_profile, idempotency_key, request_sha)
-        return {"id":row["id"],"status":row["status"],"created_at":row["created_at"],"repository_id":row["repository_id"],"base_sha":row["base_sha"],"head_sha":row["head_sha"],"capability_profile":row["capability_profile"],"job_id":row["job_id"]}
-
-    def get_analysis(analysis_id: UUID, c: dict):
-        row = store.get_analysis(c["tenant_id"], str(analysis_id))
-        if not row: return _problem(404, "RESOURCE_NOT_FOUND", "Analysis is not visible")
-        fs = store.findings(c["tenant_id"], str(analysis_id))
-        return {"id":row["id"],"status":row["status"],"created_at":row["created_at"],"repository_id":row["repository_id"],"base_sha":row["base_sha"],"head_sha":row["head_sha"],"finding_count":len(fs),"unsupported_count":0,**({"completed_at":row["completed_at"]} if row["completed_at"] else {})}
+        return _analysis(row)
 
     @app.get("/v1/analyses/{analysis_id}")
-    def read_analysis(analysis_id: UUID, c: dict = Depends(require_scope("analysis:read", store))): return get_analysis(analysis_id, c)
+    def read_analysis(analysis_id: UUID, c: dict = Depends(require_scope("analysis:read", store))):
+        row = store.get_analysis(c["tenant_id"], str(analysis_id))
+        if not row:
+            return _problem(404, "RESOURCE_NOT_FOUND", "Analysis is not visible")
+        return {"id": row["id"], "status": row["status"], "created_at": row["created_at"], "repository_id": row["repository_id"], "base_sha": row["base_sha"], "head_sha": row["head_sha"], "finding_count": store.finding_count(c["tenant_id"], str(analysis_id)), "unsupported_count": 0, **({"completed_at": row["completed_at"]} if row["completed_at"] else {})}
 
     @app.get("/v1/analyses/{analysis_id}/findings")
-    def read_findings(analysis_id: UUID, c: dict = Depends(require_scope("analysis:read", store)), cursor: Annotated[str | None, Query()] = None):
-        if not store.get_analysis(c["tenant_id"], str(analysis_id)): return _problem(404, "RESOURCE_NOT_FOUND", "Analysis is not visible")
-        items = [{"id":f["id"],"rule_id":f["rule_id"],"severity":f["severity"],"openapi_pointer":f["openapi_pointer"],"evidence_digest":f["evidence_digest"],"coverage":f["coverage"]} for f in store.findings(c["tenant_id"], str(analysis_id))]
-        return {"items":items,"next_cursor":None,"has_more":False}
+    def read_findings(analysis_id: UUID, cursor: Annotated[str | None, Query(max_length=1024)] = None, limit: Annotated[int, Query(ge=1, le=100)] = 50, c: dict = Depends(require_scope("analysis:read", store))):
+        if not store.get_analysis(c["tenant_id"], str(analysis_id)):
+            return _problem(404, "RESOURCE_NOT_FOUND", "Analysis is not visible")
+        try:
+            offset = int(base64.urlsafe_b64decode(cursor.encode()).decode()) if cursor else 0
+            if offset < 0:
+                raise ValueError
+        except (ValueError, UnicodeDecodeError):
+            return _problem(400, "INVALID_CURSOR", "Cursor is invalid")
+        items = store.findings(c["tenant_id"], str(analysis_id), offset, limit)
+        total = store.finding_count(c["tenant_id"], str(analysis_id))
+        next_cursor = base64.urlsafe_b64encode(str(offset + len(items)).encode()).decode() if offset + len(items) < total else None
+        return {"items": [{"id": f["id"], "rule_id": f["rule_id"], "severity": f["severity"], "openapi_pointer": f["openapi_pointer"], "evidence_digest": f["evidence_digest"], "coverage": f["coverage"]} for f in items], "next_cursor": next_cursor, "has_more": next_cursor is not None}
+
+    @app.post("/v1/analyses/{analysis_id}/proposals", status_code=201)
+    def create_proposal(analysis_id: UUID, body: CreateProposal, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("patch:create", store))):
+        bad = _key(idempotency_key)
+        if bad:
+            return bad
+        if body.analysis_id != analysis_id:
+            return _problem(400, "ANALYSIS_ID_MISMATCH", "Body analysis_id must match path")
+        analysis = store.get_analysis(c["tenant_id"], str(analysis_id))
+        if not analysis:
+            return _problem(404, "RESOURCE_NOT_FOUND", "Analysis is not visible")
+        if analysis["status"] != "SUCCEEDED":
+            return _problem(409, "ANALYSIS_NOT_READY", "Analysis must succeed before proposal creation")
+        request_sha = _sha(body.model_dump(mode="json"))
+        old = store.command(c["tenant_id"], c["sub"], "proposal.create", idempotency_key)
+        if old:
+            if old["request_sha"] != request_sha:
+                return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
+            return _proposal(store.proposal(c["tenant_id"], old["resource_id"]))
+        row = store.create_proposal(c["tenant_id"], str(analysis_id), body.target_language)
+        store.create_command(c["tenant_id"], c["sub"], "proposal.create", idempotency_key, request_sha, row["id"])
+        return _proposal(row)
+
+    @app.post("/v1/proposals/{proposal_id}/approvals", status_code=201)
+    def approve_proposal(proposal_id: UUID, body: ApproveProposal, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("patch:approve", store))):
+        bad = _key(idempotency_key)
+        if bad:
+            return bad
+        request_sha = _sha(body.model_dump())
+        old = store.command(c["tenant_id"], c["sub"], "proposal.approve", idempotency_key)
+        if old:
+            if old["request_sha"] != request_sha:
+                return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
+            return _approval(store.approval(c["tenant_id"], old["resource_id"]))
+        row, error = store.approve(c["tenant_id"], str(proposal_id), body.patch_sha256, body.base_sha, body.decision, body.expected_version, _reviewer(c["sub"]))
+        if error == "NOT_FOUND":
+            return _problem(404, "RESOURCE_NOT_FOUND", "Proposal is not visible")
+        if error == "STALE_VERSION":
+            return _problem(409, "STALE_VERSION", "Proposal version is stale")
+        if error == "STALE_ARTIFACT":
+            return _problem(409, "STALE_ARTIFACT", "Approval does not match the current patch or base")
+        store.create_command(c["tenant_id"], c["sub"], "proposal.approve", idempotency_key, request_sha, row["id"])
+        return _approval(row)
+
+    @app.post("/v1/proposals/{proposal_id}/pull-requests", status_code=202)
+    def create_pull_request(proposal_id: UUID, body: CreatePullRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("github:write", store))):
+        return _problem(403, "GITHUB_WRITE_DISABLED", "GitHub writes are not enabled in this MVP")
+
+    @app.post("/v1/artifacts/upload-intents", status_code=201)
+    def upload_intent(body: CreateUploadIntent, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("artifact:create", store))):
+        bad = _key(idempotency_key)
+        if bad:
+            return bad
+        request_sha = _sha(body.model_dump())
+        old = store.command(c["tenant_id"], c["sub"], "artifact.intent", idempotency_key)
+        if old:
+            if old["request_sha"] != request_sha:
+                return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
+            row = store.artifact(c["tenant_id"], old["resource_id"])
+        else:
+            row = store.create_artifact(c["tenant_id"], body.kind, body.filename, body.declared_media_type, body.sha256, body.size_bytes)
+            store.create_command(c["tenant_id"], c["sub"], "artifact.intent", idempotency_key, request_sha, row["id"])
+        return {"artifact_id": row["id"], "status": "INTENT_ISSUED", "upload_url": f"https://storage.invalid/apishield/{c['tenant_id']}/{row['id']}", "expires_at": row["expires_at"], "required_headers": {"x-artifact-sha256": row["sha256"]}}
+
+    @app.post("/v1/artifacts/{artifact_id}/commit", status_code=202)
+    def commit_artifact(artifact_id: UUID, body: CommitUpload, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("artifact:commit", store))):
+        bad = _key(idempotency_key)
+        if bad:
+            return bad
+        request_sha = _sha(body.model_dump())
+        old = store.command(c["tenant_id"], c["sub"], "artifact.commit", idempotency_key)
+        if old:
+            if old["request_sha"] != request_sha:
+                return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
+            return _artifact(store.artifact(c["tenant_id"], old["resource_id"]))
+        row, error = store.commit_artifact(c["tenant_id"], str(artifact_id), body.sha256, body.size_bytes, body.object_generation)
+        if error == "NOT_FOUND":
+            return _problem(404, "RESOURCE_NOT_FOUND", "Artifact is not visible")
+        if error == "DIGEST_MISMATCH":
+            return _problem(409, "ARTIFACT_DIGEST_MISMATCH", "Committed object digest or size does not match the intent")
+        if error:
+            return _problem(409, "INVALID_ARTIFACT_STATE", "Artifact cannot be committed in its current state")
+        store.create_command(c["tenant_id"], c["sub"], "artifact.commit", idempotency_key, request_sha, str(artifact_id))
+        return _artifact(row)
+
+    @app.get("/v1/artifacts/{artifact_id}")
+    def get_artifact(artifact_id: UUID, c: dict = Depends(require_scope("artifact:read", store))):
+        row = store.artifact(c["tenant_id"], str(artifact_id))
+        return _artifact(row) if row else _problem(404, "RESOURCE_NOT_FOUND", "Artifact is not visible")
+
+    @app.post("/v1/artifacts/{artifact_id}/download-intents", status_code=201)
+    def download_intent(artifact_id: UUID, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("artifact:download", store))):
+        bad = _key(idempotency_key)
+        if bad:
+            return bad
+        row = store.artifact(c["tenant_id"], str(artifact_id))
+        if not row:
+            return _problem(404, "RESOURCE_NOT_FOUND", "Artifact is not visible")
+        if row["status"] != "AVAILABLE":
+            return _problem(409, "ARTIFACT_NOT_AVAILABLE", "Artifact is not available for download")
+        return {"artifact_id": row["id"], "download_url": f"https://storage.invalid/apishield/{c['tenant_id']}/{row['id']}?generation={row['object_generation']}", "expires_at": row["expires_at"], "object_generation": row["object_generation"]}
 
     @app.get("/v1/jobs/{job_id}")
     def read_job(job_id: UUID, c: dict = Depends(require_scope("job:read", store))):
-        row = None
-        with store.conn() as db: row = db.execute("SELECT * FROM analyses WHERE tenant_id=? AND job_id=?", (c["tenant_id"],str(job_id))).fetchone()
-        if not row: return _problem(404, "RESOURCE_NOT_FOUND", "Job is not visible")
-        states={"PENDING":"PENDING","SUCCEEDED":"SUCCEEDED"}
-        return {"id":row["job_id"],"kind":"analysis","state":states.get(row["status"],"FAILED_TERMINAL"),"created_at":row["created_at"],"state_version":row["version"],"attempt_count":1,"last_error_code":None}
+        with store.conn() as db:
+            row = db.execute("SELECT * FROM analyses WHERE tenant_id=? AND job_id=?", (c["tenant_id"], str(job_id))).fetchone()
+        if not row:
+            return _problem(404, "RESOURCE_NOT_FOUND", "Job is not visible")
+        return {"id": row["job_id"], "kind": "analysis", "state": row["status"] if row["status"] in {"PENDING", "RUNNING", "SUCCEEDED", "FAILED_TERMINAL"} else "FAILED_TERMINAL", "created_at": row["created_at"], "state_version": row["version"], "attempt_count": row["attempt_count"], "last_error_code": row["last_error_code"]}
 
     return app
 
