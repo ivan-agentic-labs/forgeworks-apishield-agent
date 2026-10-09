@@ -28,6 +28,8 @@ Source: `c89785c342d488340ffa18d6dc35bcadaa7ccc47`. This immutable receipt cover
 
 ## Current product scope
 
+Disposable logical restore verification now compares actual tenant RLS policy expressions/role bindings, table grants, and non-internal trigger definitions/functions, in addition to row digests, columns, constraints and RLS flags. This remains a logical disposable proof, not PITR, regional failover or production operating acceptance.
+
 Disposable Sandbox Proof runs fixed synthetic Docker canaries on an opted-in GitHub Actions runner: non-root, read-only filesystem, dropped capabilities, no-new-privileges, seccomp, bounded scratch/resource policy and direct-IP network denial. The job resolves and records an immutable image ID before execution. It never runs customer code or mounts the host workspace/secrets. Passing this job is NOT an independent escape audit, image approval, production sandbox service or complete egress proof.
 
 A read-only GitHub App source adapter is implemented and wired to embedded/standalone workers behind APISHIELD_GITHUB_READS_ENABLED. It mints RS256 App JWTs, requests repository-ID-restricted contents:read installation tokens, verifies repository identity and Git blob hashes, accepts only immutable commit SHAs, and refuses redirects/path escapes. Provisioned tenant/repository mappings are server-owned configuration, not request input. Synthetic injected-transport tests exercise this adapter and resulting snapshot-bound patches without network or real secrets. LIVE INSTALLATION PROOF REMAINS OPEN: no product GitHub App/private key/mapping has been supplied. Remote PR writes remain disabled.
