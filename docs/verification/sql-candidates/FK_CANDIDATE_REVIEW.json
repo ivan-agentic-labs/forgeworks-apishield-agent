@@ -1,0 +1,14 @@
+[
+  {
+    "child": "test_executions",
+    "column": "analysis_job_id",
+    "parent": "analysis_jobs",
+    "structural": "passed structural candidate checks"
+  },
+  {
+    "child": "test_executions",
+    "column": "proposal_id",
+    "parent": "patch_proposals",
+    "structural": "passed structural candidate checks"
+  }
+]
