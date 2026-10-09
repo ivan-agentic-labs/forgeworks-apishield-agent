@@ -46,6 +46,10 @@ Deterministic inline response-presence diffs, durable worker, verified local con
 
 ## Remaining dependency and implementation register
 
+### Compatibility continuation, 2026-10-09
+
+Analysis now detects operation removal even without required response fields, and request bodies becoming required. It resolves at most 32 pure local reference hops, with exact JSON Pointer escaping; cycles, missing targets and assertion siblings remain unknown. Required response presence changes can be detected through supported local references, but reference constructs still produce UNSUPPORTED review findings because full schema semantics are not implemented. Unresolved schemas are not treated as empty schemas. Findings use escaped pointers and tuple comparison keys to avoid delimiter collisions; evidence binds exact input digests. Regression corpus covers these rules and malformed response/request-body structures. Composition, full parameter/type/enum compatibility and live GitHub acceptance remain open.
+
 1. Configure a real IdP and provisioned internal identities; finish BFF/session/CSRF/revocation and test them. This includes unfinished code, not only credentials.
 2. Configure external private storage/scanning/retention/deletion and implement remaining source/dataset/upload adapters; do not treat placeholder metadata or quarantined objects as verified bytes.
 3. Supply an isolated runner/network policy and installed test GitHub App; exercise the implemented webhook/revocation path against GitHub, then implement and prove repository reads and approval-bound remote effects before enabling them.
