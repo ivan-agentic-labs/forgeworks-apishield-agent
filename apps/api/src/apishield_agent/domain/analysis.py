@@ -38,9 +38,12 @@ def _schema_required(doc: dict[str, Any], path: str) -> dict[str, set[str]]:
 def deterministic_openapi_diff(before_path: str | None, after_path: str | None) -> list[Finding]:
     """Classify only supported required-response-field additions; unknown changes are not called compatible."""
     if not before_path or not after_path or not Path(before_path).exists() or not Path(after_path).exists():
-        return []
+        raise ValueError("CONTRACT_INPUT_UNAVAILABLE")
     before = yaml.safe_load(Path(before_path).read_text()) or {}
     after = yaml.safe_load(Path(after_path).read_text()) or {}
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        raise ValueError("CONTRACT_INPUT_INVALID")
+    source_digests = {"before": hashlib.sha256(Path(before_path).read_bytes()).hexdigest(), "after": hashlib.sha256(Path(after_path).read_bytes()).hexdigest()}
     before_required = _schema_required(before, "before")
     after_required = _schema_required(after, "after")
     findings: list[Finding] = []
@@ -49,6 +52,7 @@ def deterministic_openapi_diff(before_path: str | None, after_path: str | None) 
         added = sorted(after_fields - before_required.get(before_key, set()))
         for field in added:
             pointer = key.replace(":", "/", 1) + "/required/" + field
-            evidence = hashlib.sha256(json.dumps({"rule": "required-response-field-added", "pointer": pointer, "field": field}, sort_keys=True).encode()).hexdigest()
+            evidence = hashlib.sha256(json.dumps({"rule": "required-response-field-added", "pointer": pointer, "field": field, "source_digests": source_digests}, sort_keys=True).encode()).hexdigest()
             findings.append(Finding("REQUIRED_RESPONSE_FIELD_ADDED", "BREAKING", pointer, evidence))
     return findings
+

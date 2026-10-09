@@ -43,3 +43,9 @@ Application test result: 27 passed, 1 skipped; separate PostgreSQL workflow: 1 p
 - [APIShield PostgreSQL Runtime Proof](https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37883226499): **success**.
 
 A subsequent implementation adds an independently runnable durable worker and downloadable unified contract patch bytes with digest verification. It remains an offline contract diff, not AI-generated client migration code. The final delivery report links the follow-up commit and rerun results.
+
+## Input failure and provenance correction
+
+Missing contract paths previously produced an empty finding list and could allow a job to succeed. They now fail the durable worker job. Non-mapping YAML inputs are rejected. Finding evidence digests include the SHA-256 of both exact contract inputs. Regression tests exercise missing inputs, invalid mapping and changed source bytes.
+
+Detection remains a narrow fixture heuristic; the existing required-response-field addition rule is conservative and has not been validated against a human-adjudicated client compatibility corpus. It must not be marketed as complete OpenAPI compatibility or client impact analysis.
