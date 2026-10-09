@@ -36,7 +36,7 @@ def _schema_required(doc: dict[str, Any], path: str) -> dict[str, set[str]]:
 
 
 def deterministic_openapi_diff(before_path: str | None, after_path: str | None) -> list[Finding]:
-    """Classify only supported required-response-field additions; unknown changes are not called compatible."""
+    """Classify inline required-response-field changes; additions need review, removals break the previous presence guarantee."""
     if not before_path or not after_path or not Path(before_path).exists() or not Path(after_path).exists():
         raise ValueError("CONTRACT_INPUT_UNAVAILABLE")
     before = yaml.safe_load(Path(before_path).read_text()) or {}
@@ -47,12 +47,15 @@ def deterministic_openapi_diff(before_path: str | None, after_path: str | None) 
     before_required = _schema_required(before, "before")
     after_required = _schema_required(after, "after")
     findings: list[Finding] = []
-    for key, after_fields in after_required.items():
+    for key in sorted(set(after_required) | {key.replace("before:", "after:", 1) for key in before_required}):
         before_key = key.replace("after:", "before:", 1)
-        added = sorted(after_fields - before_required.get(before_key, set()))
-        for field in added:
+        before_fields = before_required.get(before_key, set())
+        after_fields = after_required.get(key, set())
+        changes = [(field, "ADDED", "REVIEW", "LIMITED") for field in sorted(after_fields - before_fields)]
+        changes += [(field, "REMOVED", "BREAKING", "COVERED") for field in sorted(before_fields - after_fields)]
+        for field, direction, severity, coverage in changes:
             pointer = key.replace(":", "/", 1) + "/required/" + field
-            evidence = hashlib.sha256(json.dumps({"rule": "required-response-field-added", "pointer": pointer, "field": field, "source_digests": source_digests}, sort_keys=True).encode()).hexdigest()
-            findings.append(Finding("REQUIRED_RESPONSE_FIELD_ADDED", "BREAKING", pointer, evidence))
+            evidence = hashlib.sha256(json.dumps({"rule": "required-response-field-" + direction.lower(), "pointer": pointer, "field": field, "source_digests": source_digests}, sort_keys=True).encode()).hexdigest()
+            findings.append(Finding("REQUIRED_RESPONSE_FIELD_" + direction, severity, pointer, evidence, coverage))
     return findings
 

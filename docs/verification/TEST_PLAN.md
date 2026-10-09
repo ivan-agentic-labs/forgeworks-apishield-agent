@@ -2,12 +2,12 @@
 
 | Test ID | Scenario | Fixture / setup | Expected acceptance result | Execution |
 |---|---|---|---|---|
-| API-T01 | Changed required response field classified as breaking | Golden OpenAPI before/after | diff finding severity matches reviewed corpus | NOT RUN |
+| API-T01 | Changed required response field classified as breaking | Golden OpenAPI before/after | inline response guarantee removal is BREAKING; addition is REVIEW/LIMITED | Synthetic regression corpus implemented; external adjudication OPEN |
 | API-T02 | App installation removed after approval | Revoked GitHub installation | No PR and no token usage | NOT RUN |
 | API-T03 | Branch updated after sandbox validation | Different base SHA | Approval invalidated, 409 | NOT RUN |
 | API-T04 | Duplicate PR request | same idempotency key | One remote PR at most, audit duplicate | NOT RUN |
 | API-T05 | Malicious package scripts inside repo | sandbox fixture | No secret/metadata/private network access | NOT RUN |
-| API-T06 | Tenant A reads Tenant B analysis | cross-tenant IDs | 404/403 with no data disclosure | NOT RUN |
+| API-T06 | Tenant A reads Tenant B analysis | cross-tenant IDs | 404/403 with no data disclosure | PostgreSQL RLS and API negative tests passed in disposable CI; see evidence receipt |
 
 ## Coverage and execution gates
 - Unit: every pure domain invariant, deterministic cross-validation, state guard, authorization policy and financial arithmetic where relevant.
@@ -29,3 +29,4 @@
 
 ## Evidence format
 `{test_id, requirement_id, revision_sha, input_fixture_sha, dataset_version, environment, exact_command, expected, observed, pass_fail, reviewer, trace_id, issues}`.
+
