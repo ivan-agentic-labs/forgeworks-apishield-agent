@@ -54,6 +54,16 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         PostgresStore(owner)
     store=PostgresStore(runtime)
     assert not store.member(TENANT, "unmapped-oidc-subject")
+    # Even ownership of a different product table is forbidden to runtime login/group.
+    with psycopg.connect(owner) as db:
+        db.execute('ALTER TABLE memberships OWNER TO fw_runtime_test')
+    try:
+        with pytest.raises(ValueError,match='own product tables'):
+            PostgresStore(runtime)
+    finally:
+        with psycopg.connect(owner) as db:
+            db.execute('ALTER TABLE memberships OWNER TO postgres')
+
     with pytest.raises(ValueError,match='tenant context'):
         with store.conn():
             pass
