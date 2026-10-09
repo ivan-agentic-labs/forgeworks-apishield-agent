@@ -1,5 +1,6 @@
 """Runs only against an explicitly opted-in disposable localhost PostgreSQL instance."""
 import os
+import hashlib
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -81,6 +82,28 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         assert detail.json()['status']=='SUCCEEDED',detail.text
         findings=client.get(f'/v1/analyses/{aid}/findings',headers=headers('analysis:read','pg-read-key-00002'))
         assert findings.status_code==200 and findings.json()['items']
+        proposal=client.post(f'/v1/analyses/{aid}/proposals',headers=headers('patch:create','pg-proposal-key-001'),json={'analysis_id':aid,'target_language':'typescript'})
+        assert proposal.status_code==201,proposal.text
+        proposed=proposal.json()
+        patch=client.get(f"/v1/proposals/{proposed['id']}/patch",headers=headers('patch:read','pg-patch-read-00001'))
+        assert patch.status_code==200 and hashlib.sha256(patch.content).hexdigest()==proposed['patch_sha256']
+        approved=client.post(f"/v1/proposals/{proposed['id']}/approvals",headers=headers('patch:approve','pg-approve-key-001'),json={'patch_sha256':proposed['patch_sha256'],'base_sha':'a'*40,'decision':'approve','expected_version':1})
+        assert approved.status_code==201,approved.text
+        blocked=client.post(f"/v1/proposals/{proposed['id']}/pull-requests",headers=headers('github:write','pg-github-key-001'),json={'approval_id':approved.json()['id'],'target_branch':'main'})
+        assert blocked.status_code==403 and blocked.json()['code']=='GITHUB_WRITE_DISABLED'
+        content=(ROOT/'fixtures/golden/before.yaml').read_bytes()
+        digest=hashlib.sha256(content).hexdigest()
+        created=client.post('/v1/artifacts/upload-intents',headers=headers('artifact:create','pg-artifact-key-001'),json={'kind':'contract','filename':'synthetic.yaml','size_bytes':len(content),'sha256':digest})
+        assert created.status_code==201,created.text
+        intent=created.json();artifact_id=intent['artifact_id']
+        uploaded=client.put(intent['upload_url'],content=content)
+        assert uploaded.status_code==201,uploaded.text
+        committed=client.post(f'/v1/artifacts/{artifact_id}/commit',headers=headers('artifact:commit','pg-artifact-commit-01'),json={'sha256':digest,'size_bytes':len(content),'object_generation':uploaded.json()['object_generation']})
+        assert committed.status_code==202 and committed.json()['status']=='AVAILABLE',committed.text
+        download=client.post(f'/v1/artifacts/{artifact_id}/download-intents',headers=headers('artifact:download','pg-artifact-read-001'))
+        response=client.get(download.json()['download_url'])
+        assert response.status_code==200 and response.content==content
+
     # Two independent adapters must converge on one durable analysis/lease.
     peers=[PostgresStore(runtime),PostgresStore(runtime)]
     def submit(index):
