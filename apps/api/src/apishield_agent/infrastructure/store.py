@@ -136,8 +136,12 @@ class Store:
     def finish(self, tenant, aid, findings, lease_token=None):
         digest = hashlib.sha256(json.dumps([f.__dict__ for f in findings], sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         with self.lock, self.conn() as c:
-            row = c.execute("SELECT status, lease_token FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone()
+            row = c.execute("SELECT status, lease_token, repository_id FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone()
             if not row or row['status'] in {'SUCCEEDED', 'FAILED_TERMINAL', 'CANCELLED'}:
+                return False
+            repo = c.execute("SELECT permission_state FROM repositories WHERE tenant_id=? AND id=?", (tenant, row['repository_id'])).fetchone()
+            if not repo or repo['permission_state'] not in {'READ', 'WRITE'}:
+                c.execute("UPDATE analyses SET status='FAILED_TERMINAL', last_error_code='REPOSITORY_ACCESS_REVOKED', version=version+1, lease_until=NULL, lease_token=NULL WHERE tenant_id=? AND id=?", (tenant, aid))
                 return False
             if lease_token is not None and (row['status'] != 'RUNNING' or row['lease_token'] != lease_token):
                 return False
@@ -201,7 +205,7 @@ class Store:
         if not analysis:
             return None
         repo = self.get_repository(tenant, analysis["repository_id"])
-        if not repo:
+        if not repo or repo["permission_state"] not in {"READ", "WRITE"}:
             return None
         before = Path(repo["before_contract"]).read_text(encoding="utf-8")
         after = Path(repo["after_contract"]).read_text(encoding="utf-8")

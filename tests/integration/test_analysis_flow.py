@@ -60,3 +60,17 @@ def test_auth_scope_and_cross_tenant_fail_closed(tmp_path):
         other_tenant = client.post(f"/v1/installations/1/repositories/{REPOSITORY}/analyses", headers=headers(tenant="00000000-0000-0000-0000-000000000099"), json=body)
         assert no_scope.status_code == 403
         assert other_tenant.status_code == 403
+
+
+def test_revoked_repository_rejects_new_analysis_and_replay(tmp_path):
+    app = create_app(str(tmp_path / "db.sqlite"), seed=True)
+    with TestClient(app) as client:
+        body = {"base_sha": BASE, "head_sha": HEAD, "capability_profile": "p"}
+        url = f"/v1/installations/1/repositories/{REPOSITORY}/analyses"
+        assert client.post(url, headers=headers(), json=body).status_code == 202
+        with app.state.store.conn() as db:
+            db.execute("UPDATE repositories SET permission_state='REVOKED' WHERE tenant_id=? AND id=?", (TENANT, REPOSITORY))
+        replay = client.post(url, headers=headers(), json=body)
+        assert replay.status_code == 403
+        assert replay.json()["code"] == "REPOSITORY_ACCESS_REVOKED"
+

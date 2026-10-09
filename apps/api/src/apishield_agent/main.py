@@ -199,6 +199,8 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         repo = store.get_repo(c["tenant_id"], installation_id, str(repository_id))
         if repo is None:
             return _problem(404, "RESOURCE_NOT_FOUND", "Repository is not visible")
+        if repo["permission_state"] not in {"READ", "WRITE"}:
+            return _problem(403, "REPOSITORY_ACCESS_REVOKED", "Repository access is not active")
         request_sha = _sha({"installation_id": installation_id, "repository_id": str(repository_id), "body": body.model_dump()})
         previous = store.get_idempotent(c["tenant_id"], c["sub"], idempotency_key)
         if previous:
@@ -246,6 +248,9 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         analysis = store.get_analysis(c["tenant_id"], str(analysis_id))
         if not analysis:
             return _problem(404, "RESOURCE_NOT_FOUND", "Analysis is not visible")
+        repo = store.get_repository(c["tenant_id"], analysis["repository_id"])
+        if not repo or repo["permission_state"] not in {"READ", "WRITE"}:
+            return _problem(403, "REPOSITORY_ACCESS_REVOKED", "Repository access is not active")
         if analysis["status"] != "SUCCEEDED":
             return _problem(409, "ANALYSIS_NOT_READY", "Analysis must succeed before proposal creation")
         request_sha = _sha(body.model_dump(mode="json"))
@@ -255,6 +260,8 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
                 return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
             return _proposal(store.proposal(c["tenant_id"], old["resource_id"]))
         row = store.create_proposal(c["tenant_id"], str(analysis_id), body.target_language)
+        if row is None:
+            return _problem(403, "REPOSITORY_ACCESS_REVOKED", "Repository access is not active")
         store.create_command(c["tenant_id"], c["sub"], "proposal.create", idempotency_key, request_sha, row["id"])
         return _proposal(row)
 

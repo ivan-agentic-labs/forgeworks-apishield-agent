@@ -22,7 +22,12 @@ class AnalysisWorker:
             repo = self.store.get_repository(row['tenant_id'], row['repository_id'])
             if repo is None:
                 raise ValueError('REPOSITORY_NOT_FOUND')
+            if repo['permission_state'] not in {'READ', 'WRITE'}:
+                raise PermissionError('REPOSITORY_ACCESS_REVOKED')
             findings = deterministic_openapi_diff(repo['before_contract'], repo['after_contract'])
+            current = self.store.get_repository(row['tenant_id'], row['repository_id'])
+            if current is None or current['permission_state'] not in {'READ', 'WRITE'}:
+                raise PermissionError('REPOSITORY_ACCESS_REVOKED')
             self.store.finish(row['tenant_id'], row['id'], findings, row['lease_token'])
         except Exception as error:
             # Persist a bounded, non-sensitive error class, not paths/content.
