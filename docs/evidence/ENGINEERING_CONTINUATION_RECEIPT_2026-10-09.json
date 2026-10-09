@@ -1,0 +1,34 @@
+{
+  "scope": "Immutable source receipts, not acceptance of the entire current or future main branch",
+  "production_deployed": false,
+  "customer_data_used": false,
+  "g1_e_overall": "OPEN",
+  "all_github_only_implementation_exhausted": false,
+  "local_test_scope": "Unit/integration/security/resilience tests excluding browser E2E; PostgreSQL skipped locally and tested separately in GitHub Actions",
+  "local_tests": {"apishield_agent":75,"accessfix_ai":33,"specforge_ai":35,"agenttest_lab":31,"datareconcile_ai":40,"skipped_postgres_per_project":1},
+  "sources": {
+    "apishield_agent": {
+      "sha":"49f7c670ce709d2ce8907163ae0ead3482a0467a",
+      "workflows": {
+        "contract":{"id":37921512668,"conclusion":"success"},
+        "application":{"id":37921512640,"conclusion":"success"},
+        "postgres_runtime_restore":{"id":37921512620,"conclusion":"success"},
+        "disposable_sandbox":{"id":37921512606,"conclusion":"success","canary_checks_passed":14}
+      },
+      "sandbox_image_id":"sha256:979e5a8a56846771598d47ebf1f8a75b46155104e168a0b237c0783c1dedff8a",
+      "sandbox_image_approval":"NOT independently approved for production"
+    },
+    "datareconcile_ai": {
+      "sha":"a7816ce3c93eaf019fe14dbc0d1dd071f1eab3d9",
+      "workflows": {
+        "contract":{"id":37919586847,"conclusion":"success"},
+        "application":{"id":37919586894,"conclusion":"success"},
+        "postgres_runtime_restore":{"id":37919586948,"conclusion":"success"},
+        "disposable_rls":{"id":37919586877,"conclusion":"success"}
+      }
+    }
+  },
+  "external_live_proof_dependencies":["Installed product GitHub App and runtime secrets/mappings","Real IdP/provisioned identities","Private external artifact storage/scanning","Isolated live runner and provider budgets","Approved evaluation corpora and independent acceptance"],
+  "unfinished_implementation":["Approval-bound remote PR effects","Complete compatibility analysis","BFF/session/CSRF lifecycle","AccessFix real scanner/source mapping/retest","AgentTest dataset ingestion/provider execution","External storage adapters and retention/deletion","Production operations, load, recovery and cost instrumentation"],
+  "limits":"Scoped synthetic/disposable evidence only. No escape audit, production readiness, PITR/regional recovery or whole-G1-E PASS is asserted."
+}
