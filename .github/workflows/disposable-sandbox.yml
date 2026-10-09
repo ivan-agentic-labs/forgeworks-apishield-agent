@@ -1,0 +1,20 @@
+name: APIShield Disposable Sandbox Proof
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-isolation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      G1_DISPOSABLE_SANDBOX: 'yes'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Run fixed synthetic isolation canaries
+        run: python3 scripts/prove_disposable_sandbox.py
