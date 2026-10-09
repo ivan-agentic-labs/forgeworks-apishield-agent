@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-10",
+  "environment": "staging",
+  "status": "PARTIAL_NOT_READY_FOR_FULL_PRODUCT_USE",
+  "production_ready": false,
+  "railway_project": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
+  "supabase_project": "fljekuwplgkrpdoajyhn",
+  "verification": {
+    "workflow_yaml_files_parsed": 24,
+    "session_race_tests": {
+      "passed": 15,
+      "total": 15,
+      "scope": "mocked browser DOM and authentication responses; not live owner login"
+    },
+    "application_tests_previous_verified_checkpoint": {
+      "passed": 527,
+      "skipped": 6,
+      "scope": "synthetic local and CI test data"
+    },
+    "owner_live_business_acceptance": "NOT_COMPLETED"
+  },
+  "changes": [
+    "Protect cleared login sessions against delayed refresh and login responses",
+    "Suppress duplicate login submissions",
+    "Run disposable PostgreSQL 17 CI without Docker Hub pulls",
+    "Repair DataReconcile G2 workflow YAML",
+    "Publish product-specific staging quickstart",
+    "Use official Docker Python 3.12 slim mirror on public ECR after Docker Hub 429/504 build failures"
+  ],
+  "remaining": [
+    "Verified owner Supabase Auth account and active product memberships/grants",
+    "GitHub identity verification and dedicated APIShield GitHub App credentials; deployment app is separate",
+    "APIShield completed repository analysis worker flow",
+    "AccessFix isolated browser runner for actual remote scans",
+    "AgentTest actual agent execution remains disabled; live verdict cryptographic verification incomplete",
+    "Live authenticated browser acceptance blocked by staging domain network policy"
+  ],
+  "limits": [
+    "Storage probe proves only synthetic object upload/read/digest/size/delete, not owner business flows",
+    "AccessFix Chromium proof uses disposable fixtures, not a remote customer site",
+    "No production or customer data processed",
+    "No upgrade to paid infrastructure plans"
+  ],
+  "product": "apishield-agent",
+  "source_commit": "9c1c1b93c70eea24e02ca29cba824f30d397d918",
+  "deployment": {
+    "id": "91be0163-65f5-4593-bde3-8431d3f8b783",
+    "status": "SUCCESS",
+    "updated_at": "2026-10-09T21:29:01.399Z",
+    "service_id": "57d8f010-e38e-4dbe-94bb-05cc5d855229"
+  },
+  "ci": [
+    {
+      "id": 37993605155,
+      "name": "G1 Contract Verification",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37993605155"
+    },
+    {
+      "id": 37993605165,
+      "name": "APIShield Disposable Sandbox Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37993605165"
+    },
+    {
+      "id": 37993605153,
+      "name": "APIShield PostgreSQL Runtime Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37993605153"
+    },
+    {
+      "id": 37993605052,
+      "name": "APIShield MVP Application CI",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37993605052"
+    }
+  ],
+  "storage_probe": {
+    "status": "PASS",
+    "observations": [
+      {
+        "message": "STORAGE_PROBE_PASS: signed upload, persisted read, digest and size verified",
+        "timestamp": "2026-10-09T21:28:47.598940879Z"
+      }
+    ]
+  }
+}
