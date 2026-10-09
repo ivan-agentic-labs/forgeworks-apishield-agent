@@ -19,6 +19,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from apishield_agent.application.analysis_worker import AnalysisWorker
 from apishield_agent.infrastructure.store import Store, stable_uuid
 from apishield_agent.infrastructure.local_artifacts import LocalArtifacts, MAX_BYTES
+from apishield_agent.infrastructure.github_webhooks import (
+    PostgresWebhookInbox,
+    SQLiteWebhookInbox,
+    MAX_WEBHOOK_BYTES,
+    WebhookRejected,
+    verify_webhook,
+)
 from apishield_agent.presentation.auth import require_scope
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -113,6 +120,13 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             raise ValueError("SQLite runtime is restricted to synthetic development/test")
         store = Store(path)
     artifacts = LocalArtifacts(Path(os.getenv("APISHIELD_ARTIFACT_ROOT", str(Path(path).parent / "artifacts"))))
+    webhook_inbox = None
+    webhook_dsn = os.getenv("APISHIELD_GITHUB_WEBHOOK_DATABASE_URL")
+    webhook_path = os.getenv("APISHIELD_GITHUB_WEBHOOK_DB_PATH")
+    if webhook_dsn:
+        webhook_inbox = PostgresWebhookInbox(webhook_dsn)
+    elif webhook_path and os.getenv("APP_ENV", "development") in {"development", "test"}:
+        webhook_inbox = SQLiteWebhookInbox(webhook_path)
     if seed:
         store.seed_demo(str(ROOT / "fixtures/golden/before.yaml"), str(ROOT / "fixtures/golden/after.yaml"))
     stop = threading.Event()
@@ -155,6 +169,27 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
     @app.get("/healthz")
     def health():
         return {"status": "ok", "service": "apishield-agent"}
+
+    @app.post("/internal/github/webhooks", status_code=202)
+    async def github_webhook(
+        request: Request,
+        x_hub_signature_256: Annotated[str | None, Header(alias="X-Hub-Signature-256")] = None,
+        x_github_delivery: Annotated[str | None, Header(alias="X-GitHub-Delivery")] = None,
+        x_github_event: Annotated[str | None, Header(alias="X-GitHub-Event")] = None,
+    ):
+        if webhook_inbox is None:
+            return _problem(503, "WEBHOOK_NOT_CONFIGURED", "A dedicated webhook store is required")
+        body = bytearray()
+        async for chunk in request.stream():
+            body.extend(chunk)
+            if len(body) > MAX_WEBHOOK_BYTES:
+                return _problem(413, "WEBHOOK_TOO_LARGE", "Webhook payload exceeds 1 MiB")
+        try:
+            verified = verify_webhook(os.getenv("GITHUB_WEBHOOK_SECRET", ""), x_hub_signature_256, x_github_delivery, x_github_event, bytes(body))
+            accepted, state = webhook_inbox.apply(verified)
+        except WebhookRejected as error:
+            return _problem(error.status, error.code, error.detail)
+        return {"delivery_id": verified.delivery_id, "accepted": accepted, "installation_state": state}
 
     @app.post("/v1/installations/{installation_id}/repositories/{repository_id}/analyses", status_code=202)
     def start_analysis(installation_id: int, repository_id: UUID, body: CreateAnalysis, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("repo:analyze", store))):

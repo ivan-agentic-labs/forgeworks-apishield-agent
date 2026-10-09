@@ -1,6 +1,8 @@
 """Runs only against an explicitly opted-in disposable localhost PostgreSQL instance."""
 import os
 import hashlib
+import hmac
+import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -31,10 +33,12 @@ def postgres(monkeypatch):
         # The CI service is fresh and dedicated. Never drop an existing schema.
         if db.execute("SELECT to_regclass('analysis_jobs')").fetchone()[0]:
             pytest.fail('Runtime proof requires a fresh empty database')
-        for name in ['001_apishield_mvp.sql','002_apishield_runtime.sql']:
+        for name in ['001_apishield_mvp.sql','002_apishield_runtime.sql','003_github_webhook_inbox.sql']:
             db.execute((ROOT/'migrations/versions'/name).read_text())
         db.execute("CREATE ROLE fw_runtime_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-runtime-test-only'")
+        db.execute("CREATE ROLE fw_webhook_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-webhook-test-only'")
         db.execute('GRANT fw_apishield_agent_rw TO fw_runtime_test')
+        db.execute('GRANT fw_apishield_webhook TO fw_webhook_test')
         db.execute('INSERT INTO tenants VALUES (%s,%s,%s)',(TENANT,'synthetic-demo','ACTIVE'))
         db.execute('INSERT INTO memberships VALUES (%s,%s,%s,%s)',(TENANT,USER,'editor','ACTIVE'))
         db.execute('INSERT INTO repositories VALUES (%s,%s,%s,%s,%s,%s,%s)',(TENANT,REPOSITORY,1,'main','READ',str(ROOT/'fixtures/golden/before.yaml'),str(ROOT/'fixtures/golden/after.yaml')))
@@ -44,12 +48,14 @@ def postgres(monkeypatch):
     info.update(user='fw_runtime_test',password='synthetic-local-runtime-test-only')
     from psycopg.conninfo import make_conninfo
     runtime=make_conninfo(**info)
+    info.update(user='fw_webhook_test',password='synthetic-local-webhook-test-only')
+    webhook=make_conninfo(**info)
     monkeypatch.setenv('APISHIELD_WORKER_TENANTS',TENANT)
-    return owner,runtime,other
+    return owner,runtime,webhook,other
 
 
 def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatch,tmp_path):
-    owner,runtime,other=postgres
+    owner,runtime,webhook,other=postgres
     with pytest.raises(ValueError,match='superuser'):
         PostgresStore(owner)
     store=PostgresStore(runtime)
@@ -83,6 +89,8 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
     with store.conn(other) as db:
         assert len(db.execute('SELECT * FROM repositories').fetchall())==1
     monkeypatch.setenv('APISHIELD_DATABASE_URL',runtime)
+    monkeypatch.setenv('APISHIELD_GITHUB_WEBHOOK_DATABASE_URL',webhook)
+    monkeypatch.setenv('GITHUB_WEBHOOK_SECRET','synthetic-postgres-webhook-secret-32-bytes')
     with TestClient(create_app(str(tmp_path/'unused.sqlite'))) as client:
         result=client.post(f'/v1/installations/1/repositories/{REPOSITORY}/analyses',headers=headers('repo:analyze','pg-analysis-key-001'),json={'base_sha':'a'*40,'head_sha':'b'*40,'capability_profile':'openapi31-typescript-v1'})
         assert result.status_code==202,result.text
@@ -115,6 +123,14 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         download=client.post(f'/v1/artifacts/{artifact_id}/download-intents',headers=headers('artifact:download','pg-artifact-read-001'))
         response=client.get(download.json()['download_url'])
         assert response.status_code==200 and response.content==content
+
+        webhook_body=json.dumps({'action':'suspend','installation':{'id':1}},separators=(',',':')).encode()
+        signature=hmac.new(os.environ['GITHUB_WEBHOOK_SECRET'].encode(),webhook_body,hashlib.sha256).hexdigest()
+        hook=client.post('/internal/github/webhooks',content=webhook_body,headers={'X-Hub-Signature-256':f'sha256={signature}','X-GitHub-Delivery':str(uuid4()),'X-GitHub-Event':'installation'})
+        assert hook.status_code==202 and hook.json()['installation_state']=='SUSPENDED',hook.text
+        with psycopg.connect(owner) as db:
+            assert db.execute('SELECT permission_state FROM repositories WHERE tenant_id=%s AND id=%s',(TENANT,REPOSITORY)).fetchone()[0]=='REVOKED'
+            assert db.execute('SELECT count(*) FROM github_webhook_deliveries').fetchone()[0]==1
 
     # Two independent adapters must converge on one durable analysis/lease.
     peers=[PostgresStore(runtime),PostgresStore(runtime)]
