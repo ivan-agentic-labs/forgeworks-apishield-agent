@@ -99,6 +99,8 @@ def _encode_cursor(tenant: str, analysis_id: str, limit: int, offset: int) -> st
 
 def _decode_cursor(cursor: str, tenant: str, analysis_id: str, limit: int) -> int:
     raw = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4))
+    if base64.urlsafe_b64encode(raw).decode().rstrip("=") != cursor:
+        raise ValueError("noncanonical encoding")
     payload, signature = raw.rsplit(b".", 1)
     expected = hmac.new(_cursor_secret(), payload, hashlib.sha256).hexdigest().encode()
     if not hmac.compare_digest(signature, expected):
@@ -195,6 +197,11 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         if isinstance(exc.detail, dict):
             return JSONResponse(status_code=exc.status_code, content=exc.detail)
         return _problem(exc.status_code, "REQUEST_REJECTED", str(exc.detail))
+
+    @app.get("/v1/auth/config")
+    def auth_config():
+        key=os.getenv("SUPABASE_PUBLISHABLE_KEY","")
+        return {"enabled":os.getenv("AUTH_MODE")=="supabase" and key.startswith("sb_publishable_"), "supabase_url":os.getenv("SUPABASE_URL",""), "publishable_key":key if key.startswith("sb_publishable_") else "", "product":"apishield-agent", "environment":os.getenv("APP_ENV","development")}
 
     @app.get("/readyz")
     def ready():
@@ -443,6 +450,16 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         if not row:
             return _problem(404, "RESOURCE_NOT_FOUND", "Job is not visible")
         return {"id": row["job_id"], "kind": "analysis", "state": row["status"] if row["status"] in {"PENDING", "RUNNING", "SUCCEEDED", "FAILED_TERMINAL"} else "FAILED_TERMINAL", "created_at": row["created_at"], "state_version": row["version"], "attempt_count": row["attempt_count"], "last_error_code": row["last_error_code"]}
+
+    @app.get("/", include_in_schema=False)
+    def home():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse("/ui/",status_code=307)
+
+    from fastapi.staticfiles import StaticFiles
+    web_dir=ROOT / "apps" / "web"
+    if web_dir.is_dir():
+        app.mount("/ui", StaticFiles(directory=str(web_dir),html=True),name="web-console")
 
     return app
 
