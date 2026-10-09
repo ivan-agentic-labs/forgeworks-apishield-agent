@@ -25,6 +25,9 @@ REVOKE ALL ON github_webhook_deliveries, github_installation_states FROM PUBLIC,
 GRANT SELECT, INSERT ON github_webhook_deliveries TO fw_apishield_webhook;
 GRANT SELECT, INSERT, UPDATE ON github_installation_states TO fw_apishield_webhook;
 DROP POLICY IF EXISTS webhook_revoke ON repositories;
+DROP POLICY IF EXISTS webhook_visible_for_revoke ON repositories;
+CREATE POLICY webhook_visible_for_revoke ON repositories FOR SELECT TO fw_apishield_webhook
+ USING (true);
 CREATE POLICY webhook_revoke ON repositories FOR UPDATE TO fw_apishield_webhook
  USING (true) WITH CHECK (permission_state = 'REVOKED');
 GRANT SELECT(installation_id,permission_state), UPDATE(permission_state) ON repositories TO fw_apishield_webhook;
