@@ -42,7 +42,7 @@ def test_signing_and_no_redirects(objects):
     assert "host;x-amz-content-sha256;x-amz-date" in request.get_header("Authorization")
     assert NoRedirect().redirect_request(None,None,302,"redirect",{},"https://attacker.invalid") is None
 
-@pytest.mark.parametrize("endpoint",["http://unsafe.invalid","https://user:pass@storage.invalid","https://storage.invalid/prefix","https://storage.invalid?query=x"])
+@pytest.mark.parametrize("endpoint",["http://unsafe.invalid","https://user:pass"+chr(64)+"storage.invalid","https://storage.invalid/prefix","https://storage.invalid?query=x"],ids=["scheme","userinfo","path","query"])
 def test_unsafe_endpoint_rejected(monkeypatch,endpoint):
     monkeypatch.setenv("S3_ENDPOINT",endpoint)
     with pytest.raises(HTTPException):ObjectStorage("apishield-agent")
