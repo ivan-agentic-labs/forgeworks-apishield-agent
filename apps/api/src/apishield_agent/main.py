@@ -36,40 +36,40 @@ class StrictModel(BaseModel):
 
 
 class CreateAnalysis(StrictModel):
-    base_sha: str = Field(pattern=r"^[0-9a-fA-F]{40,64}$")
-    head_sha: str = Field(pattern=r"^[0-9a-fA-F]{40,64}$")
-    capability_profile: str = Field(min_length=1)
+    base_sha: str = Field(pattern=r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
+    head_sha: str = Field(pattern=r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
+    capability_profile: str = Field(min_length=1, max_length=100)
 
 
 class CreateProposal(StrictModel):
     analysis_id: UUID
-    target_language: str = Field(min_length=1)
+    target_language: str = Field(min_length=1, max_length=100)
 
 
 class ApproveProposal(StrictModel):
     patch_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    base_sha: str = Field(pattern=r"^[0-9a-fA-F]{40,64}$")
+    base_sha: str = Field(pattern=r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
     decision: str = Field(pattern=r"^(approve|reject)$")
     expected_version: int = Field(ge=1)
 
 
 class CreatePullRequest(StrictModel):
     approval_id: UUID
-    target_branch: str = Field(min_length=1)
+    target_branch: str = Field(min_length=1, max_length=200)
 
 
 class CreateUploadIntent(StrictModel):
-    kind: str = Field(min_length=1)
-    filename: str = Field(min_length=1)
-    size_bytes: int = Field(ge=1)
+    kind: str = Field(min_length=1, max_length=100)
+    filename: str = Field(min_length=1, max_length=200)
+    size_bytes: int = Field(ge=1, le=MAX_BYTES)
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     declared_media_type: str | None = None
 
 
 class CommitUpload(StrictModel):
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    size_bytes: int = Field(ge=1)
-    object_generation: str = Field(min_length=1)
+    size_bytes: int = Field(ge=1, le=MAX_BYTES)
+    object_generation: str = Field(min_length=1, max_length=128)
 
 
 def _problem(status: int, code: str, detail: str):
@@ -281,7 +281,14 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         bad = _key(idempotency_key)
         if bad:
             return bad
-        request_sha = _sha(body.model_dump())
+        proposal = store.proposal(c["tenant_id"], str(proposal_id))
+        if not proposal:
+            return _problem(404, "RESOURCE_NOT_FOUND", "Proposal is not visible")
+        analysis = store.get_analysis(c["tenant_id"], proposal["analysis_id"])
+        repo = store.get_repository(c["tenant_id"], analysis["repository_id"]) if analysis else None
+        if not repo or repo["permission_state"] not in {"READ", "WRITE"}:
+            return _problem(403, "REPOSITORY_ACCESS_REVOKED", "Repository access is not active")
+        request_sha = _sha({"proposal_id": str(proposal_id), "body": body.model_dump()})
         old = store.command(c["tenant_id"], c["sub"], "proposal.approve", idempotency_key)
         if old:
             if old["request_sha"] != request_sha:
@@ -294,6 +301,8 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             return _problem(409, "STALE_VERSION", "Proposal version is stale")
         if error == "STALE_ARTIFACT":
             return _problem(409, "STALE_ARTIFACT", "Approval does not match the current patch or base")
+        if error == "REPOSITORY_ACCESS_REVOKED":
+            return _problem(403, error, "Repository access is not active")
         store.create_command(c["tenant_id"], c["sub"], "proposal.approve", idempotency_key, request_sha, row["id"])
         return _approval(row)
 
@@ -323,7 +332,7 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         bad = _key(idempotency_key)
         if bad:
             return bad
-        request_sha = _sha(body.model_dump())
+        request_sha = _sha({"artifact_id":str(artifact_id), "body":body.model_dump()})
         old = store.command(c["tenant_id"], c["sub"], "artifact.commit", idempotency_key)
         if old:
             if old["request_sha"] != request_sha:

@@ -150,3 +150,13 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
     with ThreadPoolExecutor(max_workers=2) as pool:
         leases=list(pool.map(lambda peer:peer.claim_pending(),peers))
     assert sum(row is not None for row in leases)==1
+    lease=next(row for row in leases if row is not None)
+    assert store.finish(TENANT,lease['id'],[],lease['lease_token'])
+    proposal=store.create_proposal(TENANT,lease['id'],'typescript')
+    def approve(index):
+        return peers[index].approve(TENANT,proposal['id'],proposal['patch_sha256'],proposal['base_sha'],'approve',1,USER)[1]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes=list(pool.map(approve,range(2)))
+    assert outcomes.count(None)==1 and outcomes.count('STALE_VERSION')==1
+    with store.conn(TENANT) as db:
+        assert db.execute('SELECT count(*) FROM approvals WHERE proposal_id=?',(proposal['id'],)).fetchone()[0]==1

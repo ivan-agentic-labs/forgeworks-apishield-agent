@@ -28,6 +28,8 @@ Source: `c89785c342d488340ffa18d6dc35bcadaa7ccc47`. This immutable receipt cover
 
 ## Current product scope
 
+Approval writes now use compare-and-swap version fencing before inserting the approval record, and PostgreSQL locks repository permission reads within that transaction. Approval/commit idempotency digests include resource IDs, preventing cross-resource replay. Revoked repository access blocks approval commands and replays. Synthetic SQLite and disposable PostgreSQL concurrency proofs cover one-winner approval behavior; remote effects remain disabled.
+
 Repository revocation now blocks new analysis requests (including idempotent replay), worker source reads, analysis result completion, and new patch proposals. Synthetic regression tests cover these paths. This is not proof of all concurrent external GitHub permission races or real installation lifecycle delivery.
 
 Deterministic inline response-presence diffs, durable worker, verified local contract bytes and downloadable contract patches. Remote GitHub effects and sandbox execution remain disabled.

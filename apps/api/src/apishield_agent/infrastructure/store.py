@@ -229,17 +229,27 @@ class Store:
 
     def approve(self, tenant, pid, patch, base, decision, expected_version, reviewer):
         with self.lock, self.conn() as c:
+            if not hasattr(self, 'dsn'):
+                c.execute('BEGIN IMMEDIATE')
             p = c.execute("SELECT * FROM proposals WHERE tenant_id=? AND id=?", (tenant, pid)).fetchone()
             if not p:
                 return None, 'NOT_FOUND'
+            statement = "SELECT r.permission_state FROM repositories r JOIN analyses a ON a.tenant_id=r.tenant_id AND a.repository_id=r.id WHERE a.tenant_id=? AND a.id=?"
+            if hasattr(self, 'dsn'):
+                statement += ' FOR SHARE OF r'
+            repo = c.execute(statement, (tenant, p['analysis_id'])).fetchone()
+            if not repo or repo['permission_state'] not in {'READ','WRITE'}:
+                return p, 'REPOSITORY_ACCESS_REVOKED'
             if p['version'] != expected_version:
                 return p, 'STALE_VERSION'
             if p['patch_sha256'] != patch or p['base_sha'] != base:
                 return p, 'STALE_ARTIFACT'
             status = 'APPROVED' if decision == 'approve' else 'REJECTED'
+            updated = c.execute("UPDATE proposals SET approval_status=?, version=version+1 WHERE tenant_id=? AND id=? AND version=?", (status, tenant, pid, expected_version))
+            if not updated.rowcount:
+                return p, 'STALE_VERSION'
             approval_id, expiry = str(uuid.uuid4()), later(86400)
             c.execute("INSERT INTO approvals VALUES(?,?,?,?,?,?,?,?,?)", (tenant, approval_id, pid, status, now(), patch, base, reviewer, expiry))
-            c.execute("UPDATE proposals SET approval_status=?, version=version+1 WHERE tenant_id=? AND id=? AND version=?", (status, tenant, pid, expected_version))
             return c.execute("SELECT * FROM approvals WHERE tenant_id=? AND id=?", (tenant, approval_id)).fetchone(), None
 
     def approval(self, tenant, aid):
