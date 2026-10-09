@@ -56,3 +56,44 @@ def test_invalid_response_shape_is_typed_failure():
     old = document(); new = deepcopy(old); new["paths"]["/items"]["get"]["responses"]["200"] = "invalid"
     with pytest.raises(ValueError, match="CONTRACT_RESPONSE_SHAPE_INVALID"):
         diff(old, new)
+
+
+def test_required_request_parameter_addition_and_type_change_are_breaking():
+    old = document()
+    old["paths"]["/items"]["get"]["parameters"] = [{"name": "limit", "in": "query", "required": False, "schema": {"type": "integer"}}]
+    new = deepcopy(old)
+    new["paths"]["/items"]["get"]["parameters"] = [
+        {"name": "limit", "in": "query", "required": True, "schema": {"type": "string"}},
+        {"name": "cursor", "in": "query", "required": True, "schema": {"type": "string"}},
+    ]
+    result = diff(old, new)
+    rules = {finding.rule_id for finding in result}
+    assert "REQUEST_PARAMETER_BECAME_REQUIRED" in rules
+    assert "REQUEST_PARAMETER_SCHEMA_TYPE_CHANGED" in rules
+    assert "REQUEST_PARAMETER_ADDED_REQUIRED" in rules
+
+
+def test_removed_request_parameter_and_enum_value_are_breaking():
+    old = document()
+    old["paths"]["/items"]["get"]["parameters"] = [{"name": "status", "in": "query", "schema": {"type": "string", "enum": ["open", "closed"]}}]
+    new = document()
+    result = diff(old, new)
+    assert any(f.rule_id == "REQUEST_PARAMETER_REMOVED" for f in result)
+    new = document()
+    new["paths"]["/items"]["get"]["parameters"] = [{"name": "status", "in": "query", "schema": {"type": "string", "enum": ["open"]}}]
+    assert any(f.rule_id == "REQUEST_PARAMETER_ENUM_VALUE_REMOVED" for f in diff(old, new))
+
+
+def test_request_body_required_property_and_response_surface_changes_are_breaking():
+    old = document()
+    old["paths"]["/items"]["post"] = {"requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"name": {"type": "string"}}}}}}, "responses": {"200": {"content": {"application/json": {"schema": {"type": "string", "enum": ["ok", "error"]}}}}, "201": {"description": "created"}}}
+    new = deepcopy(old)
+    new["paths"]["/items"]["post"]["requestBody"]["content"]["application/json"]["schema"]["required"] = ["name"]
+    new["paths"]["/items"]["post"]["responses"]["200"]["content"]["application/json"]["schema"] = {"type": "integer", "enum": [1]}
+    del new["paths"]["/items"]["post"]["responses"]["201"]
+    result = diff(old, new)
+    rules = {finding.rule_id for finding in result}
+    assert "REQUEST_BODY_FIELD_BECAME_REQUIRED" in rules
+    assert "RESPONSE_SCHEMA_TYPE_CHANGED" in rules
+    assert "RESPONSE_ENUM_VALUE_REMOVED" in rules
+    assert "RESPONSE_STATUS_REMOVED" in rules
