@@ -12,6 +12,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -126,6 +127,15 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         t.join(timeout=1)
 
     app = FastAPI(title="APIShield Agent MVP", version="0.2.0", lifespan=lifespan)
+    cors_origins = [origin.strip() for origin in os.getenv("APISHIELD_CORS_ORIGINS", "").split(",") if origin.strip()]
+    if cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
+            allow_credentials=False,
+            allow_methods=["GET", "OPTIONS"],
+            allow_headers=["Authorization", "Accept", "Content-Type"],
+        )
     app.state.store = store
 
     @app.exception_handler(HTTPException)

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>APIShield analysis viewer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="eyebrow">ForgeWorks / APIShield Agent</p>
+        <h1>Analysis viewer</h1>
+        <p class="lede">A small, read-only local viewer for an analysis summary, its durable job, and deterministic findings.</p>
+      </header>
+
+      <section class="panel" aria-labelledby="connection-title">
+        <h2 id="connection-title">Connect to the API</h2>
+        <form id="lookup-form">
+          <label>
+            API base URL
+            <input id="api-base-url" name="apiBaseUrl" type="url" inputmode="url" placeholder="http://127.0.0.1:8000" required>
+            <small>Stored in this browser only. A <code>?apiBaseUrl=...</code> query parameter also works.</small>
+          </label>
+          <label>
+            Bearer token
+            <input id="bearer-token" name="bearerToken" type="password" autocomplete="off" placeholder="Paste a development token">
+            <small>Never commit or share a real credential. Leave blank only when the API is configured without auth.</small>
+          </label>
+          <div class="form-grid">
+            <label>
+              Analysis ID
+              <input id="analysis-id" name="analysisId" type="text" autocomplete="off" placeholder="UUID from the analysis response" required>
+            </label>
+            <label>
+              Job ID
+              <input id="job-id" name="jobId" type="text" autocomplete="off" placeholder="UUID from the analysis response" required>
+            </label>
+          </div>
+          <button id="load-button" type="submit">Load analysis</button>
+        </form>
+        <p id="status" class="status" role="status" aria-live="polite">Ready.</p>
+      </section>
+
+      <section id="error-panel" class="panel error-panel" hidden aria-labelledby="error-title">
+        <h2 id="error-title">Request error</h2>
+        <p id="error-message"></p>
+      </section>
+
+      <section id="results" class="results" hidden aria-labelledby="results-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Canonical read endpoints</p>
+            <h2 id="results-title">Analysis result</h2>
+          </div>
+          <span id="analysis-status" class="pill">—</span>
+        </div>
+        <div class="cards">
+          <article class="card">
+            <h3>Analysis</h3>
+            <dl id="analysis-details"></dl>
+          </article>
+          <article class="card">
+            <h3>Durable job</h3>
+            <dl id="job-details"></dl>
+          </article>
+        </div>
+        <article class="card findings-card">
+          <div class="card-heading">
+            <h3>Findings</h3>
+            <span id="finding-count" class="muted"></span>
+          </div>
+          <div id="findings-list" class="findings-list"></div>
+        </article>
+      </section>
+
+      <footer>
+        <p>Blueprint UI only. It performs GET requests and does not create proposals, approvals, or GitHub writes.</p>
+      </footer>
+    </main>
+  </body>
+</html>

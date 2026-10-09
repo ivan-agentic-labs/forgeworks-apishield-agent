@@ -14,6 +14,9 @@ python -W error -m pytest tests/unit tests/integration
 ```
 The default SQLite store, synthetic HS256 issuer, and golden fixture are development/test-only. See `docs/evidence/MVP_CHECKPOINT.md`.
 
+## Static blueprint viewer
+`apps/web/` contains a vanilla HTML/JS read-only viewer for the canonical analysis, job, and findings endpoints. Run the API and static server as documented in `apps/web/README.md`; the viewer requires an analysis ID and job ID from the analysis response. GitHub writes remain disabled.
+
 ## Documents
 - Product scope: `docs/product/PRODUCT_SCOPE.md`
 - Architecture and file ownership: `docs/architecture/`
@@ -30,7 +33,7 @@ python scripts/verify_contracts.py
 python scripts/validate_openapi_independent.py
 ```
 
-CI contains a manual PostgreSQL disposable DDL smoke test. **No live RLS/two-tenant proof or sandbox evidence is claimed.**
+CI contains a manual PostgreSQL disposable DDL smoke test and a separate manual runtime RLS/tenant-isolation negative test. The latter starts from an empty database and uses a non-owner, non-BYPASSRLS application role with synthetic rows only. **No production readiness or customer-data evidence is claimed.**
 
 ## Non-goals at this stage
 No production deployment, customer data, code-execution agent, public access, financial mutation, license assertion or fake passing tests.
