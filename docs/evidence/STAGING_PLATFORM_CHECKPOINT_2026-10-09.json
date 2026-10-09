@@ -1,0 +1,58 @@
+{
+  "product": "apishield-agent",
+  "verified_source_commit": "1ffadeff299060c1993cb5c9ef11aac79c41bb1a",
+  "workflows": [
+    {
+      "id": 37961422034,
+      "name": "G1 Contract Verification",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37961422034"
+    },
+    {
+      "id": 37961422070,
+      "name": "APIShield Disposable Sandbox Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37961422070"
+    },
+    {
+      "id": 37961422152,
+      "name": "APIShield PostgreSQL Runtime Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37961422152"
+    },
+    {
+      "id": 37961422059,
+      "name": "APIShield MVP Application CI",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37961422059"
+    }
+  ],
+  "railway": {
+    "projectId": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
+    "environmentId": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+    "serviceId": "57d8f010-e38e-4dbe-94bb-05cc5d855229",
+    "variables_and_config": "configured and read back",
+    "source_connection": "rejected: User does not have access to the repo",
+    "deployment_count": 0
+  },
+  "supabase": {
+    "projectId": "fljekuwplgkrpdoajyhn",
+    "schema": "fw_apishield_agent",
+    "total_product_tables": 62,
+    "all_product_tables_forced_rls": true,
+    "cross_product_schema_grants": 0,
+    "public_schema_usage": false,
+    "application_users": 0,
+    "private_session_function_missing_session_result": false,
+    "positive_session_and_runtime_login_proof": "not yet performed"
+  },
+  "limits": [
+    "No deployment or live authenticated end-to-end proof",
+    "No production acceptance or full G1-E pass",
+    "Live role-switched row proof attempt was not applied; connector returned Invalid or expired requestState"
+  ]
+}
