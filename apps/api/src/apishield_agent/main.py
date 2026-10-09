@@ -27,6 +27,7 @@ from apishield_agent.infrastructure.github_webhooks import (
     verify_webhook,
 )
 from apishield_agent.presentation.auth import require_scope
+from apishield_agent.infrastructure.github_sources import GitHubSources
 
 ROOT = Path(__file__).resolve().parents[4]
 
@@ -131,7 +132,7 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         store.seed_demo(str(ROOT / "fixtures/golden/before.yaml"), str(ROOT / "fixtures/golden/after.yaml"))
     stop = threading.Event()
 
-    analysis_worker = AnalysisWorker(store)
+    analysis_worker = AnalysisWorker(store, GitHubSources.from_environment())
     def worker():
         analysis_worker.serve(stop)
 
