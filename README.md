@@ -1,10 +1,18 @@
 # APIShield Agent
 
-**Status: GitHub G2 bootstrap candidate. Not implemented, not deployed, not production-ready.**
+**Status: synthetic MVP milestone implemented and tested locally. Not deployed, not production-ready, and G1-E remains open.**
 
 API change impact analysis, verified patch proposals and GitHub PR approval workflows.
 
-This private repository contains the canonical G1 design and executable **verification scaffolding**, not functioning AI product code.
+The first executable slice accepts an authorized analysis request, persists a tenant-scoped job, runs a deterministic OpenAPI fixture diff through a local worker, and exposes findings/status. It does not perform GitHub writes, arbitrary code execution, AI provider calls, or customer-data processing.
+
+## MVP run and test
+```bash
+python -m pip install -e 'apps/api[test]'
+APISHIELD_SEED_FIXTURE=1 PYTHONPATH=apps/api/src uvicorn apishield_agent.main:app --reload
+python -W error -m pytest tests/unit tests/integration
+```
+The default SQLite store, synthetic HS256 issuer, and golden fixture are development/test-only. See `docs/evidence/MVP_CHECKPOINT.md`.
 
 ## Documents
 - Product scope: `docs/product/PRODUCT_SCOPE.md`
