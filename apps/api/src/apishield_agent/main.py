@@ -192,6 +192,11 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             return JSONResponse(status_code=exc.status_code, content=exc.detail)
         return _problem(exc.status_code, "REQUEST_REJECTED", str(exc.detail))
 
+    @app.get("/readyz")
+    def ready():
+        from apishield_agent.presentation.authentication import readiness
+        return readiness(store)
+
     @app.get("/healthz")
     def health():
         return {"status": "ok", "service": "apishield-agent"}

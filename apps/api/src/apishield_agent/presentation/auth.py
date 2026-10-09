@@ -1,5 +1,5 @@
 from __future__ import annotations
-from apishield_agent.presentation.authentication import decode_bearer
+from apishield_agent.presentation.authentication import decode_bearer, verify_session
 
 import os
 from typing import Annotated
@@ -20,6 +20,7 @@ def claims(authorization: Annotated[str | None, Header()] = None):
 
 def require_scope(scope: str, store: Store):
     def dependency(c: dict = Depends(claims)) -> dict:
+        verify_session(store, c)
         scopes = set(str(c.get("scope", "")).split())
         tenant, user = c.get("tenant_id"), c.get("sub")
         if not tenant or not user or not store.member(tenant, user):
