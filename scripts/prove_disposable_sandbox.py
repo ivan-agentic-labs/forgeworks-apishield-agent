@@ -82,8 +82,8 @@ def main():
         raise SystemExit('Docker unavailable: BLOCKED, not PASS')
     # Pull a named upstream version, then execute only its resolved immutable ID.
     # This records provenance but is NOT an independently approved image digest.
-    run(['docker','pull','python:3.12-alpine'],120)
-    image = json.loads(run(['docker','image','inspect','python:3.12-alpine'],10))[0]
+    run(['docker','pull','public.ecr.aws/docker/library/python:3.12-alpine'],120)
+    image = json.loads(run(['docker','image','inspect','public.ecr.aws/docker/library/python:3.12-alpine'],10))[0]
     image_id=image['Id'];name='fw-synthetic-sandbox-'+uuid.uuid4().hex
     try:
         checks=json.loads(run(sandbox_command(image_id,name),20))
