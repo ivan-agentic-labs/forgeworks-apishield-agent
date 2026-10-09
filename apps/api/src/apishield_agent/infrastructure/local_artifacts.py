@@ -17,6 +17,7 @@ import jwt
 import yaml
 from fastapi import HTTPException
 from openapi_spec_validator import validate
+from apishield_agent.domain.contract_input import load_contract
 
 MAX_BYTES = 2 * 1024 * 1024
 TTL = 300
@@ -129,7 +130,7 @@ class LocalArtifacts:
         try:
             if any(isinstance(event, yaml.events.AliasEvent) for event in yaml.parse(body)):
                 raise ValueError("YAML aliases are disabled")
-            document = yaml.safe_load(body)
+            document = load_contract(body)
             pending = [document]
             visited = 0
             while pending:

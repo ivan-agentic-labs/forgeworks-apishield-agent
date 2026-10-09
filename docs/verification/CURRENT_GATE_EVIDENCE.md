@@ -28,6 +28,10 @@ Source: `c89785c342d488340ffa18d6dc35bcadaa7ccc47`. This immutable receipt cover
 
 ## Current product scope
 
+Migration 004 persists immutable tenant-isolated analysis source snapshots in the same completion transaction. Proposals use these exact bytes and verify their digests, rather than reading mutable repository paths again. Missing/tampered snapshots fail closed. Runtime PostgreSQL roles cannot update/delete snapshot rows. This binds local analyzed bytes, not an independently fetched GitHub revision: real repository reads remain open.
+
+Contract ingestion and analysis share a bounded offline parser that rejects duplicate mapping keys, YAML aliases, remote references, non-finite numbers, excessive structures and unsafe non-regular source files. Analysis hashes the exact bytes it parses, instead of reading the input again for its digest. Internal references/composition are explicitly recorded as UNSUPPORTED findings and counted in API responses and completion events, not silently presented as zero coverage gaps. Full OpenAPI compatibility analysis remains unfinished.
+
 Approval writes now use compare-and-swap version fencing before inserting the approval record, and PostgreSQL locks repository permission reads within that transaction. Approval/commit idempotency digests include resource IDs, preventing cross-resource replay. Revoked repository access blocks approval commands and replays. Synthetic SQLite and disposable PostgreSQL concurrency proofs cover one-winner approval behavior; remote effects remain disabled.
 
 Repository revocation now blocks new analysis requests (including idempotent replay), worker source reads, analysis result completion, and new patch proposals. Synthetic regression tests cover these paths. This is not proof of all concurrent external GitHub permission races or real installation lifecycle delivery.

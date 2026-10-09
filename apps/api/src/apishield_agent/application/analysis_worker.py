@@ -6,7 +6,8 @@ import signal
 import threading
 from pathlib import Path
 
-from apishield_agent.domain.analysis import deterministic_openapi_diff
+from apishield_agent.domain.analysis import deterministic_openapi_diff_bytes
+from apishield_agent.domain.contract_input import read_contract
 from apishield_agent.infrastructure.store import Store
 
 
@@ -24,11 +25,13 @@ class AnalysisWorker:
                 raise ValueError('REPOSITORY_NOT_FOUND')
             if repo['permission_state'] not in {'READ', 'WRITE'}:
                 raise PermissionError('REPOSITORY_ACCESS_REVOKED')
-            findings = deterministic_openapi_diff(repo['before_contract'], repo['after_contract'])
+            before = read_contract(repo['before_contract'])
+            after = read_contract(repo['after_contract'])
+            findings = deterministic_openapi_diff_bytes(before, after)
             current = self.store.get_repository(row['tenant_id'], row['repository_id'])
             if current is None or current['permission_state'] not in {'READ', 'WRITE'}:
                 raise PermissionError('REPOSITORY_ACCESS_REVOKED')
-            self.store.finish(row['tenant_id'], row['id'], findings, row['lease_token'])
+            self.store.finish(row['tenant_id'], row['id'], findings, row['lease_token'], source_bytes=(before, after))
         except Exception as error:
             # Persist a bounded, non-sensitive error class, not paths/content.
             self.store.fail(row['tenant_id'], row['id'], type(error).__name__.upper(), row['lease_token'])

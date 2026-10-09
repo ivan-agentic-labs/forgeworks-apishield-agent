@@ -221,7 +221,7 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         row = store.get_analysis(c["tenant_id"], str(analysis_id))
         if not row:
             return _problem(404, "RESOURCE_NOT_FOUND", "Analysis is not visible")
-        return {"id": row["id"], "status": row["status"], "created_at": row["created_at"], "repository_id": row["repository_id"], "base_sha": row["base_sha"], "head_sha": row["head_sha"], "finding_count": store.finding_count(c["tenant_id"], str(analysis_id)), "unsupported_count": 0, **({"completed_at": row["completed_at"]} if row["completed_at"] else {})}
+        return {"id": row["id"], "status": row["status"], "created_at": row["created_at"], "repository_id": row["repository_id"], "base_sha": row["base_sha"], "head_sha": row["head_sha"], "finding_count": store.finding_count(c["tenant_id"], str(analysis_id)), "unsupported_count": store.unsupported_count(c["tenant_id"], str(analysis_id)), **({"completed_at": row["completed_at"]} if row["completed_at"] else {})}
 
     @app.get("/v1/analyses/{analysis_id}/findings")
     def read_findings(analysis_id: UUID, cursor: Annotated[str | None, Query(max_length=1024)] = None, limit: Annotated[int, Query(ge=1, le=100)] = 50, c: dict = Depends(require_scope("analysis:read", store))):
@@ -259,7 +259,12 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             if old["request_sha"] != request_sha:
                 return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
             return _proposal(store.proposal(c["tenant_id"], old["resource_id"]))
-        row = store.create_proposal(c["tenant_id"], str(analysis_id), body.target_language)
+        try:
+            row = store.create_proposal(c["tenant_id"], str(analysis_id), body.target_language)
+        except ValueError as error:
+            if str(error) not in {"ANALYSIS_SOURCE_SNAPSHOT_REQUIRED", "ANALYSIS_SOURCE_INTEGRITY_FAILURE"}:
+                raise
+            return _problem(409, str(error), "Proposal requires an intact snapshot of the analyzed source bytes")
         if row is None:
             return _problem(403, "REPOSITORY_ACCESS_REVOKED", "Repository access is not active")
         store.create_command(c["tenant_id"], c["sub"], "proposal.create", idempotency_key, request_sha, row["id"])

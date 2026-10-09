@@ -24,7 +24,7 @@ for p in root.glob(".github/workflows/*.yml"):
 for p in root.glob("migrations/versions/*.sql"):
     # Versioned MVP migrations are implementation artifacts; review-only candidates
     # remain under docs/verification/sql-candidates and must not be copied here.
-    if p.name not in {"001_apishield_mvp.sql", "002_apishield_runtime.sql", "003_github_webhook_inbox.sql"}:
+    if p.name not in {"001_apishield_mvp.sql", "002_apishield_runtime.sql", "003_github_webhook_inbox.sql", "004_analysis_source_snapshots.sql"}:
         errors.append(f"unapproved migration: {p.relative_to(root)}")
 patterns = {
     "private key": r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",

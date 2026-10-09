@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
+from apishield_agent.domain.contract_input import load_contract, unsupported_constructs, read_contract
 
 
 @dataclass(frozen=True)
@@ -39,14 +39,21 @@ def deterministic_openapi_diff(before_path: str | None, after_path: str | None) 
     """Classify inline required-response-field changes; additions need review, removals break the previous presence guarantee."""
     if not before_path or not after_path or not Path(before_path).exists() or not Path(after_path).exists():
         raise ValueError("CONTRACT_INPUT_UNAVAILABLE")
-    before = yaml.safe_load(Path(before_path).read_text()) or {}
-    after = yaml.safe_load(Path(after_path).read_text()) or {}
-    if not isinstance(before, dict) or not isinstance(after, dict):
-        raise ValueError("CONTRACT_INPUT_INVALID")
-    source_digests = {"before": hashlib.sha256(Path(before_path).read_bytes()).hexdigest(), "after": hashlib.sha256(Path(after_path).read_bytes()).hexdigest()}
+    before_bytes = read_contract(before_path)
+    after_bytes = read_contract(after_path)
+    return deterministic_openapi_diff_bytes(before_bytes, after_bytes)
+
+
+def deterministic_openapi_diff_bytes(before_bytes: bytes, after_bytes: bytes) -> list[Finding]:
+    before = load_contract(before_bytes)
+    after = load_contract(after_bytes)
+    source_digests = {"before": hashlib.sha256(before_bytes).hexdigest(), "after": hashlib.sha256(after_bytes).hexdigest()}
     before_required = _schema_required(before, "before")
     after_required = _schema_required(after, "after")
     findings: list[Finding] = []
+    for pointer in sorted(set(unsupported_constructs(before)) | set(unsupported_constructs(after))):
+        evidence = hashlib.sha256(json.dumps({'rule':'unsupported-schema-construct','pointer':pointer,'source_digests':source_digests},sort_keys=True).encode()).hexdigest()
+        findings.append(Finding('UNSUPPORTED_SCHEMA_CONSTRUCT','REVIEW',pointer,evidence,'UNSUPPORTED'))
     for key in sorted(set(after_required) | {key.replace("before:", "after:", 1) for key in before_required}):
         before_key = key.replace("after:", "before:", 1)
         before_fields = before_required.get(before_key, set())

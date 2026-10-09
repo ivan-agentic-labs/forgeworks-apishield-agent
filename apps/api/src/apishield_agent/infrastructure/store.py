@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import base64
 import difflib
 import json
 import sqlite3
@@ -56,6 +57,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS artifacts (tenant_id TEXT NOT NULL, id TEXT NOT NULL, kind TEXT NOT NULL, filename TEXT NOT NULL, declared_media_type TEXT, sha256 TEXT NOT NULL, size_bytes INTEGER NOT NULL, status TEXT NOT NULL, object_generation TEXT, rejected_reason TEXT, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
             CREATE TABLE IF NOT EXISTS proposals (tenant_id TEXT NOT NULL, id TEXT NOT NULL, analysis_id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, base_sha TEXT NOT NULL, patch_sha256 TEXT NOT NULL, sandbox_status TEXT NOT NULL, approval_status TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (tenant_id,id));
             CREATE TABLE IF NOT EXISTS proposal_patch_content (tenant_id TEXT NOT NULL, id TEXT NOT NULL, patch_text TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
+            CREATE TABLE IF NOT EXISTS analysis_source_snapshots (tenant_id TEXT NOT NULL, analysis_id TEXT NOT NULL, before_base64 TEXT NOT NULL, after_base64 TEXT NOT NULL, before_sha TEXT NOT NULL, after_sha TEXT NOT NULL, PRIMARY KEY(tenant_id,analysis_id));
             CREATE TABLE IF NOT EXISTS approvals (tenant_id TEXT NOT NULL, id TEXT NOT NULL, proposal_id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, patch_sha256 TEXT NOT NULL, base_sha TEXT NOT NULL, reviewer_id TEXT NOT NULL, expires_at TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
             CREATE TABLE IF NOT EXISTS pull_requests (tenant_id TEXT NOT NULL, id TEXT NOT NULL, proposal_id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, github_pr_node_id TEXT NOT NULL, draft INTEGER NOT NULL, external_effect_key TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
             """)
@@ -133,7 +135,7 @@ class Store:
         with self.conn() as c:
             return c.execute("SELECT * FROM analyses WHERE status='PENDING' ORDER BY created_at").fetchall()
 
-    def finish(self, tenant, aid, findings, lease_token=None):
+    def finish(self, tenant, aid, findings, lease_token=None, source_bytes=None):
         digest = hashlib.sha256(json.dumps([f.__dict__ for f in findings], sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         with self.lock, self.conn() as c:
             row = c.execute("SELECT status, lease_token, repository_id FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone()
@@ -147,8 +149,13 @@ class Store:
                 return False
             for f in findings:
                 c.execute("INSERT OR IGNORE INTO findings VALUES(?,?,?,?,?,?,?,?)", (tenant, str(uuid.uuid4()), aid, f.rule_id, f.severity, f.pointer, f.evidence_digest, f.coverage))
+            if source_bytes is not None:
+                before, after = source_bytes
+                if max(len(before), len(after)) > 2 * 1024 * 1024:
+                    raise ValueError('CONTRACT_TOO_LARGE')
+                c.execute("INSERT INTO analysis_source_snapshots VALUES(?,?,?,?,?,?)", (tenant, aid, base64.b64encode(before).decode(), base64.b64encode(after).decode(), hashlib.sha256(before).hexdigest(), hashlib.sha256(after).hexdigest()))
             c.execute("UPDATE analyses SET status='SUCCEEDED', completed_at=?, version=version+1, lease_until=NULL, lease_token=NULL, result_digest=? WHERE tenant_id=? AND id=? AND status IN ('PENDING','RUNNING')", (now(), digest, tenant, aid))
-            payload = {'analysis_id': aid, 'finding_count': len(findings), 'unsupported_count': 0, 'result_digest': digest}
+            payload = {'analysis_id': aid, 'finding_count': len(findings), 'unsupported_count': sum(f.coverage == 'UNSUPPORTED' for f in findings), 'result_digest': digest}
             c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?,?)", (tenant, stable_uuid(f'analysis.completed:{tenant}:{aid}'), 'analysis.completed', aid, json.dumps(payload, sort_keys=True), now()))
             return True
 
@@ -174,6 +181,10 @@ class Store:
     def finding_count(self, tenant, aid):
         with self.conn() as c:
             return int(c.execute("SELECT COUNT(*) FROM findings WHERE tenant_id=? AND analysis_id=?", (tenant, aid)).fetchone()[0])
+
+    def unsupported_count(self, tenant, aid):
+        with self.conn() as c:
+            return int(c.execute("SELECT COUNT(*) FROM findings WHERE tenant_id=? AND analysis_id=? AND coverage='UNSUPPORTED'", (tenant, aid)).fetchone()[0])
 
     def create_artifact(self, tenant, kind, filename, media_type, sha256, size_bytes):
         aid = str(uuid.uuid4())
@@ -202,19 +213,35 @@ class Store:
 
     def create_proposal(self, tenant, analysis_id, target_language):
         analysis = self.get_analysis(tenant, analysis_id)
-        if not analysis:
+        if not analysis or analysis['status'] != 'SUCCEEDED':
             return None
         repo = self.get_repository(tenant, analysis["repository_id"])
         if not repo or repo["permission_state"] not in {"READ", "WRITE"}:
             return None
-        before = Path(repo["before_contract"]).read_text(encoding="utf-8")
-        after = Path(repo["after_contract"]).read_text(encoding="utf-8")
-        if max(len(before.encode()), len(after.encode())) > 2 * 1024 * 1024:
-            raise ValueError("CONTRACT_TOO_LARGE")
+        with self.conn() as db:
+            snapshot = db.execute("SELECT * FROM analysis_source_snapshots WHERE tenant_id=? AND analysis_id=?", (tenant, analysis_id)).fetchone()
+        if not snapshot:
+            raise ValueError('ANALYSIS_SOURCE_SNAPSHOT_REQUIRED')
+        try:
+            before_bytes = base64.b64decode(snapshot['before_base64'], validate=True)
+            after_bytes = base64.b64decode(snapshot['after_base64'], validate=True)
+            if max(len(before_bytes), len(after_bytes)) > 2 * 1024 * 1024 or hashlib.sha256(before_bytes).hexdigest() != snapshot['before_sha'] or hashlib.sha256(after_bytes).hexdigest() != snapshot['after_sha']:
+                raise ValueError('digest mismatch')
+            before, after = before_bytes.decode('utf-8'), after_bytes.decode('utf-8')
+        except (ValueError, UnicodeError) as error:
+            raise ValueError('ANALYSIS_SOURCE_INTEGRITY_FAILURE') from error
         patch_text = "".join(difflib.unified_diff(before.splitlines(keepends=True), after.splitlines(keepends=True), fromfile="contracts/before.yaml", tofile="contracts/after.yaml"))
         patch = hashlib.sha256(patch_text.encode()).hexdigest()
         pid = str(uuid.uuid4())
         with self.lock, self.conn() as c:
+            if not hasattr(self, 'dsn'):
+                c.execute('BEGIN IMMEDIATE')
+            statement = "SELECT permission_state FROM repositories WHERE tenant_id=? AND id=?"
+            if hasattr(self, 'dsn'):
+                statement += ' FOR SHARE'
+            active = c.execute(statement, (tenant, analysis['repository_id'])).fetchone()
+            if not active or active['permission_state'] not in {'READ','WRITE'}:
+                return None
             c.execute("INSERT INTO proposals VALUES(?,?,?,?,?,?,?,?,?,?)", (tenant, pid, analysis_id, 'READY', now(), analysis['base_sha'], patch, 'NOT_RUN', 'PENDING', 1))
             c.execute("INSERT INTO proposal_patch_content VALUES(?,?,?)", (tenant, pid, patch_text))
         return self.proposal(tenant, pid)

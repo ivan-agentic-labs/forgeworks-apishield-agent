@@ -31,7 +31,7 @@ def test_revoked_repository_never_reads_contracts(tmp_path, monkeypatch):
         db.execute("UPDATE repositories SET permission_state='REVOKED' WHERE tenant_id=? AND id=?", (TENANT, REPOSITORY))
     def forbidden(*args):
         pytest.fail('revoked repository contract was read')
-    monkeypatch.setattr('apishield_agent.application.analysis_worker.deterministic_openapi_diff', forbidden)
+    monkeypatch.setattr('apishield_agent.application.analysis_worker.deterministic_openapi_diff_bytes', forbidden)
     assert AnalysisWorker(store).run_once()
     result = store.get_analysis(TENANT, row['id'])
     assert result['status'] != 'SUCCEEDED'

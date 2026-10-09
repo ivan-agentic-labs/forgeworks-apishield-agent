@@ -33,7 +33,7 @@ def postgres(monkeypatch):
         # The CI service is fresh and dedicated. Never drop an existing schema.
         if db.execute("SELECT to_regclass('analysis_jobs')").fetchone()[0]:
             pytest.fail('Runtime proof requires a fresh empty database')
-        for name in ['001_apishield_mvp.sql','002_apishield_runtime.sql','003_github_webhook_inbox.sql']:
+        for name in ['001_apishield_mvp.sql','002_apishield_runtime.sql','003_github_webhook_inbox.sql','004_analysis_source_snapshots.sql']:
             db.execute((ROOT/'migrations/versions'/name).read_text())
         db.execute("CREATE ROLE fw_runtime_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-runtime-test-only'")
         db.execute("CREATE ROLE fw_webhook_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-webhook-test-only'")
@@ -151,7 +151,7 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         leases=list(pool.map(lambda peer:peer.claim_pending(),peers))
     assert sum(row is not None for row in leases)==1
     lease=next(row for row in leases if row is not None)
-    assert store.finish(TENANT,lease['id'],[],lease['lease_token'])
+    assert store.finish(TENANT,lease['id'],[],lease['lease_token'],source_bytes=((ROOT/'fixtures/golden/before.yaml').read_bytes(),(ROOT/'fixtures/golden/after.yaml').read_bytes()))
     proposal=store.create_proposal(TENANT,lease['id'],'typescript')
     def approve(index):
         return peers[index].approve(TENANT,proposal['id'],proposal['patch_sha256'],proposal['base_sha'],'approve',1,USER)[1]
@@ -160,3 +160,8 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
     assert outcomes.count(None)==1 and outcomes.count('STALE_VERSION')==1
     with store.conn(TENANT) as db:
         assert db.execute('SELECT count(*) FROM approvals WHERE proposal_id=?',(proposal['id'],)).fetchone()[0]==1
+        assert db.execute('SELECT count(*) FROM analysis_source_snapshots').fetchone()[0]>=2
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            db.execute("UPDATE analysis_source_snapshots SET before_base64='tampered'")
+    with store.conn(other) as db:
+        assert db.execute('SELECT count(*) FROM analysis_source_snapshots').fetchone()[0]==0
