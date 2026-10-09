@@ -10,7 +10,7 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
-from apishield_agent.infrastructure.postgres_store import PostgresStore
+from apishield_agent.infrastructure.postgres_store import PostgresStore, ROLE
 from apishield_agent.infrastructure.store import TENANT, USER, REPOSITORY
 from apishield_agent.main import create_app
 from test_hardening import headers
@@ -54,15 +54,17 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         PostgresStore(owner)
     store=PostgresStore(runtime)
     assert not store.member(TENANT, "unmapped-oidc-subject")
-    # Even ownership of a different product table is forbidden to runtime login/group.
-    with psycopg.connect(owner) as db:
-        db.execute('ALTER TABLE memberships OWNER TO fw_runtime_test')
-    try:
-        with pytest.raises(ValueError,match='own product tables'):
-            PostgresStore(runtime)
-    finally:
+    # Runtime login and its group cannot own tenant/provisioning tables either.
+    for table, new_owner in [('memberships','fw_runtime_test'),('tenants',ROLE)]:
         with psycopg.connect(owner) as db:
-            db.execute('ALTER TABLE memberships OWNER TO postgres')
+            db.execute(psycopg.sql.SQL('ALTER TABLE {} OWNER TO {}').format(psycopg.sql.Identifier(table),psycopg.sql.Identifier(new_owner)))
+        try:
+            with pytest.raises(ValueError,match='own product tables'):
+                PostgresStore(runtime)
+        finally:
+            with psycopg.connect(owner) as db:
+                db.execute(psycopg.sql.SQL('ALTER TABLE {} OWNER TO postgres').format(psycopg.sql.Identifier(table)))
+                db.execute(psycopg.sql.SQL('REVOKE ALL ON {} FROM {}').format(psycopg.sql.Identifier(table),psycopg.sql.Identifier(new_owner)))
 
     with pytest.raises(ValueError,match='tenant context'):
         with store.conn():

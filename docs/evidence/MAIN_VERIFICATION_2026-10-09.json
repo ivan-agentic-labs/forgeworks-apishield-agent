@@ -1,0 +1,43 @@
+{
+  "slug": "apishield-agent",
+  "source_sha": "c89785c342d488340ffa18d6dc35bcadaa7ccc47",
+  "scope": "Exact source commit; synthetic/disposable evidence; G1-E remains open",
+  "runs": [
+    {
+      "name": "G1 Contract Verification",
+      "id": 37888154257,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37888154257",
+      "head_sha": "c89785c342d488340ffa18d6dc35bcadaa7ccc47",
+      "conclusion": "success"
+    },
+    {
+      "name": "APIShield PostgreSQL Runtime Proof",
+      "id": 37888154277,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37888154277",
+      "head_sha": "c89785c342d488340ffa18d6dc35bcadaa7ccc47",
+      "conclusion": "success"
+    },
+    {
+      "name": "APIShield MVP Application CI",
+      "id": 37888154220,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37888154220",
+      "head_sha": "c89785c342d488340ffa18d6dc35bcadaa7ccc47",
+      "conclusion": "success"
+    }
+  ],
+  "logs": [
+    {
+      "workflow": "APIShield PostgreSQL Runtime Proof",
+      "observed": [
+        "1 passed in 1.87s",
+        "{\"check\": \"disposable logical restore and restored membership/RLS\", \"limits\": \"Not PITR, regional failover, production RTO/RPO or operational signoff\", \"result\": \"PASS\", \"rows\": 19, \"tables\": 13}"
+      ]
+    },
+    {
+      "workflow": "APIShield MVP Application CI",
+      "observed": [
+        "======================== 40 passed, 1 skipped in 20.19s ========================"
+      ]
+    }
+  ]
+}

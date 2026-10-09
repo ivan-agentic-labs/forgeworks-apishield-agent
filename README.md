@@ -33,7 +33,7 @@ python scripts/verify_contracts.py
 python scripts/validate_openapi_independent.py
 ```
 
-CI contains a manual PostgreSQL disposable DDL smoke test and a separate manual runtime RLS/tenant-isolation negative test. The latter starts from an empty database and uses a non-owner, non-BYPASSRLS application role with synthetic rows only. **No production readiness or customer-data evidence is claimed.**
+CI runs on main and verifies the complete test tree, OpenAPI/event contracts, generated TypeScript client, implemented PostgreSQL MVP runtime, tenant RLS/concurrency and disposable logical backup/restore. These are scoped synthetic proofs; full G1-E and production operations remain open.
 
 ## Non-goals at this stage
 No production deployment, customer data, code-execution agent, public access, financial mutation, license assertion or fake passing tests.
@@ -45,3 +45,7 @@ The owner approved proceeding with GitHub bootstrap. Technical G1-E controls are
 ## Engineering continuation
 
 See [current changes and residual gaps](docs/evidence/ENGINEERING_CONTINUATION.md). Configure authentication explicitly; development fixture commands now require `AUTH_MODE=development`, `APP_ENV=development`, a locally generated `DEV_AUTH_SECRET` of at least 32 bytes, and issuer/audience configuration. Never reuse test fixture credentials outside tests.
+
+## Current main engineering status
+
+See [current G1/G2 evidence](docs/verification/CURRENT_GATE_EVIDENCE.md), [exact source receipt](docs/evidence/MAIN_VERIFICATION_2026-10-09.json), and [owner main authorization](docs/governance/ENGINEERING_MAIN_AUTHORIZATION_2026-10-09.md). PostgreSQL adapters exist for all five independent projects. Historical evidence retains its source SHA and narrower scope.
