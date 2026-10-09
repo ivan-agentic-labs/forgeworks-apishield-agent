@@ -1,4 +1,5 @@
 from __future__ import annotations
+from apishield_agent.presentation.authentication import decode_bearer
 
 import os
 from typing import Annotated
@@ -13,17 +14,8 @@ def _problem(status: int, code: str, detail: str):
     raise HTTPException(status_code=status, detail={"type":"about:blank","title":"Request rejected","status":status,"code":code,"detail":detail,"request_id":"runtime"})
 
 
-def claims(authorization: Annotated[str | None, Header()] = None) -> dict:
-    if not authorization or not authorization.startswith("Bearer "):
-        _problem(401, "UNAUTHENTICATED", "Bearer token is required")
-    token = authorization[7:]
-    secret = os.getenv("DEV_AUTH_SECRET", "forgeworks-development-secret-32-plus")
-    if os.getenv("APP_ENV", "development") == "production" and secret == "forgeworks-development-secret-32-plus":
-        _problem(500, "AUTH_NOT_CONFIGURED", "Production issuer secret is not configured")
-    try:
-        return jwt.decode(token, secret, algorithms=["HS256"], issuer=os.getenv("AUTH_ISSUER", "https://issuer.synthetic.invalid"), audience=os.getenv("AUTH_AUDIENCE", "forgeworks-api"))
-    except jwt.PyJWTError:
-        _problem(401, "INVALID_TOKEN", "Token signature, issuer, audience, or expiry is invalid")
+def claims(authorization: Annotated[str | None, Header()] = None):
+    return decode_bearer(authorization)
 
 
 def require_scope(scope: str, store: Store):
@@ -36,3 +28,4 @@ def require_scope(scope: str, store: Store):
             _problem(403, "INSUFFICIENT_SCOPE", f"Scope {scope} is required")
         return c
     return dependency
+

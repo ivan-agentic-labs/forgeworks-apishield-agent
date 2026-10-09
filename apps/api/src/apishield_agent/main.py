@@ -11,13 +11,14 @@ from pathlib import Path
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from apishield_agent.domain.analysis import deterministic_openapi_diff
 from apishield_agent.infrastructure.store import Store, stable_uuid
+from apishield_agent.infrastructure.local_artifacts import LocalArtifacts, MAX_BYTES
 from apishield_agent.presentation.auth import require_scope
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -103,7 +104,15 @@ def _reviewer(value: str) -> str:
 
 def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
     path = db_path or os.getenv("APISHIELD_DB_PATH", str(ROOT / ".runtime" / "apishield.db"))
-    store = Store(path)
+    dsn = os.getenv("APISHIELD_DATABASE_URL")
+    if dsn:
+        from apishield_agent.infrastructure.postgres_store import PostgresStore
+        store = PostgresStore(dsn)
+    else:
+        if os.getenv("APP_ENV", "development") not in {"development", "test"}:
+            raise ValueError("SQLite runtime is restricted to synthetic development/test")
+        store = Store(path)
+    artifacts = LocalArtifacts(Path(os.getenv("APISHIELD_ARTIFACT_ROOT", str(Path(path).parent / "artifacts"))))
     if seed:
         store.seed_demo(str(ROOT / "fixtures/golden/before.yaml"), str(ROOT / "fixtures/golden/after.yaml"))
     stop = threading.Event()
@@ -163,14 +172,19 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         repo = store.get_repo(c["tenant_id"], installation_id, str(repository_id))
         if repo is None:
             return _problem(404, "RESOURCE_NOT_FOUND", "Repository is not visible")
-        request_sha = _sha(body.model_dump())
+        request_sha = _sha({"installation_id": installation_id, "repository_id": str(repository_id), "body": body.model_dump()})
         previous = store.get_idempotent(c["tenant_id"], c["sub"], idempotency_key)
         if previous:
             if previous["request_sha"] != request_sha:
                 return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
             row = store.get_analysis(c["tenant_id"], previous["analysis_id"])
         else:
-            row = store.create_analysis(c["tenant_id"], c["sub"], str(repository_id), body.base_sha, body.head_sha, body.capability_profile, idempotency_key, request_sha)
+            try:
+                row = store.create_analysis(c["tenant_id"], c["sub"], str(repository_id), body.base_sha, body.head_sha, body.capability_profile, idempotency_key, request_sha)
+            except ValueError as error:
+                if str(error) == "IDEMPOTENCY_CONFLICT":
+                    return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
+                raise
         return _analysis(row)
 
     @app.get("/v1/analyses/{analysis_id}")
@@ -256,7 +270,8 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         else:
             row = store.create_artifact(c["tenant_id"], body.kind, body.filename, body.declared_media_type, body.sha256, body.size_bytes)
             store.create_command(c["tenant_id"], c["sub"], "artifact.intent", idempotency_key, request_sha, row["id"])
-        return {"artifact_id": row["id"], "status": "INTENT_ISSUED", "upload_url": f"https://storage.invalid/apishield/{c['tenant_id']}/{row['id']}", "expires_at": row["expires_at"], "required_headers": {"x-artifact-sha256": row["sha256"]}}
+        url, expires = artifacts.intent(c["tenant_id"], row["id"], "upload")
+        return {"artifact_id": row["id"], "status": "INTENT_ISSUED", "upload_url": url, "expires_at": datetime.fromtimestamp(expires, timezone.utc).isoformat().replace("+00:00", "Z"), "required_headers": {"x-artifact-sha256": row["sha256"]}}
 
     @app.post("/v1/artifacts/{artifact_id}/commit", status_code=202)
     def commit_artifact(artifact_id: UUID, body: CommitUpload, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("artifact:commit", store))):
@@ -269,6 +284,10 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             if old["request_sha"] != request_sha:
                 return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
             return _artifact(store.artifact(c["tenant_id"], old["resource_id"]))
+        intent = store.artifact(c["tenant_id"], str(artifact_id))
+        if intent and intent["sha256"] == body.sha256 and intent["size_bytes"] == body.size_bytes:
+            content = artifacts.verify(c["tenant_id"], str(artifact_id), body.object_generation, body.sha256, body.size_bytes)
+            artifacts.validate_contract(content, intent["kind"])
         row, error = store.commit_artifact(c["tenant_id"], str(artifact_id), body.sha256, body.size_bytes, body.object_generation)
         if error == "NOT_FOUND":
             return _problem(404, "RESOURCE_NOT_FOUND", "Artifact is not visible")
@@ -294,11 +313,40 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             return _problem(404, "RESOURCE_NOT_FOUND", "Artifact is not visible")
         if row["status"] != "AVAILABLE":
             return _problem(409, "ARTIFACT_NOT_AVAILABLE", "Artifact is not available for download")
-        return {"artifact_id": row["id"], "download_url": f"https://storage.invalid/apishield/{c['tenant_id']}/{row['id']}?generation={row['object_generation']}", "expires_at": row["expires_at"], "object_generation": row["object_generation"]}
+        artifacts.verify(c["tenant_id"], row["id"], row["object_generation"], row["sha256"], row["size_bytes"])
+        url, expires = artifacts.intent(c["tenant_id"], row["id"], "download", row["object_generation"])
+        return {"artifact_id": row["id"], "download_url": url, "expires_at": datetime.fromtimestamp(expires, timezone.utc).isoformat().replace("+00:00", "Z"), "object_generation": row["object_generation"]}
+
+    @app.put("/v1/artifact-transfers/{artifact_id}", status_code=201)
+    async def upload_bytes(artifact_id: UUID, request: Request, token: str = Query(max_length=4096)):
+        claims = artifacts.capability(token, artifact_id, "upload")
+        row = store.artifact(claims["tenant_id"], str(artifact_id))
+        if not row or row["status"] != "INTENT_ISSUED":
+            return _problem(409, "ARTIFACT_NOT_PENDING", "Artifact is not pending upload")
+        if datetime.fromisoformat(row["expires_at"].replace("Z", "+00:00")) <= datetime.now(timezone.utc):
+            return _problem(410, "ARTIFACT_INTENT_EXPIRED", "Upload intent has expired")
+        if row["size_bytes"] > MAX_BYTES:
+            return _problem(413, "ARTIFACT_TOO_LARGE", "Artifact exceeds the local provider limit")
+        content = bytearray()
+        async for chunk in request.stream():
+            content.extend(chunk)
+            if len(content) > min(MAX_BYTES, row["size_bytes"]):
+                return _problem(413, "ARTIFACT_TOO_LARGE", "Uploaded body exceeds declared size")
+        metadata = artifacts.put(claims["tenant_id"], str(artifact_id), bytes(content), row["sha256"], row["size_bytes"])
+        return {"artifact_id": str(artifact_id), "object_generation": metadata["generation"], "sha256": metadata["sha256"], "size_bytes": metadata["size"]}
+
+    @app.get("/v1/artifact-transfers/{artifact_id}")
+    def download_bytes(artifact_id: UUID, token: str = Query(max_length=4096)):
+        claims = artifacts.capability(token, artifact_id, "download")
+        row = store.artifact(claims["tenant_id"], str(artifact_id))
+        if not row or row["status"] != "AVAILABLE":
+            return _problem(409, "ARTIFACT_NOT_AVAILABLE", "Artifact is not available")
+        body = artifacts.verify(claims["tenant_id"], str(artifact_id), claims["generation"], row["sha256"], row["size_bytes"])
+        return Response(body, media_type="application/octet-stream", headers={"Content-Disposition": "attachment", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer"})
 
     @app.get("/v1/jobs/{job_id}")
     def read_job(job_id: UUID, c: dict = Depends(require_scope("job:read", store))):
-        with store.conn() as db:
+        with store.conn(c["tenant_id"]) as db:
             row = db.execute("SELECT * FROM analyses WHERE tenant_id=? AND job_id=?", (c["tenant_id"], str(job_id))).fetchone()
         if not row:
             return _problem(404, "RESOURCE_NOT_FOUND", "Job is not visible")
@@ -308,3 +356,4 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
 
 
 app = create_app(seed=os.getenv("APISHIELD_SEED_FIXTURE", "0") == "1")
+

@@ -14,6 +14,14 @@ from playwright.sync_api import sync_playwright
 from apishield_agent.infrastructure.store import REPOSITORY, TENANT, USER
 from apishield_agent.main import create_app
 
+def local_get(url, **kwargs):
+    return httpx.get(url, trust_env=False, **kwargs)
+
+
+def local_post(url, **kwargs):
+    return httpx.post(url, trust_env=False, **kwargs)
+
+
 SECRET = "forgeworks-development-secret-32-plus"
 ISSUER = "https://issuer.synthetic.invalid"
 AUDIENCE = "forgeworks-api"
@@ -46,7 +54,7 @@ def _wait_for(url):
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
         try:
-            response = httpx.get(url, timeout=0.5)
+            response = local_get(url, timeout=0.5)
             if response.status_code == 200:
                 return
         except httpx.HTTPError:
@@ -78,13 +86,13 @@ def test_live_api_and_static_ui_smoke_flow(tmp_path, monkeypatch):
     api_url = f"http://127.0.0.1:{api_port}"
     try:
         _wait_for(f"{api_url}/healthz")
-        assert httpx.get(f"{api_url}/healthz").json() == {"status": "ok", "service": "apishield-agent"}
-        asset = httpx.get(f"{static_url}/app.js")
+        assert local_get(f"{api_url}/healthz").json() == {"status": "ok", "service": "apishield-agent"}
+        asset = local_get(f"{static_url}/app.js")
         assert asset.status_code == 200
         assert "fetch(apiUrl(baseUrl" in asset.text
 
         headers = {"Authorization": f"Bearer {token()}", "Idempotency-Key": "e2e-analysis-key-0001"}
-        submitted = httpx.post(
+        submitted = local_post(
             f"{api_url}/v1/installations/1/repositories/{REPOSITORY}/analyses",
             headers=headers,
             json={"base_sha": BASE, "head_sha": HEAD, "capability_profile": "openapi31-typescript-v1"},
@@ -95,7 +103,7 @@ def test_live_api_and_static_ui_smoke_flow(tmp_path, monkeypatch):
 
         job = None
         for _ in range(100):
-            job_response = httpx.get(
+            job_response = local_get(
                 f"{api_url}/v1/jobs/{analysis['job_id']}",
                 headers={"Authorization": f"Bearer {token('analysis:read job:read')}"},
             )
@@ -107,9 +115,10 @@ def test_live_api_and_static_ui_smoke_flow(tmp_path, monkeypatch):
         assert job["state"] == "SUCCEEDED"
 
         browser_path = shutil.which("chromium") or shutil.which("google-chrome")
-        assert browser_path, "Chromium is required for the browser smoke flow"
         requests = []
         with sync_playwright() as playwright:
+            browser_path = browser_path or playwright.chromium.executable_path
+            assert Path(browser_path).is_file(), "Chromium is required for the browser smoke flow"
             browser = playwright.chromium.launch(headless=True, executable_path=browser_path, args=["--no-sandbox"])
             page = browser.new_page()
             page.on("request", lambda request: requests.append(request.url) if "/v1/" in request.url else None)
@@ -136,3 +145,4 @@ def test_live_api_and_static_ui_smoke_flow(tmp_path, monkeypatch):
         static.shutdown()
         static.server_close()
         static_thread.join(timeout=5)
+

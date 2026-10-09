@@ -35,7 +35,7 @@ class Store:
         self.lock = threading.RLock()
         self._init_schema()
 
-    def conn(self):
+    def conn(self, tenant=None):
         c = sqlite3.connect(self.path, check_same_thread=False, timeout=10)
         c.row_factory = sqlite3.Row
         c.execute("PRAGMA foreign_keys=ON")
@@ -96,8 +96,10 @@ class Store:
     def create_analysis(self, tenant, actor, repo, base, head, profile, idem_key, request_sha):
         aid, jid = str(uuid.uuid4()), str(uuid.uuid4())
         with self.lock, self.conn() as c:
-            existing = c.execute("SELECT analysis_id FROM idempotency WHERE tenant_id=? AND actor=? AND key=?", (tenant, actor, idem_key)).fetchone()
+            existing = c.execute("SELECT * FROM idempotency WHERE tenant_id=? AND actor=? AND key=?", (tenant, actor, idem_key)).fetchone()
             if existing:
+                if existing["request_sha"] != request_sha:
+                    raise ValueError("IDEMPOTENCY_CONFLICT")
                 return self.get_analysis(tenant, existing["analysis_id"])
             c.execute("INSERT INTO analyses(tenant_id,id,job_id,repository_id,base_sha,head_sha,capability_profile,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)", (tenant, aid, jid, repo, base, head, profile, "PENDING", now()))
             try:
@@ -107,7 +109,7 @@ class Store:
                 # unique command record is the source of truth; return its job
                 # rather than exposing a duplicate analysis.
                 c.execute("DELETE FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid))
-                existing = c.execute("SELECT analysis_id FROM idempotency WHERE tenant_id=? AND actor=? AND key=?", (tenant, actor, idem_key)).fetchone()
+                existing = c.execute("SELECT * FROM idempotency WHERE tenant_id=? AND actor=? AND key=?", (tenant, actor, idem_key)).fetchone()
                 return self.get_analysis(tenant, existing["analysis_id"]) if existing else None
         return self.get_analysis(tenant, aid)
 
@@ -231,3 +233,4 @@ class Store:
     def pull_request(self, tenant, rid):
         with self.conn() as c:
             return c.execute("SELECT * FROM pull_requests WHERE tenant_id=? AND id=?", (tenant, rid)).fetchone()
+

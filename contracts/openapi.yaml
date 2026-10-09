@@ -927,12 +927,89 @@ paths:
         in: path
         required: true
         schema: *id001
+  /v1/artifact-transfers/{artifact_id}:
+    put:
+      operationId: upload_signed_artifact_bytes
+      security:
+      - ArtifactCapability: []
+      x-required-scope: artifact:upload-capability
+      parameters:
+      - name: artifact_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: token
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 4096
+      responses:
+        '201':
+          description: Immutable upload result
+          content:
+            application/json:
+              schema:
+                type: object
+        '403':
+          description: Invalid or expired capability
+        '409':
+          description: Integrity mismatch or unavailable artifact
+        '413':
+          description: Body exceeds size limit
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+    get:
+      operationId: download_signed_artifact_bytes
+      security:
+      - ArtifactCapability: []
+      x-required-scope: artifact:download-capability
+      parameters:
+      - name: artifact_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: token
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 4096
+      responses:
+        '200':
+          description: Immutable download result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: Invalid or expired capability
+        '409':
+          description: Integrity mismatch or unavailable artifact
+        '413':
+          description: Body exceeds size limit
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    ArtifactCapability:
+      type: apiKey
+      in: query
+      name: token
+      description: Short-lived capability bound to tenant, artifact, action and generation; issued only after bearer
+        authorization.
   schemas:
     AnalysisJob:
       type: object
@@ -1297,7 +1374,7 @@ components:
           - INTENT_ISSUED
         upload_url:
           type: string
-          format: uri
+          format: uri-reference
         expires_at: &id004
           type: string
           format: date-time
@@ -1364,7 +1441,7 @@ components:
         artifact_id: *id001
         download_url:
           type: string
-          format: uri
+          format: uri-reference
         expires_at: *id004
         object_generation: *id003
     JobStatus:
