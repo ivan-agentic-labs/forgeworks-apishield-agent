@@ -1,0 +1,90 @@
+{
+  "verified_at_utc": "2026-10-09T17:53:46.131Z",
+  "product": "apishield-agent",
+  "source_commit": "0313025ca677269866a1a17ae42b42b53bd4c573",
+  "railway": {
+    "projectId": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
+    "environmentId": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+    "serviceId": "57d8f010-e38e-4dbe-94bb-05cc5d855229",
+    "deploymentId": "2fee1eb8-a32c-4f69-8c5d-e6b17ef1dcf7",
+    "status": "SUCCESS",
+    "url": "https://apishield-agent-staging.up.railway.app",
+    "pinned": true
+  },
+  "github_app": {
+    "installation_id": 169689787,
+    "account": "ivan-agentic-labs",
+    "selected_repository_count": 5
+  },
+  "tls": {
+    "mode": "verify-full",
+    "rootcert": "system",
+    "SSL_CERT_FILE": "/etc/ssl/certs/ca-certificates.crt",
+    "ca_source": "https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt",
+    "ca_sha256_fingerprint": "807025ad50d4ed219d2c9c7d299c004f824eb00cf7f65afef607d07b72e6cafa"
+  },
+  "workflows": [
+    {
+      "id": 37968840642,
+      "name": "APIShield Disposable Sandbox Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37968840642"
+    },
+    {
+      "id": 37968840656,
+      "name": "G1 Contract Verification",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37968840656"
+    },
+    {
+      "id": 37968840766,
+      "name": "APIShield PostgreSQL Runtime Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37968840766"
+    },
+    {
+      "id": 37968840651,
+      "name": "APIShield MVP Application CI",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37968840651"
+    }
+  ],
+  "limits": [
+    "No positive authenticated business workflow or user session revocation proof",
+    "No production acceptance; remote agent execution remains disabled"
+  ],
+  "live_smoke": [
+    {
+      "check": "ready",
+      "url": "https://apishield-agent-staging.up.railway.app/readyz",
+      "http_status": 200,
+      "body": "{\"status\":\"ready\"}",
+      "exit": 0
+    },
+    {
+      "check": "liveness",
+      "url": "https://apishield-agent-staging.up.railway.app/healthz",
+      "http_status": 200,
+      "body": "{\"status\":\"ok\",\"service\":\"apishield-agent\"}",
+      "exit": 0
+    },
+    {
+      "check": "no_token",
+      "url": "https://apishield-agent-staging.up.railway.app/v1/analyses/00000000-0000-0000-0000-000000000001",
+      "http_status": 401,
+      "body": "{\"type\":\"about:blank\",\"title\":\"Request rejected\",\"status\":401,\"code\":\"UNAUTHENTICATED\",\"detail\":\"Bearer token is required\",\"request_id\":\"runtime\"}",
+      "exit": 0
+    },
+    {
+      "check": "invalid_token",
+      "url": "https://apishield-agent-staging.up.railway.app/v1/analyses/00000000-0000-0000-0000-000000000001",
+      "http_status": 401,
+      "body": "{\"type\":\"about:blank\",\"title\":\"Request rejected\",\"status\":401,\"code\":\"INVALID_TOKEN\",\"detail\":\"Token signature or required claims are invalid\",\"request_id\":\"runtime\"}",
+      "exit": 0
+    }
+  ]
+}
