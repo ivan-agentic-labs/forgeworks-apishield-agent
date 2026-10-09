@@ -112,9 +112,16 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         while not stop.is_set():
             row = store.claim_pending()
             if row:
-                repo = store.get_repo(row["tenant_id"], 1, row["repository_id"])
-                findings = deterministic_openapi_diff(repo["before_contract"], repo["after_contract"]) if repo else []
-                store.finish(row["tenant_id"], row["id"], findings)
+                try:
+                    repo = store.get_repo(row["tenant_id"], 1, row["repository_id"])
+                    if repo is None:
+                        raise RuntimeError("REPOSITORY_NOT_FOUND")
+                    findings = deterministic_openapi_diff(repo["before_contract"], repo["after_contract"])
+                    store.finish(row["tenant_id"], row["id"], findings, row["lease_token"])
+                except Exception as exc:
+                    # Keep failures durable and bounded. A stale worker cannot
+                    # overwrite a newer lease because fail() fences by token.
+                    store.fail(row["tenant_id"], row["id"], type(exc).__name__.upper(), row["lease_token"])
             else:
                 stop.wait(0.05)
 

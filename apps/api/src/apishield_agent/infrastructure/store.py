@@ -47,7 +47,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, slug TEXT UNIQUE NOT NULL, status TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS memberships (tenant_id TEXT NOT NULL, user_id TEXT NOT NULL, role TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (tenant_id,user_id));
             CREATE TABLE IF NOT EXISTS repositories (tenant_id TEXT NOT NULL, id TEXT NOT NULL, installation_id INTEGER NOT NULL, default_branch TEXT NOT NULL, permission_state TEXT NOT NULL, before_contract TEXT, after_contract TEXT, PRIMARY KEY (tenant_id,id));
-            CREATE TABLE IF NOT EXISTS analyses (tenant_id TEXT NOT NULL, id TEXT NOT NULL, job_id TEXT NOT NULL, repository_id TEXT NOT NULL, base_sha TEXT NOT NULL, head_sha TEXT NOT NULL, capability_profile TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, completed_at TEXT, version INTEGER NOT NULL DEFAULT 1, attempt_count INTEGER NOT NULL DEFAULT 0, last_error_code TEXT, lease_until TEXT, result_digest TEXT, PRIMARY KEY (tenant_id,id), UNIQUE (tenant_id,job_id));
+            CREATE TABLE IF NOT EXISTS analyses (tenant_id TEXT NOT NULL, id TEXT NOT NULL, job_id TEXT NOT NULL, repository_id TEXT NOT NULL, base_sha TEXT NOT NULL, head_sha TEXT NOT NULL, capability_profile TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, completed_at TEXT, version INTEGER NOT NULL DEFAULT 1, attempt_count INTEGER NOT NULL DEFAULT 0, last_error_code TEXT, lease_until TEXT, lease_token TEXT, result_digest TEXT, PRIMARY KEY (tenant_id,id), UNIQUE (tenant_id,job_id));
             CREATE TABLE IF NOT EXISTS findings (tenant_id TEXT NOT NULL, id TEXT NOT NULL, analysis_id TEXT NOT NULL, rule_id TEXT NOT NULL, severity TEXT NOT NULL, openapi_pointer TEXT NOT NULL, evidence_digest TEXT NOT NULL, coverage TEXT NOT NULL, UNIQUE (tenant_id,analysis_id,rule_id,openapi_pointer));
             CREATE TABLE IF NOT EXISTS idempotency (tenant_id TEXT NOT NULL, actor TEXT NOT NULL, key TEXT NOT NULL, request_sha TEXT NOT NULL, analysis_id TEXT NOT NULL, PRIMARY KEY (tenant_id,actor,key));
             CREATE TABLE IF NOT EXISTS commands (tenant_id TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, key TEXT NOT NULL, request_sha TEXT NOT NULL, resource_id TEXT NOT NULL, PRIMARY KEY (tenant_id,actor,action,key));
@@ -57,7 +57,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS approvals (tenant_id TEXT NOT NULL, id TEXT NOT NULL, proposal_id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, patch_sha256 TEXT NOT NULL, base_sha TEXT NOT NULL, reviewer_id TEXT NOT NULL, expires_at TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
             CREATE TABLE IF NOT EXISTS pull_requests (tenant_id TEXT NOT NULL, id TEXT NOT NULL, proposal_id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, github_pr_node_id TEXT NOT NULL, draft INTEGER NOT NULL, external_effect_key TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
             """)
-            for sql in ("ALTER TABLE analyses ADD COLUMN attempt_count INTEGER NOT NULL DEFAULT 0", "ALTER TABLE analyses ADD COLUMN last_error_code TEXT", "ALTER TABLE analyses ADD COLUMN lease_until TEXT", "ALTER TABLE analyses ADD COLUMN result_digest TEXT"):
+            for sql in ("ALTER TABLE analyses ADD COLUMN attempt_count INTEGER NOT NULL DEFAULT 0", "ALTER TABLE analyses ADD COLUMN last_error_code TEXT", "ALTER TABLE analyses ADD COLUMN lease_until TEXT", "ALTER TABLE analyses ADD COLUMN lease_token TEXT", "ALTER TABLE analyses ADD COLUMN result_digest TEXT"):
                 try:
                     c.execute(sql)
                 except sqlite3.OperationalError:
@@ -96,8 +96,19 @@ class Store:
     def create_analysis(self, tenant, actor, repo, base, head, profile, idem_key, request_sha):
         aid, jid = str(uuid.uuid4()), str(uuid.uuid4())
         with self.lock, self.conn() as c:
+            existing = c.execute("SELECT analysis_id FROM idempotency WHERE tenant_id=? AND actor=? AND key=?", (tenant, actor, idem_key)).fetchone()
+            if existing:
+                return self.get_analysis(tenant, existing["analysis_id"])
             c.execute("INSERT INTO analyses(tenant_id,id,job_id,repository_id,base_sha,head_sha,capability_profile,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)", (tenant, aid, jid, repo, base, head, profile, "PENDING", now()))
-            c.execute("INSERT INTO idempotency VALUES(?,?,?,?,?)", (tenant, actor, idem_key, request_sha, aid))
+            try:
+                c.execute("INSERT INTO idempotency VALUES(?,?,?,?,?)", (tenant, actor, idem_key, request_sha, aid))
+            except sqlite3.IntegrityError:
+                # A concurrent submit can win between the read and insert. The
+                # unique command record is the source of truth; return its job
+                # rather than exposing a duplicate analysis.
+                c.execute("DELETE FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid))
+                existing = c.execute("SELECT analysis_id FROM idempotency WHERE tenant_id=? AND actor=? AND key=?", (tenant, actor, idem_key)).fetchone()
+                return self.get_analysis(tenant, existing["analysis_id"]) if existing else None
         return self.get_analysis(tenant, aid)
 
     def claim_pending(self, lease_seconds=30):
@@ -106,24 +117,42 @@ class Store:
             row = c.execute("SELECT * FROM analyses WHERE status='PENDING' ORDER BY created_at LIMIT 1").fetchone()
             if not row:
                 return None
-            updated = c.execute("UPDATE analyses SET status='RUNNING', attempt_count=attempt_count+1, version=version+1, lease_until=? WHERE tenant_id=? AND id=? AND status='PENDING'", (later(lease_seconds), row['tenant_id'], row['id']))
-            return self.get_analysis(row['tenant_id'], row['id']) if updated.rowcount else None
+            lease_token = str(uuid.uuid4())
+            updated = c.execute("UPDATE analyses SET status='RUNNING', attempt_count=attempt_count+1, version=version+1, lease_until=?, lease_token=? WHERE tenant_id=? AND id=? AND status='PENDING'", (later(lease_seconds), lease_token, row['tenant_id'], row['id']))
+            return c.execute("SELECT * FROM analyses WHERE tenant_id=? AND id=?", (row['tenant_id'], row['id'])).fetchone() if updated.rowcount else None
 
     def pending(self):
         with self.conn() as c:
             return c.execute("SELECT * FROM analyses WHERE status='PENDING' ORDER BY created_at").fetchall()
 
-    def finish(self, tenant, aid, findings):
+    def finish(self, tenant, aid, findings, lease_token=None):
         digest = hashlib.sha256(json.dumps([f.__dict__ for f in findings], sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         with self.lock, self.conn() as c:
-            row = c.execute("SELECT status FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone()
+            row = c.execute("SELECT status, lease_token FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone()
             if not row or row['status'] in {'SUCCEEDED', 'FAILED_TERMINAL', 'CANCELLED'}:
+                return False
+            if lease_token is not None and (row['status'] != 'RUNNING' or row['lease_token'] != lease_token):
                 return False
             for f in findings:
                 c.execute("INSERT OR IGNORE INTO findings VALUES(?,?,?,?,?,?,?,?)", (tenant, str(uuid.uuid4()), aid, f.rule_id, f.severity, f.pointer, f.evidence_digest, f.coverage))
-            c.execute("UPDATE analyses SET status='SUCCEEDED', completed_at=?, version=version+1, lease_until=NULL, result_digest=? WHERE tenant_id=? AND id=? AND status IN ('PENDING','RUNNING')", (now(), digest, tenant, aid))
+            c.execute("UPDATE analyses SET status='SUCCEEDED', completed_at=?, version=version+1, lease_until=NULL, lease_token=NULL, result_digest=? WHERE tenant_id=? AND id=? AND status IN ('PENDING','RUNNING')", (now(), digest, tenant, aid))
             payload = {'analysis_id': aid, 'finding_count': len(findings), 'unsupported_count': 0, 'result_digest': digest}
             c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?,?)", (tenant, stable_uuid(f'analysis.completed:{tenant}:{aid}'), 'analysis.completed', aid, json.dumps(payload, sort_keys=True), now()))
+            return True
+
+    def fail(self, tenant, aid, error_code, lease_token=None, max_attempts=3):
+        """Release a worker lease for retry, or make the job terminal.
+
+        The lease token makes a late worker completion/failure a no-op after a
+        lease has been fenced. Retries are explicit and bounded.
+        """
+        with self.lock, self.conn() as c:
+            row = c.execute("SELECT status, lease_token, attempt_count FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone()
+            if not row or row["status"] != "RUNNING" or (lease_token is not None and row["lease_token"] != lease_token):
+                return False
+            terminal = row["attempt_count"] >= max_attempts
+            status = "FAILED_TERMINAL" if terminal else "PENDING"
+            c.execute("UPDATE analyses SET status=?, last_error_code=?, version=version+1, lease_until=NULL, lease_token=NULL WHERE tenant_id=? AND id=? AND status='RUNNING' AND lease_token=?", (status, error_code, tenant, aid, row["lease_token"]))
             return True
 
     def findings(self, tenant, aid, offset=0, limit=50):
@@ -151,13 +180,13 @@ class Store:
                 return None, 'NOT_FOUND'
             if row['sha256'] != sha256 or row['size_bytes'] != size_bytes:
                 c.execute("UPDATE artifacts SET status='REJECTED', rejected_reason='DIGEST_OR_SIZE_MISMATCH' WHERE tenant_id=? AND id=?", (tenant, aid))
-                return self.artifact(tenant, aid), 'DIGEST_MISMATCH'
+                return c.execute("SELECT * FROM artifacts WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone(), 'DIGEST_MISMATCH'
             if row['status'] == 'AVAILABLE' and row['object_generation'] == generation:
                 return row, None
             if row['status'] != 'INTENT_ISSUED':
                 return row, 'INVALID_ARTIFACT_STATE'
             c.execute("UPDATE artifacts SET status='AVAILABLE', object_generation=? WHERE tenant_id=? AND id=?", (generation, tenant, aid))
-            return self.artifact(tenant, aid), None
+            return c.execute("SELECT * FROM artifacts WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone(), None
 
     def create_proposal(self, tenant, analysis_id, target_language):
         analysis = self.get_analysis(tenant, analysis_id)

@@ -17,9 +17,13 @@ jobs:
           python-version: '3.12'
       - name: Install MVP and verification dependencies
         run: python -m pip install -e 'apps/api[test]' -r scripts/requirements-verification.txt
-      - name: Run unit and integration acceptance tests
-        run: python -m pytest tests/unit tests/integration
+      - name: Install browser for live static UI smoke test
+        run: python -m playwright install chromium
+      - name: Run unit, integration, resilience, and E2E acceptance tests
+        run: python -m pytest -W error tests/unit tests/integration tests/resilience tests/e2e
+      - name: Compile Python sources
+        run: python -m compileall -q apps tests scripts
       - name: Run static contract checks
         run: python scripts/verify_bootstrap.py && python scripts/verify_contracts.py && python scripts/validate_openapi_independent.py
-      - name: Check shell syntax
-        run: bash -n scripts/probe_disposable_postgres.sh
+      - name: Check shell and browser JavaScript syntax
+        run: bash -n scripts/probe_disposable_postgres.sh scripts/test_disposable_postgres_rls.sh && node --check apps/web/app.js && node --check apps/web/config.js
