@@ -74,3 +74,22 @@ def test_revoked_repository_rejects_new_analysis_and_replay(tmp_path):
         assert replay.status_code == 403
         assert replay.json()["code"] == "REPOSITORY_ACCESS_REVOKED"
 
+
+
+def test_findings_cursor_is_signed_and_query_bound(tmp_path):
+    app = create_app(str(tmp_path / "db.sqlite"), seed=True)
+    with TestClient(app) as client:
+        response = client.post(f"/v1/installations/1/repositories/{REPOSITORY}/analyses", headers=headers(), json={"base_sha": BASE, "head_sha": HEAD, "capability_profile": "p"})
+        analysis = response.json()
+        for _ in range(30):
+            if client.get(f"/v1/analyses/{analysis['id']}", headers=headers()).json()["status"] == "SUCCEEDED":
+                break
+            time.sleep(0.02)
+        with app.state.store.conn() as db:
+            db.execute("INSERT INTO findings VALUES(?,?,?,?,?,?,?,?)", (TENANT, "22222222-2222-2222-2222-222222222222", analysis["id"], "SYNTHETIC_SECOND_FINDING", "REVIEW", "/paths/~1synthetic", "b" * 64, "BOUNDED"))
+        first = client.get(f"/v1/analyses/{analysis['id']}/findings?limit=1", headers=headers())
+        cursor = first.json()["next_cursor"]
+        assert first.status_code == 200 and cursor
+        tampered = cursor[:-1] + ("A" if cursor[-1] != "A" else "B")
+        assert client.get(f"/v1/analyses/{analysis['id']}/findings?cursor={tampered}&limit=1", headers=headers()).json()["code"] == "INVALID_CURSOR"
+        assert client.get(f"/v1/analyses/{analysis['id']}/findings?cursor={cursor}&limit=2", headers=headers()).json()["code"] == "INVALID_CURSOR"

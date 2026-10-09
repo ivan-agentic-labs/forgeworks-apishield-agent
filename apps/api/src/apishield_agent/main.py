@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import hmac
 import json
 import os
 import threading
@@ -85,6 +86,30 @@ def _key(key: str | None):
 
 def _sha(payload) -> str:
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+def _cursor_secret() -> bytes:
+    secret = os.getenv("APISHIELD_CURSOR_SECRET") or os.getenv("DEV_AUTH_SECRET", "")
+    if len(secret.encode()) < 32:
+        raise RuntimeError("APISHIELD_CURSOR_SECRET must be configured with at least 32 bytes")
+    return secret.encode()
+
+def _encode_cursor(tenant: str, analysis_id: str, limit: int, offset: int) -> str:
+    payload = json.dumps({"tenant_id": tenant, "analysis_id": analysis_id, "limit": limit, "offset": offset}, sort_keys=True, separators=(",", ":")).encode()
+    signature = hmac.new(_cursor_secret(), payload, hashlib.sha256).hexdigest().encode()
+    return base64.urlsafe_b64encode(payload + b"." + signature).decode().rstrip("=")
+
+def _decode_cursor(cursor: str, tenant: str, analysis_id: str, limit: int) -> int:
+    raw = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4))
+    payload, signature = raw.rsplit(b".", 1)
+    expected = hmac.new(_cursor_secret(), payload, hashlib.sha256).hexdigest().encode()
+    if not hmac.compare_digest(signature, expected):
+        raise ValueError("signature")
+    values = json.loads(payload)
+    if values.get("tenant_id") != tenant or values.get("analysis_id") != analysis_id or values.get("limit") != limit:
+        raise ValueError("scope")
+    offset = values.get("offset")
+    if not isinstance(offset, int) or offset < 0:
+        raise ValueError("offset")
+    return offset
 
 
 def _analysis(row):
@@ -229,14 +254,12 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         if not store.get_analysis(c["tenant_id"], str(analysis_id)):
             return _problem(404, "RESOURCE_NOT_FOUND", "Analysis is not visible")
         try:
-            offset = int(base64.urlsafe_b64decode(cursor.encode()).decode()) if cursor else 0
-            if offset < 0:
-                raise ValueError
-        except (ValueError, UnicodeDecodeError):
-            return _problem(400, "INVALID_CURSOR", "Cursor is invalid")
+            offset = _decode_cursor(cursor, c["tenant_id"], str(analysis_id), limit) if cursor else 0
+        except (ValueError, UnicodeDecodeError, json.JSONDecodeError, RuntimeError, TypeError):
+            return _problem(400, "INVALID_CURSOR", "Cursor is invalid or bound to another query")
         items = store.findings(c["tenant_id"], str(analysis_id), offset, limit)
         total = store.finding_count(c["tenant_id"], str(analysis_id))
-        next_cursor = base64.urlsafe_b64encode(str(offset + len(items)).encode()).decode() if offset + len(items) < total else None
+        next_cursor = _encode_cursor(c["tenant_id"], str(analysis_id), limit, offset + len(items)) if offset + len(items) < total else None
         return {"items": [{"id": f["id"], "rule_id": f["rule_id"], "severity": f["severity"], "openapi_pointer": f["openapi_pointer"], "evidence_digest": f["evidence_digest"], "coverage": f["coverage"]} for f in items], "next_cursor": next_cursor, "has_more": next_cursor is not None}
 
     @app.post("/v1/analyses/{analysis_id}/proposals", status_code=201)
