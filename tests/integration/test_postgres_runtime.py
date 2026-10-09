@@ -52,6 +52,7 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
     with pytest.raises(ValueError,match='superuser'):
         PostgresStore(owner)
     store=PostgresStore(runtime)
+    assert not store.member(TENANT, "unmapped-oidc-subject")
     with pytest.raises(ValueError,match='tenant context'):
         with store.conn():
             pass
