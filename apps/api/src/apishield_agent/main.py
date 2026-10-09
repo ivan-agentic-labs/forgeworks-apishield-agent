@@ -145,7 +145,11 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         if os.getenv("APP_ENV", "development") not in {"development", "test"}:
             raise ValueError("SQLite runtime is restricted to synthetic development/test")
         store = Store(path)
-    artifacts = LocalArtifacts(Path(os.getenv("APISHIELD_ARTIFACT_ROOT", str(Path(path).parent / "artifacts"))))
+    if os.getenv("S3_ENDPOINT"):
+        from apishield_agent.infrastructure.s3_artifacts import S3Artifacts
+        artifacts = S3Artifacts()
+    else:
+        artifacts = LocalArtifacts(Path(os.getenv("APISHIELD_ARTIFACT_ROOT", str(Path(path).parent / "artifacts"))))
     webhook_inbox = None
     webhook_dsn = os.getenv("APISHIELD_GITHUB_WEBHOOK_DATABASE_URL")
     webhook_path = os.getenv("APISHIELD_GITHUB_WEBHOOK_DB_PATH")
