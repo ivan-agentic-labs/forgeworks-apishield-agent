@@ -63,7 +63,7 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         assert len(db.execute('SELECT * FROM repositories').fetchall())==1
         assert db.execute('UPDATE repositories SET default_branch=? WHERE tenant_id=?',('changed',other)).rowcount==0
         assert db.execute('DELETE FROM repositories WHERE tenant_id=?',(other,)).rowcount==0
-        with pytest.raises(Exception):
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
             db.execute('INSERT INTO repositories(tenant_id,id,installation_id,default_branch,permission_state) VALUES(?,?,?,?,?)',(other,str(uuid4()),1,'main','READ'))
     # Fresh context in a separate transaction can see only its own tenant.
     with store.conn(other) as db:

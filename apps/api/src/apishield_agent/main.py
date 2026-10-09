@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from apishield_agent.domain.analysis import deterministic_openapi_diff
+from apishield_agent.application.analysis_worker import AnalysisWorker
 from apishield_agent.infrastructure.store import Store, stable_uuid
 from apishield_agent.infrastructure.local_artifacts import LocalArtifacts, MAX_BYTES
 from apishield_agent.presentation.auth import require_scope
@@ -117,30 +117,22 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         store.seed_demo(str(ROOT / "fixtures/golden/before.yaml"), str(ROOT / "fixtures/golden/after.yaml"))
     stop = threading.Event()
 
+    analysis_worker = AnalysisWorker(store)
     def worker():
-        while not stop.is_set():
-            row = store.claim_pending()
-            if row:
-                try:
-                    repo = store.get_repo(row["tenant_id"], 1, row["repository_id"])
-                    if repo is None:
-                        raise RuntimeError("REPOSITORY_NOT_FOUND")
-                    findings = deterministic_openapi_diff(repo["before_contract"], repo["after_contract"])
-                    store.finish(row["tenant_id"], row["id"], findings, row["lease_token"])
-                except Exception as exc:
-                    # Keep failures durable and bounded. A stale worker cannot
-                    # overwrite a newer lease because fail() fences by token.
-                    store.fail(row["tenant_id"], row["id"], type(exc).__name__.upper(), row["lease_token"])
-            else:
-                stop.wait(0.05)
+        analysis_worker.serve(stop)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         t = threading.Thread(target=worker, name="apishield-worker", daemon=True)
-        t.start()
-        yield
-        stop.set()
-        t.join(timeout=1)
+        embedded = os.getenv("APISHIELD_EMBEDDED_WORKER", "1") == "1"
+        if embedded:
+            t.start()
+        try:
+            yield
+        finally:
+            stop.set()
+            if embedded:
+                t.join(timeout=5)
 
     app = FastAPI(title="APIShield Agent MVP", version="0.2.0", lifespan=lifespan)
     cors_origins = [origin.strip() for origin in os.getenv("APISHIELD_CORS_ORIGINS", "").split(",") if origin.strip()]
@@ -230,6 +222,17 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         row = store.create_proposal(c["tenant_id"], str(analysis_id), body.target_language)
         store.create_command(c["tenant_id"], c["sub"], "proposal.create", idempotency_key, request_sha, row["id"])
         return _proposal(row)
+
+    @app.get("/v1/proposals/{proposal_id}/patch")
+    def read_patch(proposal_id: UUID, c: dict = Depends(require_scope("patch:read", store))):
+        proposal = store.proposal(c["tenant_id"], str(proposal_id))
+        content = store.proposal_patch(c["tenant_id"], str(proposal_id))
+        if not proposal or not content:
+            return _problem(404, "RESOURCE_NOT_FOUND", "Proposal patch bytes are not visible")
+        body = content["patch_text"].encode()
+        if hashlib.sha256(body).hexdigest() != proposal["patch_sha256"]:
+            return _problem(409, "PATCH_INTEGRITY_FAILURE", "Proposal bytes do not match the approved digest")
+        return Response(body, media_type="text/plain", headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
     @app.post("/v1/proposals/{proposal_id}/approvals", status_code=201)
     def approve_proposal(proposal_id: UUID, body: ApproveProposal, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("patch:approve", store))):

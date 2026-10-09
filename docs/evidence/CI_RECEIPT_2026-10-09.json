@@ -1,0 +1,26 @@
+{
+  "scope": "exact source commit; no G1-E certification",
+  "application_tests": "27 passed, 1 skipped; separate PostgreSQL workflow: 1 passed",
+  "slug": "apishield-agent",
+  "sha": "a133724b3e6149baa28852cd46cca77b4187c080",
+  "runs": [
+    {
+      "id": 37883226432,
+      "name": "G1 Contract Verification",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37883226432"
+    },
+    {
+      "id": 37883226408,
+      "name": "APIShield MVP Application CI",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37883226408"
+    },
+    {
+      "id": 37883226499,
+      "name": "APIShield PostgreSQL Runtime Proof",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/37883226499"
+    }
+  ]
+}

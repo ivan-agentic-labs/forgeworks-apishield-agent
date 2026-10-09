@@ -54,6 +54,13 @@ def test_proposal_approval_idempotency_stale_version_and_artifact_digest(tmp_pat
         )
         assert proposal_response.status_code == 201
         proposal = proposal_response.json()
+        import hashlib
+        patch = client.get(f"/v1/proposals/{proposal['id']}/patch", headers=headers("patch:read", "patch-read-key-001"))
+        assert patch.status_code == 200
+        assert b"--- contracts/before.yaml" in patch.content and b"+++ contracts/after.yaml" in patch.content
+        assert hashlib.sha256(patch.content).hexdigest() == proposal["patch_sha256"]
+        assert client.get(f"/v1/proposals/{proposal['id']}/patch", headers=headers("analysis:read", "patch-read-key-002")).status_code == 403
+
         approval_body = {"patch_sha256": proposal["patch_sha256"], "base_sha": BASE, "decision": "approve", "expected_version": 1}
         approval = client.post(f"/v1/proposals/{proposal['id']}/approvals", headers=headers("patch:approve", "approval-key-000010"), json=approval_body)
         assert approval.status_code == 201
@@ -83,3 +90,4 @@ def test_proposal_approval_idempotency_stale_version_and_artifact_digest(tmp_pat
             json={"approval_id": approval.json()["id"], "target_branch": "main"},
         )
         assert github.status_code == 403 and github.json()["code"] == "GITHUB_WRITE_DISABLED"
+

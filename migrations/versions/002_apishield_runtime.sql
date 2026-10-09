@@ -84,3 +84,8 @@ ALTER TABLE approvals ADD CONSTRAINT approvals_proposal_fk FOREIGN KEY (tenant_i
 ALTER TABLE pull_requests ADD CONSTRAINT pull_requests_proposal_fk FOREIGN KEY (tenant_id,proposal_id) REFERENCES proposals(tenant_id,id);
 CREATE UNIQUE INDEX IF NOT EXISTS pull_requests_effect_unique ON pull_requests(tenant_id,external_effect_key);
 REVOKE INSERT, UPDATE, DELETE ON memberships FROM fw_apishield_agent_rw;
+CREATE TABLE IF NOT EXISTS proposal_patch_content(tenant_id uuid NOT NULL,id uuid NOT NULL,patch_text text NOT NULL,PRIMARY KEY(tenant_id,id),FOREIGN KEY(tenant_id,id) REFERENCES proposals(tenant_id,id));
+ALTER TABLE proposal_patch_content ENABLE ROW LEVEL SECURITY;
+ALTER TABLE proposal_patch_content FORCE ROW LEVEL SECURITY;
+CREATE POLICY patch_content_tenant ON proposal_patch_content TO fw_apishield_agent_rw USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid) WITH CHECK(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid);
+GRANT SELECT, INSERT ON proposal_patch_content TO fw_apishield_agent_rw;

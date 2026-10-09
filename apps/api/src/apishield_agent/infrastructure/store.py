@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import difflib
 import json
 import sqlite3
 import threading
@@ -54,6 +55,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS events (tenant_id TEXT NOT NULL, id TEXT PRIMARY KEY, event_type TEXT NOT NULL, aggregate_id TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE (tenant_id,event_type,aggregate_id));
             CREATE TABLE IF NOT EXISTS artifacts (tenant_id TEXT NOT NULL, id TEXT NOT NULL, kind TEXT NOT NULL, filename TEXT NOT NULL, declared_media_type TEXT, sha256 TEXT NOT NULL, size_bytes INTEGER NOT NULL, status TEXT NOT NULL, object_generation TEXT, rejected_reason TEXT, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
             CREATE TABLE IF NOT EXISTS proposals (tenant_id TEXT NOT NULL, id TEXT NOT NULL, analysis_id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, base_sha TEXT NOT NULL, patch_sha256 TEXT NOT NULL, sandbox_status TEXT NOT NULL, approval_status TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (tenant_id,id));
+            CREATE TABLE IF NOT EXISTS proposal_patch_content (tenant_id TEXT NOT NULL, id TEXT NOT NULL, patch_text TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
             CREATE TABLE IF NOT EXISTS approvals (tenant_id TEXT NOT NULL, id TEXT NOT NULL, proposal_id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, patch_sha256 TEXT NOT NULL, base_sha TEXT NOT NULL, reviewer_id TEXT NOT NULL, expires_at TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
             CREATE TABLE IF NOT EXISTS pull_requests (tenant_id TEXT NOT NULL, id TEXT NOT NULL, proposal_id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, github_pr_node_id TEXT NOT NULL, draft INTEGER NOT NULL, external_effect_key TEXT NOT NULL, PRIMARY KEY (tenant_id,id));
             """)
@@ -76,6 +78,10 @@ class Store:
     def get_repo(self, tenant, installation, repo):
         with self.conn() as c:
             return c.execute("SELECT * FROM repositories WHERE tenant_id=? AND installation_id=? AND id=?", (tenant, installation, repo)).fetchone()
+
+    def get_repository(self, tenant, repository_id):
+        with self.conn(tenant) as db:
+            return db.execute("SELECT * FROM repositories WHERE tenant_id=? AND id=?", (tenant, repository_id)).fetchone()
 
     def get_idempotent(self, tenant, actor, key):
         with self.conn() as c:
@@ -194,15 +200,28 @@ class Store:
         analysis = self.get_analysis(tenant, analysis_id)
         if not analysis:
             return None
-        patch = hashlib.sha256(f"{tenant}:{analysis_id}:{analysis['base_sha']}:{analysis['head_sha']}:{target_language}".encode()).hexdigest()
+        repo = self.get_repository(tenant, analysis["repository_id"])
+        if not repo:
+            return None
+        before = Path(repo["before_contract"]).read_text(encoding="utf-8")
+        after = Path(repo["after_contract"]).read_text(encoding="utf-8")
+        if max(len(before.encode()), len(after.encode())) > 2 * 1024 * 1024:
+            raise ValueError("CONTRACT_TOO_LARGE")
+        patch_text = "".join(difflib.unified_diff(before.splitlines(keepends=True), after.splitlines(keepends=True), fromfile="contracts/before.yaml", tofile="contracts/after.yaml"))
+        patch = hashlib.sha256(patch_text.encode()).hexdigest()
         pid = str(uuid.uuid4())
         with self.lock, self.conn() as c:
             c.execute("INSERT INTO proposals VALUES(?,?,?,?,?,?,?,?,?,?)", (tenant, pid, analysis_id, 'READY', now(), analysis['base_sha'], patch, 'NOT_RUN', 'PENDING', 1))
+            c.execute("INSERT INTO proposal_patch_content VALUES(?,?,?)", (tenant, pid, patch_text))
         return self.proposal(tenant, pid)
 
     def proposal(self, tenant, pid):
         with self.conn() as c:
             return c.execute("SELECT * FROM proposals WHERE tenant_id=? AND id=?", (tenant, pid)).fetchone()
+
+    def proposal_patch(self, tenant, proposal_id):
+        with self.conn(tenant) as db:
+            return db.execute("SELECT * FROM proposal_patch_content WHERE tenant_id=? AND id=?", (tenant, proposal_id)).fetchone()
 
     def approve(self, tenant, pid, patch, base, decision, expected_version, reviewer):
         with self.lock, self.conn() as c:
