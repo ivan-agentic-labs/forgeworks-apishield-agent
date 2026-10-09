@@ -128,9 +128,18 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         signature=hmac.new(os.environ['GITHUB_WEBHOOK_SECRET'].encode(),webhook_body,hashlib.sha256).hexdigest()
         hook=client.post('/internal/github/webhooks',content=webhook_body,headers={'X-Hub-Signature-256':f'sha256={signature}','X-GitHub-Delivery':str(uuid4()),'X-GitHub-Event':'installation'})
         assert hook.status_code==202 and hook.json()['installation_state']=='SUSPENDED',hook.text
+        revoked=client.post(f'/v1/installations/1/repositories/{REPOSITORY}/analyses',headers=headers('repo:analyze','pg-revoked-key-001'),json={'base_sha':'a'*40,'head_sha':'b'*40,'capability_profile':'p'})
+        assert revoked.status_code==403 and revoked.json()['code']=='REPOSITORY_ACCESS_REVOKED'
+        revoked_proposal=client.post(f"/v1/analyses/{aid}/proposals",headers=headers('patch:create','pg-revoked-proposal-001'),json={'analysis_id':aid,'target_language':'typescript'})
+        assert revoked_proposal.status_code==403,revoked_proposal.text
         with psycopg.connect(owner) as db:
             assert db.execute('SELECT permission_state FROM repositories WHERE tenant_id=%s AND id=%s',(TENANT,REPOSITORY)).fetchone()[0]=='REVOKED'
             assert db.execute('SELECT count(*) FROM github_webhook_deliveries').fetchone()[0]==1
+
+    # Explicit fixture re-provisioning for independent concurrency tests below.
+    # A received unsuspend event does not automatically re-grant product access.
+    with psycopg.connect(owner) as db:
+        db.execute("UPDATE repositories SET permission_state='READ' WHERE tenant_id=%s AND id=%s",(TENANT,REPOSITORY))
 
     # Two independent adapters must converge on one durable analysis/lease.
     peers=[PostgresStore(runtime),PostgresStore(runtime)]

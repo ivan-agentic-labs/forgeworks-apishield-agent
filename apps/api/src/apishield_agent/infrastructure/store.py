@@ -139,11 +139,11 @@ class Store:
             row = c.execute("SELECT status, lease_token, repository_id FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone()
             if not row or row['status'] in {'SUCCEEDED', 'FAILED_TERMINAL', 'CANCELLED'}:
                 return False
+            if lease_token is not None and (row['status'] != 'RUNNING' or row['lease_token'] != lease_token):
+                return False
             repo = c.execute("SELECT permission_state FROM repositories WHERE tenant_id=? AND id=?", (tenant, row['repository_id'])).fetchone()
             if not repo or repo['permission_state'] not in {'READ', 'WRITE'}:
                 c.execute("UPDATE analyses SET status='FAILED_TERMINAL', last_error_code='REPOSITORY_ACCESS_REVOKED', version=version+1, lease_until=NULL, lease_token=NULL WHERE tenant_id=? AND id=?", (tenant, aid))
-                return False
-            if lease_token is not None and (row['status'] != 'RUNNING' or row['lease_token'] != lease_token):
                 return False
             for f in findings:
                 c.execute("INSERT OR IGNORE INTO findings VALUES(?,?,?,?,?,?,?,?)", (tenant, str(uuid.uuid4()), aid, f.rule_id, f.severity, f.pointer, f.evidence_digest, f.coverage))
