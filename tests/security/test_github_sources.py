@@ -89,7 +89,8 @@ def test_worker_uses_remote_adapter_bytes_not_local_fixture_paths(tmp_path,key):
     row=store.create_analysis(TENANT,USER,REPOSITORY,'a'*40,'b'*40,'p','github-read-analysis-001','request')
     reader=GitHubSources('123',key,mapping(),MockGitHub(key))
     assert AnalysisWorker(store,reader).run_once()
-    assert store.get_analysis(TENANT,row['id'])['status']=='SUCCEEDED'
+    outcome = dict(store.get_analysis(TENANT, row['id']))
+    assert outcome['status'] == 'SUCCEEDED', {'status': outcome['status'], 'error_code': outcome['last_error_code'], 'attempts': outcome['attempt_count']}
     proposal=store.create_proposal(TENANT,row['id'],'typescript')
     assert 'next_cursor' in store.proposal_patch(TENANT,proposal['id'])['patch_text']
 
