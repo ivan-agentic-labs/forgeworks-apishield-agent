@@ -42,6 +42,12 @@ def postgres(monkeypatch):
         policy = db.execute("SELECT qual, with_check FROM pg_policies WHERE schemaname=current_schema() AND tablename='repositories' AND policyname='repositories_tenant'").fetchone()
         assert policy and all('SELECT current_setting' in expression for expression in policy)
         db.execute((ROOT/'infra/environments/staging/005_drop_duplicate_runtime_policies.sql').read_text())
+        db.execute((ROOT/'infra/environments/staging/006_remaining_tenant_rls_initplans.sql').read_text())
+        for table, policy_name, role in [['analysis_findings','analysis_findings_tenant','public'],['analysis_jobs','analysis_jobs_tenant','public'],['analysis_source_snapshots','tenant_boundary','public'],['approvals','runtime_tenant','fw_apishield_agent_rw'],['artifacts','runtime_tenant','fw_apishield_agent_rw'],['audit_events','runtime_tenant','fw_apishield_agent_rw'],['commands','runtime_tenant','fw_apishield_agent_rw'],['idempotency','runtime_tenant','fw_apishield_agent_rw'],['memberships','runtime_tenant','fw_apishield_agent_rw'],['proposal_patch_content','patch_content_tenant','fw_apishield_agent_rw'],['proposals','runtime_tenant','fw_apishield_agent_rw'],['pull_requests','runtime_tenant','fw_apishield_agent_rw']]:
+            row = db.execute("SELECT qual, with_check, cmd, roles FROM pg_policies WHERE schemaname=current_schema() AND tablename=%s AND policyname=%s", (table, policy_name)).fetchone()
+            assert row and row[2] == 'ALL' and row[3] == [role]
+            assert all('SELECT current_setting' in clause for clause in row[:2])
+
         for table, required in [('analysis_findings', 'analysis_findings_tenant'), ('analysis_jobs', 'analysis_jobs_tenant'), ('repositories', 'repositories_tenant')]:
             policies = db.execute("SELECT policyname, roles, cmd FROM pg_policies WHERE schemaname=current_schema() AND tablename=%s", (table,)).fetchall()
             assert all(name != 'runtime_tenant' for name, _, _ in policies)
