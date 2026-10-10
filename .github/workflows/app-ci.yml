@@ -37,3 +37,9 @@ jobs:
         run: |
           npm ci --prefix packages/sdk
           npm run check --prefix packages/sdk
+
+      - name: Verify bounded TypeScript caller analysis and applicable migration diffs
+        run: |
+          npm ci --ignore-scripts --prefix packages/caller-analysis
+          npm test --prefix packages/caller-analysis
+          APISHIELD_CALLER_CLI_PROOF=yes python -W error -m pytest tests/unit/test_typescript_caller_cli.py

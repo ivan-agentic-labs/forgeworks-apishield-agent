@@ -51,3 +51,6 @@ See [current changes and residual gaps](docs/evidence/ENGINEERING_CONTINUATION.m
 See [current G1/G2 evidence](docs/verification/CURRENT_GATE_EVIDENCE.md), [exact source receipt](docs/evidence/MAIN_VERIFICATION_2026-10-09.json), and [owner main authorization](docs/governance/ENGINEERING_MAIN_AUTHORIZATION_2026-10-09.md). PostgreSQL adapters exist for all five independent projects. Historical evidence retains its source SHA and narrower scope.
 
 GitHub App webhook intake now verifies `sha256` signatures over the exact body, enforces UUID delivery IDs and a 1 MiB limit, rejects conflicting replays, and projects installation suspension/deletion through a separate least-privilege PostgreSQL role. Remote repository reads and pull-request writes remain disabled until an installed test GitHub App and approval-bound effect tests are available.
+
+
+A bounded [TypeScript caller profile](docs/architecture/TYPESCRIPT_CALLER_PROFILE.md) can now propose actual source diffs for literal global-fetch endpoint relocations. It remains an offline review tool; product worker/approval integration and sandbox build proof are still unfinished.

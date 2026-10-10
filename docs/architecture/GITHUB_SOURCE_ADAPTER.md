@@ -27,7 +27,7 @@ Migrations 001–004 are required for the implemented PostgreSQL runtime. Worker
 
 Injected-transport tests verify RS256 signing, least-privilege token requests, source integrity, failure handling and the worker-to-snapshot-to-proposal path. They do NOT demonstrate an installed product App, real token permissions, actual GitHub delivery or external repository reads. The connected ChatGPT GitHub account is not automatically the product App.
 
-Live proof requires a registered/installed test App, provisioned identities/mappings, secrets outside git and an isolated runtime. Use synthetic repositories only. Repository write effects remain disabled even after read configuration is supplied. Approval-bound PR effects, real sandbox/provider execution and complete compatibility analysis are unfinished implementation, not merely missing credentials.
+Live proof requires a registered/installed test App, provisioned identities/mappings, secrets outside git and an isolated runtime. Use synthetic repositories only. Repository write effects remain disabled even after read configuration is supplied. An offline TypeScript caller/path migration module is now available (see TYPESCRIPT_CALLER_PROFILE.md). Wiring its independently verified caller snapshots into the durable worker and approval records, approval-bound PR effects, real sandbox/provider execution and complete compatibility analysis remain unfinished implementation, not merely missing credentials.
 
 ## Reference specifications
 

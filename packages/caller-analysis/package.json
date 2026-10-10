@@ -1,0 +1,7 @@
+{
+  "name": "forgeworks-apishield-caller-analysis",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {"test": "node --test analysis.test.cjs"},
+  "dependencies": {"typescript": "5.9.3"}
+}
