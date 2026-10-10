@@ -74,7 +74,7 @@ def postgres(monkeypatch):
         db.execute('INSERT INTO repositories VALUES (%s,%s,%s,%s,%s,%s,%s)',(TENANT,REPOSITORY,1,'main','READ',str(ROOT/'fixtures/golden/before.yaml'),str(ROOT/'fixtures/golden/after.yaml')))
         other=str(uuid4())
         db.execute('INSERT INTO tenants VALUES (%s,%s,%s)',(other,'synthetic-other','ACTIVE'))
-        db.execute('INSERT INTO repositories VALUES (%s,%s,%s,%s,%s,%s,%s)',(other,str(uuid4()),1,'main','READ','',''))
+        db.execute('INSERT INTO repositories VALUES (%s,%s,%s,%s,%s,%s,%s)',(other,str(uuid4()),2,'main','READ','',''))
     info.update(user='fw_runtime_test',password='synthetic-local-runtime-test-only')
     from psycopg.conninfo import make_conninfo
     runtime=make_conninfo(**info)
@@ -191,6 +191,13 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
 
     # A webhook connection cannot re-grant access even when it sets a valid
     # tenant context. PUBLIC policies are ORed, so this catches the old bypass.
+    # First reproduce the old PUBLIC-policy bypass on exactly one installation.
+    # Updating two tenants at once would mask the bug: the unmatched row's
+    # WITH CHECK failure would roll back even the otherwise-authorized row.
+    with psycopg.connect(webhook) as db:
+        db.execute("SELECT set_config('app.tenant_id',%s,true)", (TENANT,))
+        assert db.execute("UPDATE repositories SET permission_state='READ' WHERE installation_id=1").rowcount == 1
+        assert db.execute("UPDATE repositories SET permission_state='REVOKED' WHERE installation_id=1").rowcount == 1
     with psycopg.connect(owner) as db:
         for _ in range(2):
             db.execute((ROOT/'infra/environments/staging/008_repository_policy_role_fence.sql').read_text())
@@ -204,7 +211,7 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
                     db.execute("UPDATE repositories SET permission_state=%s WHERE installation_id=1", (permission,))
     with psycopg.connect(webhook) as db:
         # Revoke remains possible across tenants, without broader SELECT grants.
-        assert db.execute("UPDATE repositories SET permission_state='REVOKED' WHERE installation_id=1").rowcount == 2
+        assert db.execute("UPDATE repositories SET permission_state='REVOKED' WHERE installation_id IN (1,2)").rowcount == 2
     with store.conn(TENANT) as db:
         assert len(db.execute('SELECT * FROM repositories').fetchall()) == 1
     with store.conn(other) as db:
