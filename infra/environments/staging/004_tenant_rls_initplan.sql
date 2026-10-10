@@ -2,5 +2,5 @@
 -- Existing policy must exist; run under the migration role with
 -- search_path fw_apishield_agent,pg_catalog (disposable CI uses public schema).
 ALTER POLICY repositories_tenant ON repositories
-  USING (tenant_id = (SELECT NULLIF(current_setting('app.tenant_id', true), '')::uuid))
-  WITH CHECK (tenant_id = (SELECT NULLIF(current_setting('app.tenant_id', true), '')::uuid));
+  USING (tenant_id = NULLIF((SELECT current_setting('app.tenant_id', true)), '')::uuid)
+  WITH CHECK (tenant_id = NULLIF((SELECT current_setting('app.tenant_id', true)), '')::uuid);
