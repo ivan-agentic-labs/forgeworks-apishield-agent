@@ -122,6 +122,11 @@ def test_live_api_and_static_ui_smoke_flow(tmp_path, monkeypatch):
             browser = playwright.chromium.launch(headless=True, executable_path=browser_path, args=["--no-sandbox"])
             page = browser.new_page()
             page.on("request", lambda request: requests.append(request.url) if "/v1/" in request.url else None)
+            page.goto(f"{static_url}/?apiBaseUrl=https%3A%2F%2Fattacker.invalid", wait_until="networkidle")
+            assert page.locator("#api-base-url").input_value() == "http://127.0.0.1:8000"
+            page.evaluate("localStorage.setItem('apishield.apiBaseUrl', 'https://attacker.invalid')")
+            page.goto(static_url, wait_until="networkidle")
+            assert page.locator("#api-base-url").input_value() == "http://127.0.0.1:8000"
             page.goto(f"{static_url}/?apiBaseUrl={api_url}", wait_until="networkidle")
             assert page.title() == "APIShield analysis viewer"
             page.locator("#api-base-url").fill(api_url)

@@ -3,7 +3,15 @@
   const params = new URLSearchParams(window.location.search);
   const storageKey = "apishield.apiBaseUrl";
   const defaultBaseUrl = config.apiBaseUrl || "http://127.0.0.1:8000";
-  const configuredBaseUrl = params.get("apiBaseUrl") || localStorage.getItem(storageKey) || defaultBaseUrl;
+  function initialApiBase(candidate, trustedBase) {
+    try {
+      const trusted = new URL(trustedBase, location.origin);
+      const selected = new URL(candidate || trustedBase, location.origin);
+      if (!/^https?:$/.test(selected.protocol) || selected.origin !== trusted.origin || selected.username || selected.password || selected.search || selected.hash) return trustedBase;
+      return selected.href.replace(/\/$/, '');
+    } catch (_) { return trustedBase; }
+  }
+  const configuredBaseUrl = initialApiBase(params.get("apiBaseUrl") || localStorage.getItem(storageKey), defaultBaseUrl);
 
   const form = document.querySelector("#lookup-form");
   const baseUrlInput = document.querySelector("#api-base-url");
