@@ -35,6 +35,9 @@ def postgres(monkeypatch):
             pytest.fail('Runtime proof requires a fresh empty database')
         for name in ['001_apishield_mvp.sql','002_apishield_runtime.sql','003_github_webhook_inbox.sql','004_analysis_source_snapshots.sql']:
             db.execute((ROOT/'migrations/versions'/name).read_text())
+        db.execute((ROOT/'infra/environments/staging/003_fk_lookup_index.sql').read_text())
+        definition = db.execute("SELECT pg_get_indexdef('idx_analysis_jobs_tenant_repository'::regclass)").fetchone()[0]
+        assert 'analysis_jobs USING btree (tenant_id, repository_id)' in definition
         db.execute("CREATE ROLE fw_runtime_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-runtime-test-only'")
         db.execute("CREATE ROLE fw_webhook_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-webhook-test-only'")
         db.execute('GRANT fw_apishield_agent_rw TO fw_runtime_test')

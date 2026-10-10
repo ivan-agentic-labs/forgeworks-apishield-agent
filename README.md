@@ -1,6 +1,6 @@
 # APIShield Agent
 
-**Status: synthetic MVP milestone implemented and tested locally. Not deployed, not production-ready, and G1-E remains open.**
+**Status: synthetic MVP deployed to Railway staging, with scoped CI evidence. Not production-ready; G1-E and authenticated customer acceptance remain open.**
 
 API change impact analysis, verified patch proposals and GitHub PR approval workflows.
 
