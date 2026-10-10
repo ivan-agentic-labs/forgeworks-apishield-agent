@@ -78,6 +78,8 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
     with pytest.raises(ValueError,match='superuser'):
         PostgresStore(owner)
     store=PostgresStore(runtime)
+    assert store.member_role(TENANT, USER) == 'editor'
+    assert store.member_role(TENANT, 'malformed-subject') is None
     assert not store.member(TENANT, "unmapped-oidc-subject")
     # Runtime login and its group cannot own tenant/provisioning tables either.
     for table, new_owner in [('memberships','fw_runtime_test'),('tenants',ROLE)]:
