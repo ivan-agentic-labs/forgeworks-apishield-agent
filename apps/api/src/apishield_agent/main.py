@@ -30,6 +30,8 @@ from apishield_agent.infrastructure.github_webhooks import (
 from apishield_agent.presentation.auth import require_scope
 from apishield_agent.infrastructure.github_sources import GitHubSources
 
+from apishield_agent.presentation.body_budget import BodyBudgetMiddleware
+
 ROOT = Path(__file__).resolve().parents[4]
 
 
@@ -181,6 +183,7 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
                 t.join(timeout=5)
 
     app = FastAPI(title="APIShield Agent MVP", version="0.2.0", lifespan=lifespan)
+    app.add_middleware(BodyBudgetMiddleware)
     cors_origins = [origin.strip() for origin in os.getenv("APISHIELD_CORS_ORIGINS", "").split(",") if origin.strip()]
     if cors_origins:
         app.add_middleware(
