@@ -136,7 +136,11 @@ class GitHubSources:
         if type(installation) is not int or installation<=0 or installation != repository['installation_id'] or type(repository_id) is not int or repository_id<=0:
             raise SourceError('GITHUB_INSTALLATION_BINDING_INVALID')
         # Reject mutable refs before any network/token minting.
-        if any(not isinstance(analysis.get(name), str) or not re.fullmatch(r'[0-9a-fA-F]{40}', analysis[name]) for name in ('base_sha','head_sha')):
+        try:
+            revisions = (analysis['base_sha'], analysis['head_sha'])
+        except (KeyError, IndexError, TypeError):
+            raise SourceError('GITHUB_IMMUTABLE_REVISION_REQUIRED') from None
+        if any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-fA-F]{40}', value) for value in revisions):
             raise SourceError('GITHUB_IMMUTABLE_REVISION_REQUIRED')
         token = self.installation_token(installation, repository_id)
         metadata = self.request('GET', f'/repos/{full_name}', token)
