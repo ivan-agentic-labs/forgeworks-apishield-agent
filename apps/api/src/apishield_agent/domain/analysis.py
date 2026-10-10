@@ -100,18 +100,22 @@ def _schema_required(doc: dict[str, Any], path: str) -> dict[tuple, set[str] | N
     return result
 
 
-def _parameters(doc: dict[str, Any], route: str, operation: dict[str, Any]) -> dict[tuple[str, str], tuple[dict[str, Any], str]]:
+def _parameters(doc: dict[str, Any], route: str, method: str, operation: dict[str, Any]) -> dict[tuple[str, str], tuple[dict[str, Any], str]]:
     result: dict[tuple[str, str], tuple[dict[str, Any], str]] = {}
     path_item = (doc.get("paths") or {}).get(route) or {}
-    entries = list(path_item.get("parameters") or []) + list(operation.get("parameters") or [])
-    for index, raw in enumerate(entries):
-        parameter = _local_reference(doc, raw)
-        if parameter is None:
-            continue
-        location, name = parameter.get("in"), parameter.get("name")
-        if not isinstance(location, str) or not isinstance(name, str):
-            continue
-        result[(location, name)] = (parameter, f"/paths/{_escape(route)}/parameters/{index}")
+    # Operation parameters override path parameters by (location, name).
+    for owner, prefix in ((path_item, f"/paths/{_escape(route)}"),
+                          (operation, f"/paths/{_escape(route)}/{method}")):
+        entries = owner.get("parameters", [])
+        if not isinstance(entries, list):
+            raise ValueError("CONTRACT_PARAMETER_SHAPE_INVALID")
+        for index, raw in enumerate(entries):
+            parameter = _local_reference(doc, raw)
+            if parameter is None:
+                continue
+            location, name = parameter.get("in"), parameter.get("name")
+            if isinstance(location, str) and isinstance(name, str):
+                result[(location, name)] = (parameter, f"{prefix}/parameters/{index}")
     return result
 
 
@@ -139,12 +143,80 @@ def _compare_schema_pair(findings: list[Finding], source_digests: dict[str, str]
     if isinstance(old_type, str) and isinstance(new_type, str) and old_type != new_type:
         _record_finding(findings, source_digests, (family or ("RESPONSE" if response else "REQUEST")) + "_SCHEMA_TYPE_CHANGED", pointer + "/type")
     old_enum, new_enum = old.get("enum"), new.get("enum")
-    if isinstance(old_enum, list) and isinstance(new_enum, list) and set(old_enum) - set(new_enum):
-        _record_finding(findings, source_digests, (family or ("RESPONSE" if response else "REQUEST")) + "_ENUM_VALUE_REMOVED", pointer + "/enum")
+    if isinstance(old_enum, list) and isinstance(new_enum, list):
+        def scalar_key(value):
+            if type(value) in (int, float):
+                return ("number", value)
+            if value is None or type(value) in (str, bool):
+                return (type(value).__name__, value)
+            raise ValueError("Complex enums require review")
+        try:
+            old_values, new_values = {scalar_key(v) for v in old_enum}, {scalar_key(v) for v in new_enum}
+        except ValueError:
+            _record_finding(findings, source_digests, "UNSUPPORTED_ENUM_VALUE", pointer + "/enum", "REVIEW", "UNSUPPORTED")
+        else:
+            if old_values - new_values:
+                _record_finding(findings, source_digests, (family or ("RESPONSE" if response else "REQUEST")) + "_ENUM_VALUE_REMOVED", pointer + "/enum", "REVIEW" if response else "BREAKING", "LIMITED" if response else "COVERED")
+            if response and new_values - old_values:
+                _record_finding(findings, source_digests, "RESPONSE_ENUM_VALUE_ADDED", pointer + "/enum")
+
+
+def _compare_schema_tree(findings, source_digests, before, after, old, new, pointer, *, response, family=None, depth=0, active=frozenset(), budget=None):
+    """Bound nested properties/items and local reference expansion explicitly."""
+    if budget is None:
+        budget = [512]
+    budget[0] -= 1
+    old, new = _local_reference(before, old), _local_reference(after, new)
+    if old is None or new is None:
+        _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer, "REVIEW", "UNSUPPORTED")
+        return
+    pair = (id(old), id(new))
+    if pair in active or depth > 32 or budget[0] < 0:
+        _record_finding(findings, source_digests, "SCHEMA_TRAVERSAL_LIMIT", pointer, "REVIEW", "UNSUPPORTED")
+        return
+    if any(key in value for value in (old, new) for key in ("allOf", "anyOf", "oneOf", "not", "if", "then", "else", "$dynamicRef")):
+        _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer, "REVIEW", "UNSUPPORTED")
+        return
+    _compare_schema_pair(findings, source_digests, old, new, pointer, response=response, family=family)
+    lower_bounds = {"minimum", "exclusiveMinimum", "minLength", "minItems", "minProperties"}
+    upper_bounds = {"maximum", "exclusiveMaximum", "maxLength", "maxItems", "maxProperties"}
+    for keyword in sorted(lower_bounds | upper_bounds):
+        default = 0 if keyword in {"minLength", "minItems", "minProperties"} else None
+        a, b = old.get(keyword, default), new.get(keyword, default)
+        numeric_a, numeric_b = type(a) in (int, float), type(b) in (int, float)
+        tightened = numeric_b and (a is None or numeric_a and (b > a if keyword in lower_bounds else b < a))
+        loosened = numeric_a and (b is None or numeric_b and (b < a if keyword in lower_bounds else b > a))
+        if (not response and tightened) or (response and loosened):
+            rule = "RESPONSE_CONSTRAINT_LOOSENED" if response else "REQUEST_CONSTRAINT_TIGHTENED"
+            _record_finding(findings, source_digests, rule, pointer + "/" + keyword)
+    old_props, new_props = old.get("properties", {}), new.get("properties", {})
+    if not isinstance(old_props, dict) or not isinstance(new_props, dict):
+        raise ValueError("CONTRACT_PROPERTIES_SHAPE_INVALID")
+    # Root required fields are recorded by the existing response/body surface checks.
+    if depth:
+        a, b = old.get("required", []), new.get("required", [])
+        if any(not isinstance(v, list) or any(not isinstance(x, str) for x in v) for v in (a, b)):
+            raise ValueError("CONTRACT_REQUIRED_SHAPE_INVALID")
+        if response:
+            for name in sorted(set(a) - set(b)):
+                _record_finding(findings, source_digests, "REQUIRED_RESPONSE_FIELD_REMOVED", pointer + "/required/" + str(a.index(name)))
+            for name in sorted(set(b) - set(a)):
+                _record_finding(findings, source_digests, "REQUIRED_RESPONSE_FIELD_ADDED", pointer + "/required/" + str(b.index(name)), "REVIEW", "LIMITED")
+        else:
+            for name in sorted(set(b) - set(a)):
+                _record_finding(findings, source_digests, "REQUEST_BODY_FIELD_BECAME_REQUIRED", pointer + "/required/" + str(b.index(name)))
+    if not response and new.get("additionalProperties") is False and old.get("additionalProperties", True) is not False:
+        _record_finding(findings, source_digests, "REQUEST_ADDITIONAL_PROPERTIES_DISALLOWED", pointer + "/additionalProperties")
+    for name in sorted(set(old_props) & set(new_props), key=str):
+        if budget[0] < 0:
+            break
+        _compare_schema_tree(findings, source_digests, before, after, old_props[name], new_props[name], pointer + "/properties/" + _escape(name), response=response, family=family, depth=depth + 1, active=active | {pair}, budget=budget)
+    if "items" in old or "items" in new:
+        _compare_schema_tree(findings, source_digests, before, after, old.get("items", {}), new.get("items", {}), pointer + "/items", response=response, family=family, depth=depth + 1, active=active | {pair}, budget=budget)
 
 
 def _compare_request(findings: list[Finding], source_digests: dict[str, str], before: dict[str, Any], after: dict[str, Any], route: str, method: str, old: dict[str, Any], new: dict[str, Any]) -> None:
-    old_params, new_params = _parameters(before, route, old), _parameters(after, route, new)
+    old_params, new_params = _parameters(before, route, method, old), _parameters(after, route, method, new)
     for key in sorted(set(old_params) | set(new_params)):
         old_entry, new_entry = old_params.get(key), new_params.get(key)
         if old_entry is None:
@@ -161,7 +233,7 @@ def _compare_request(findings: list[Finding], source_digests: dict[str, str], be
         old_schema = _local_reference(before, old_param.get("schema") or {})
         new_schema = _local_reference(after, new_param.get("schema") or {})
         if old_schema is not None and new_schema is not None:
-            _compare_schema_pair(findings, source_digests, old_schema, new_schema, new_pointer + "/schema", response=False, family="REQUEST_PARAMETER")
+            _compare_schema_tree(findings, source_digests, before, after, old_schema, new_schema, new_pointer + "/schema", response=False, family="REQUEST_PARAMETER")
     old_body = _local_reference(before, old.get("requestBody", {}))
     new_body = _local_reference(after, new.get("requestBody", {}))
     if old.get("requestBody") is not None and not isinstance(old.get("requestBody"), dict):
@@ -175,7 +247,7 @@ def _compare_request(findings: list[Finding], source_digests: dict[str, str], be
         for media in sorted(set(old_media) & set(new_media)):
             old_schema, new_schema = old_media[media][0], new_media[media][0]
             pointer = f"/paths/{_escape(route)}/{method}/requestBody/content/{_escape(media)}/schema"
-            _compare_schema_pair(findings, source_digests, old_schema, new_schema, pointer, response=False)
+            _compare_schema_tree(findings, source_digests, before, after, old_schema, new_schema, pointer, response=False)
             old_required, new_required = set(old_schema.get("required") or []), set(new_schema.get("required") or [])
             for field in sorted(new_required - old_required):
                 _record_finding(findings, source_digests, "REQUEST_BODY_FIELD_BECAME_REQUIRED", pointer + "/required/" + _escape(field))
@@ -201,7 +273,7 @@ def _compare_responses(findings: list[Finding], source_digests: dict[str, str], 
             old_schema, new_schema = _local_reference(before, old_media.get("schema") or {}), _local_reference(after, new_media.get("schema") or {})
             if old_schema is not None and new_schema is not None:
                 pointer = f"/paths/{_escape(route)}/{method}/responses/{_escape(code)}/content/{_escape(media)}/schema"
-                _compare_schema_pair(findings, source_digests, old_schema, new_schema, pointer, response=True)
+                _compare_schema_tree(findings, source_digests, before, after, old_schema, new_schema, pointer, response=True)
 
 
 def deterministic_openapi_diff(before_path: str | None, after_path: str | None) -> list[Finding]:
