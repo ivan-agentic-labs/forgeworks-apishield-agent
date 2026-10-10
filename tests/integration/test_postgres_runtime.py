@@ -41,6 +41,13 @@ def postgres(monkeypatch):
         db.execute((ROOT/'infra/environments/staging/004_tenant_rls_initplan.sql').read_text())
         policy = db.execute("SELECT qual, with_check FROM pg_policies WHERE schemaname=current_schema() AND tablename='repositories' AND policyname='repositories_tenant'").fetchone()
         assert policy and all('SELECT current_setting' in expression for expression in policy)
+        db.execute((ROOT/'infra/environments/staging/005_drop_duplicate_runtime_policies.sql').read_text())
+        for table, required in [('analysis_findings', 'analysis_findings_tenant'), ('analysis_jobs', 'analysis_jobs_tenant'), ('repositories', 'repositories_tenant')]:
+            policies = db.execute("SELECT policyname, roles, cmd FROM pg_policies WHERE schemaname=current_schema() AND tablename=%s", (table,)).fetchall()
+            assert all(name != 'runtime_tenant' for name, _, _ in policies)
+            assert any(name == required and roles == ['public'] and cmd == 'ALL' for name, roles, cmd in policies)
+            flags = db.execute('SELECT relrowsecurity, relforcerowsecurity FROM pg_class WHERE oid=%s::regclass', (table,)).fetchone()
+            assert flags[0] is True and flags[1] is True
         db.execute("CREATE ROLE fw_runtime_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-runtime-test-only'")
         db.execute("CREATE ROLE fw_webhook_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-webhook-test-only'")
         db.execute('GRANT fw_apishield_agent_rw TO fw_runtime_test')
