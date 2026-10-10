@@ -44,3 +44,7 @@ See `docs/evidence/STAGING_DEPLOYMENT_2026-10-10.json` for deployment IDs, sourc
 ## Additive foreign-key index rollout
 
 After bootstrap, execute `003_fk_lookup_index.sql` using the migration role with `search_path` set to `fw_apishield_agent, pg_catalog`. Verify `idx_analysis_jobs_tenant_repository` on `analysis_jobs (tenant_id, repository_id)`, rerun the Supabase advisor, and retain rollback: `DROP INDEX IF EXISTS fw_apishield_agent.idx_analysis_jobs_tenant_repository;` (only after query-plan review). This closes one index finding, **not** a measured application latency requirement.
+
+## Tenant policy initPlan (staging)
+
+The migration `004_tenant_rls_initplan.sql` changes only policy `repositories_tenant` on `repositories`. Existing `tenant_id` equality is retained in both `USING` and `WITH CHECK`, with `current_setting('app.tenant_id',true)` wrapped in a query-constant SELECT to reduce repeated evaluation. Execute under migration role with `search_path=fw_apishield_agent,pg_catalog`. Disposable PostgreSQL CI proves the SQL executes and preserves tenant negative tests, but is not a substitute for a live workload benchmark. Confirm `pg_policies` and the Supabase performance advisor after migration. Restore original policy only under a reviewed rollback plan, since policy changes affect authorization.
