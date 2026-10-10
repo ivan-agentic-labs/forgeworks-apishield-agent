@@ -54,6 +54,17 @@ def postgres(monkeypatch):
             assert any(name == required and roles == ['public'] and cmd == 'ALL' for name, roles, cmd in policies)
             flags = db.execute('SELECT relrowsecurity, relforcerowsecurity FROM pg_class WHERE oid=%s::regclass', (table,)).fetchone()
             assert flags[0] is True and flags[1] is True
+        # Run twice to prove replay safety, then inspect actual catalog definitions.
+        for _ in range(2):
+            db.execute((ROOT/'infra/environments/staging/007_remaining_fk_indexes.sql').read_text())
+        definition = db.execute("SELECT pg_get_indexdef('idx_approvals_tenant_proposal'::regclass)").fetchone()[0]
+        assert 'approvals USING btree (tenant_id, proposal_id)' in definition
+        definition = db.execute("SELECT pg_get_indexdef('idx_idempotency_tenant_analysis'::regclass)").fetchone()[0]
+        assert 'idempotency USING btree (tenant_id, analysis_id)' in definition
+        definition = db.execute("SELECT pg_get_indexdef('idx_proposals_tenant_analysis'::regclass)").fetchone()[0]
+        assert 'proposals USING btree (tenant_id, analysis_id)' in definition
+        definition = db.execute("SELECT pg_get_indexdef('idx_pull_requests_tenant_proposal'::regclass)").fetchone()[0]
+        assert 'pull_requests USING btree (tenant_id, proposal_id)' in definition
         db.execute("CREATE ROLE fw_runtime_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-runtime-test-only'")
         db.execute("CREATE ROLE fw_webhook_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-webhook-test-only'")
         db.execute('GRANT fw_apishield_agent_rw TO fw_runtime_test')
@@ -177,6 +188,27 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         with psycopg.connect(owner) as db:
             assert db.execute('SELECT permission_state FROM repositories WHERE tenant_id=%s AND id=%s',(TENANT,REPOSITORY)).fetchone()[0]=='REVOKED'
             assert db.execute('SELECT count(*) FROM github_webhook_deliveries').fetchone()[0]==1
+
+    # A webhook connection cannot re-grant access even when it sets a valid
+    # tenant context. PUBLIC policies are ORed, so this catches the old bypass.
+    with psycopg.connect(owner) as db:
+        for _ in range(2):
+            db.execute((ROOT/'infra/environments/staging/008_repository_policy_role_fence.sql').read_text())
+        row = db.execute("SELECT roles FROM pg_policies WHERE schemaname=current_schema() AND tablename='repositories' AND policyname='repositories_tenant'").fetchone()
+        assert row[0] == ['fw_apishield_agent_rw']
+    for tenant_context in ('', TENANT, other):
+        for permission in ('READ', 'WRITE'):
+            with psycopg.connect(webhook) as db:
+                db.execute("SELECT set_config('app.tenant_id',%s,true)", (tenant_context,))
+                with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                    db.execute("UPDATE repositories SET permission_state=%s WHERE installation_id=1", (permission,))
+    with psycopg.connect(webhook) as db:
+        # Revoke remains possible across tenants, without broader SELECT grants.
+        assert db.execute("UPDATE repositories SET permission_state='REVOKED' WHERE installation_id=1").rowcount == 2
+    with store.conn(TENANT) as db:
+        assert len(db.execute('SELECT * FROM repositories').fetchall()) == 1
+    with store.conn(other) as db:
+        assert len(db.execute('SELECT * FROM repositories').fetchall()) == 1
 
     # Explicit fixture re-provisioning for independent concurrency tests below.
     # A received unsuspend event does not automatically re-grant product access.

@@ -52,3 +52,35 @@ The migration `004_tenant_rls_initplan.sql` changes only policy `repositories_te
 ## APIShield permissive RLS deduplication
 
 Three `runtime_tenant` policies for `repositories`, `analysis_jobs`, and `analysis_findings` duplicated the matching public tenant guard verbatim before the query-cache optimization. The SQL `005_drop_duplicate_runtime_policies.sql` removes only these redundant runtime policies, retaining each required `*_tenant` public ALL policy, FORCE RLS, and webhook-specific policies. Disposable PostgreSQL tests verify policy inventory, tenant negative cases, and webhook behavior. Apply only with migration role and `search_path=fw_apishield_agent,pg_catalog` after green CI. If any access changes unexpectedly, restore the three runtime policies from `migrations/versions/002_apishield_runtime.sql` by separately reviewed rollback and verify role-specific behavior; do not drop any webhook policy.
+
+## Remaining FK index rollout (2026-10-11)
+
+`007_remaining_fk_indexes.sql` adds tenant-prefixed indexes for referencing
+foreign keys not covered by existing primary/unique/lookup indexes. The tables
+in connected staging are small (each below 128 KiB at review). Apply using the
+migration role, the product's private `search_path`, and a single transaction.
+Lock and statement timeouts bound this small-table rollout. For a populated
+production deployment, separately assess write overhead and use a reviewed
+concurrent-index procedure; this staging script is not a production benchmark.
+
+The disposable runtime proof executes the migration twice and verifies exact
+index definitions, followed by the existing business-flow and RLS negatives.
+Do not drop unused indexes merely to remove advisor INFO notices. Rollback is
+limited to the newly named indexes after query-plan review; it requires no
+row, membership, constraint, grant or tenant-policy changes.
+
+## Webhook revoke-only role fence
+
+After 007, apply `008_repository_policy_role_fence.sql` with the same migration
+role and product schema. It restricts `repositories_tenant` to
+`fw_apishield_agent_rw`, preserving both tenant predicates. Previously its
+PUBLIC audience also applied to the webhook role: permissive policies combine
+with OR, weakening the webhook's revoke-only WITH CHECK when a matching tenant
+context was set. No role membership or new privilege is granted.
+
+The disposable regression attempts READ/WRITE via the webhook connection with
+missing, matching and other tenant contexts and requires permission denial. It
+also verifies that cross-tenant revocation still works and application SELECT
+remains tenant-isolated. Rolling back this fence would restore the unsafe
+policy overlap; prefer fixing forward. Live database verification and CI
+receipts must be recorded independently before declaring this applied.
