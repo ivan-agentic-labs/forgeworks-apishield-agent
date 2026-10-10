@@ -38,6 +38,9 @@ def postgres(monkeypatch):
         db.execute((ROOT/'infra/environments/staging/003_fk_lookup_index.sql').read_text())
         definition = db.execute("SELECT pg_get_indexdef('idx_analysis_jobs_tenant_repository'::regclass)").fetchone()[0]
         assert 'analysis_jobs USING btree (tenant_id, repository_id)' in definition
+        db.execute((ROOT/'infra/environments/staging/004_tenant_rls_initplan.sql').read_text())
+        policy = db.execute("SELECT qual, with_check FROM pg_policies WHERE schemaname=current_schema() AND tablename='repositories' AND policyname='repositories_tenant'").fetchone()
+        assert policy and all('SELECT current_setting' in expression for expression in policy)
         db.execute("CREATE ROLE fw_runtime_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-runtime-test-only'")
         db.execute("CREATE ROLE fw_webhook_test LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD 'synthetic-local-webhook-test-only'")
         db.execute('GRANT fw_apishield_agent_rw TO fw_runtime_test')
