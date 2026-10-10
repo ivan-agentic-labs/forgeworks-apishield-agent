@@ -104,3 +104,45 @@ def test_live_read_mode_requires_external_configuration(monkeypatch):
     monkeypatch.delenv('APISHIELD_GITHUB_SOURCE_MAP_JSON',raising=False)
     with pytest.raises(SourceError,match='CONFIGURATION_REQUIRED'):
         GitHubSources.from_environment()
+
+
+def test_malformed_installation_expiry_is_typed_failure(key):
+    class InvalidExpiry(MockGitHub):
+        def __call__(self, method, url, headers, body):
+            status, result = super().__call__(method, url, headers, body)
+            if method == "POST":
+                result["expires_at"] = {"not": "an ISO timestamp"}
+            return status, result
+
+    with pytest.raises(SourceError, match="GITHUB_TOKEN_RESPONSE_INVALID"):
+        GitHubSources("123", key, mapping(), InvalidExpiry(key)).snapshot(
+            analysis(), {"installation_id": 1}
+        )
+
+
+def test_corrupt_base64_file_is_typed_failure(key):
+    class BrokenContent(MockGitHub):
+        def __call__(self, method, url, headers, body):
+            status, result = super().__call__(method, url, headers, body)
+            if "/contents/" in url:
+                result["content"] = "not-valid-@-base64"
+            return status, result
+
+    with pytest.raises(SourceError, match="GITHUB_SOURCE_ENCODING_INVALID"):
+        GitHubSources("123", key, mapping(), BrokenContent(key)).snapshot(
+            analysis(), {"installation_id": 1}
+        )
+
+
+@pytest.mark.parametrize("field,value", [
+    ("base_sha", None),
+    ("head_sha", 42),
+    ("base_sha", {}),
+])
+def test_malformed_commit_identity_fails_before_network(key, field, value):
+    server = MockGitHub(key)
+    request = analysis()
+    request[field] = value
+    with pytest.raises(SourceError, match="GITHUB_IMMUTABLE_REVISION_REQUIRED"):
+        GitHubSources("123", key, mapping(), server).snapshot(request, {"installation_id": 1})
+    assert server.calls == []
