@@ -262,6 +262,31 @@ class Store:
         with self.conn(tenant) as db:
             return db.execute("SELECT * FROM proposal_patch_content WHERE tenant_id=? AND id=?", (tenant, proposal_id)).fetchone()
 
+    def authorized_patch_bytes(self, tenant, proposal_id):
+        # Permission decisions and patch bytes share one database snapshot.
+        # The repository lock fences concurrent verified webhook revocation.
+        with self.lock, self.conn(tenant) as db:
+            if not hasattr(self, 'dsn'):
+                db.execute('BEGIN IMMEDIATE')
+            statement = "SELECT r.permission_state, p.patch_sha256 FROM proposals p JOIN analyses a ON a.tenant_id=p.tenant_id AND a.id=p.analysis_id JOIN repositories r ON r.tenant_id=a.tenant_id AND r.id=a.repository_id WHERE p.tenant_id=? AND p.id=?"
+            if hasattr(self, 'dsn'):
+                statement += ' FOR SHARE OF r'
+            row = db.execute(statement, (tenant, proposal_id)).fetchone()
+            if not row:
+                raise ValueError('RESOURCE_NOT_FOUND')
+            if row['permission_state'] not in {'READ', 'WRITE'}:
+                raise ValueError('REPOSITORY_ACCESS_REVOKED')
+            content = db.execute("SELECT patch_text FROM proposal_patch_content WHERE tenant_id=? AND id=?", (tenant, proposal_id)).fetchone()
+            if not content:
+                raise ValueError('RESOURCE_NOT_FOUND')
+            try:
+                body = content['patch_text'].encode('utf-8')
+            except UnicodeError as error:
+                raise ValueError('PATCH_INTEGRITY_FAILURE') from error
+            if hashlib.sha256(body).hexdigest() != row['patch_sha256']:
+                raise ValueError('PATCH_INTEGRITY_FAILURE')
+            return body, row['patch_sha256']
+
     def approve(self, tenant, pid, patch, base, decision, expected_version, reviewer):
         with self.lock, self.conn() as c:
             if not hasattr(self, 'dsn'):
@@ -279,6 +304,13 @@ class Store:
                 return p, 'STALE_VERSION'
             if p['patch_sha256'] != patch or p['base_sha'] != base:
                 return p, 'STALE_ARTIFACT'
+            content = c.execute("SELECT patch_text FROM proposal_patch_content WHERE tenant_id=? AND id=?", (tenant, pid)).fetchone()
+            try:
+                intact = content is not None and hashlib.sha256(content['patch_text'].encode('utf-8')).hexdigest() == patch
+            except UnicodeError:
+                intact = False
+            if not intact:
+                return p, 'PATCH_INTEGRITY_FAILURE'
             status = 'APPROVED' if decision == 'approve' else 'REJECTED'
             updated = c.execute("UPDATE proposals SET approval_status=?, version=version+1 WHERE tenant_id=? AND id=? AND version=?", (status, tenant, pid, expected_version))
             if not updated.rowcount:

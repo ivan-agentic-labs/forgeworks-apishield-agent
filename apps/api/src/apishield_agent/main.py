@@ -312,14 +312,18 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
 
     @app.get("/v1/proposals/{proposal_id}/patch")
     def read_patch(proposal_id: UUID, c: dict = Depends(require_scope("patch:read", store))):
-        proposal = store.proposal(c["tenant_id"], str(proposal_id))
-        content = store.proposal_patch(c["tenant_id"], str(proposal_id))
-        if not proposal or not content:
-            return _problem(404, "RESOURCE_NOT_FOUND", "Proposal patch bytes are not visible")
-        body = content["patch_text"].encode()
-        if hashlib.sha256(body).hexdigest() != proposal["patch_sha256"]:
-            return _problem(409, "PATCH_INTEGRITY_FAILURE", "Proposal bytes do not match the approved digest")
-        return Response(body, media_type="text/plain", headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+        try:
+            body, sha = store.authorized_patch_bytes(c["tenant_id"], str(proposal_id))
+        except ValueError as error:
+            code = str(error)
+            if code == "RESOURCE_NOT_FOUND":
+                return _problem(404, code, "Proposal patch bytes are not visible")
+            if code == "REPOSITORY_ACCESS_REVOKED":
+                return _problem(403, code, "Repository access is not active")
+            if code == "PATCH_INTEGRITY_FAILURE":
+                return _problem(409, code, "Proposal bytes do not match the approved digest")
+            raise
+        return Response(body, media_type="text/plain", headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "ETag": f'"{sha}"', "X-Patch-SHA256": sha})
 
     @app.post("/v1/proposals/{proposal_id}/approvals", status_code=201)
     def approve_proposal(proposal_id: UUID, body: ApproveProposal, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("patch:approve", store))):
@@ -344,6 +348,8 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             return _problem(404, "RESOURCE_NOT_FOUND", "Proposal is not visible")
         if error == "STALE_VERSION":
             return _problem(409, "STALE_VERSION", "Proposal version is stale")
+        if error == "PATCH_INTEGRITY_FAILURE":
+            return _problem(409, error, "Stored patch bytes no longer match the approval digest")
         if error == "STALE_ARTIFACT":
             return _problem(409, "STALE_ARTIFACT", "Approval does not match the current patch or base")
         if error == "REPOSITORY_ACCESS_REVOKED":

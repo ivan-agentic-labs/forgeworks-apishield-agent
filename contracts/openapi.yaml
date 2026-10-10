@@ -1015,12 +1015,20 @@ paths:
         '200':
           description: Actual unified OpenAPI contract diff bytes, bound to patch_sha256; this is not an AI-generated
             client-code migration
+          headers:
+            X-Patch-SHA256:
+              schema:
+                type: string
+                pattern: ^[0-9a-f]{64}$
+            ETag:
+              schema:
+                type: string
           content:
             text/plain:
               schema:
                 type: string
         '403':
-          description: Missing scope
+          description: Missing scope or repository access revoked
         '404':
           description: Proposal not visible
         '409':

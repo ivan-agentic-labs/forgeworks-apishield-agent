@@ -132,6 +132,10 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         assert revoked.status_code==403 and revoked.json()['code']=='REPOSITORY_ACCESS_REVOKED'
         revoked_proposal=client.post(f"/v1/analyses/{aid}/proposals",headers=headers('patch:create','pg-revoked-proposal-001'),json={'analysis_id':aid,'target_language':'typescript'})
         assert revoked_proposal.status_code==403,revoked_proposal.text
+        revoked_patch=client.get(f"/v1/proposals/{proposed['id']}/patch",headers=headers('patch:read','pg-revoked-patch-001'))
+        assert revoked_patch.status_code==403 and revoked_patch.json()['code']=='REPOSITORY_ACCESS_REVOKED'
+        with pytest.raises(ValueError,match='REPOSITORY_ACCESS_REVOKED'):
+            store.authorized_patch_bytes(TENANT,proposed['id'])
         with psycopg.connect(owner) as db:
             assert db.execute('SELECT permission_state FROM repositories WHERE tenant_id=%s AND id=%s',(TENANT,REPOSITORY)).fetchone()[0]=='REVOKED'
             assert db.execute('SELECT count(*) FROM github_webhook_deliveries').fetchone()[0]==1

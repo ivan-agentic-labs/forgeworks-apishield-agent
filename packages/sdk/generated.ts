@@ -1661,13 +1661,15 @@ export interface operations {
             /** @description Actual unified OpenAPI contract diff bytes, bound to patch_sha256; this is not an AI-generated client-code migration */
             200: {
                 headers: {
+                    "X-Patch-SHA256"?: string;
+                    ETag?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "text/plain": string;
                 };
             };
-            /** @description Missing scope */
+            /** @description Missing scope or repository access revoked */
             403: {
                 headers: {
                     [name: string]: unknown;
