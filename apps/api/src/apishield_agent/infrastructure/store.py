@@ -73,6 +73,15 @@ class Store:
             c.execute("INSERT OR IGNORE INTO memberships VALUES (?,?,?,?)", (TENANT, USER, "editor", "ACTIVE"))
             c.execute("INSERT OR REPLACE INTO repositories VALUES (?,?,?,?,?,?,?)", (TENANT, REPOSITORY, 1, "main", "READ", before, after))
 
+    def member_role(self, tenant: str, user: str) -> str | None:
+        """Fetch role of an ACTIVE member of this exact tenant."""
+        with self.conn() as db:
+            row = db.execute(
+                "SELECT role FROM memberships WHERE tenant_id=? AND user_id=? AND status='ACTIVE'",
+                (tenant, user),
+            ).fetchone()
+            return str(row["role"]) if row else None
+
     def member(self, tenant, user):
         with self.conn() as c:
             return c.execute("SELECT 1 FROM memberships WHERE tenant_id=? AND user_id=? AND status='ACTIVE'", (tenant, user)).fetchone() is not None
