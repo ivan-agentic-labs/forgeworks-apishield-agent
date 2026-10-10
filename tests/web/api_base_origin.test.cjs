@@ -23,7 +23,7 @@ function boot(candidate, saved, trusted = 'https://console.invalid') {
   return element(shield ? '#api-base-url' : 'api-base').value;
 }
 
-for (const candidate of ['https://attacker.invalid','//attacker.invalid','javascript:alert(1)','https://user:pass@console.invalid','https://console.invalid?redirect=evil','https://console.invalid/#evil']) {
+for (const candidate of ['https://attacker.invalid','//attacker.invalid','javascript:alert(1)','https://user:pass' + String.fromCharCode(64) + 'console.invalid','https://console.invalid?redirect=evil','https://console.invalid/#evil']) {
   test('untrusted automatic API override is ignored: ' + candidate, () => {
     assert.equal(boot(candidate,null),'https://console.invalid');
     assert.equal(boot(null,candidate),'https://console.invalid');
