@@ -82,7 +82,7 @@ def _installation_projection(event: VerifiedWebhook) -> tuple[int, str] | None:
         return None
     installation = event.payload.get("installation")
     action = event.payload.get("action")
-    if not isinstance(installation, dict) or type(installation.get("id")) is not int or installation["id"] <= 0:
+    if not isinstance(installation, dict) or type(installation.get("id")) is not int or not (0 < installation["id"] <= 2**63 - 1):
         raise WebhookRejected("INVALID_INSTALLATION_EVENT", "Installation event requires a positive integer installation.id", 422)
     states = {"created": "ACTIVE", "new_permissions_accepted": "ACTIVE", "suspend": "SUSPENDED", "unsuspend": "ACTIVE", "deleted": "DELETED"}
     if not isinstance(action, str) or action not in states:
