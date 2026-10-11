@@ -14,6 +14,7 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -54,7 +55,7 @@ class ApproveProposal(StrictModel):
     patch_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     base_sha: str = Field(pattern=r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
     decision: str = Field(pattern=r"^(approve|reject)$")
-    expected_version: int = Field(ge=1)
+    expected_version: int = Field(ge=1, strict=True)
 
 
 class CreatePullRequest(StrictModel):
@@ -194,6 +195,15 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             allow_headers=["Authorization", "Accept", "Content-Type"],
         )
     app.state.store = store
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(_, error: RequestValidationError):
+        # Do not echo raw input or attempt to serialize non-finite values.
+        return JSONResponse(status_code=422, content={
+            "type": "about:blank", "title": "Request rejected", "status": 422,
+            "code": "INVALID_REQUEST", "detail": "Request does not match the input contract",
+            "request_id": "runtime",
+        })
 
     @app.exception_handler(HTTPException)
     async def http_error(_, exc: HTTPException):
