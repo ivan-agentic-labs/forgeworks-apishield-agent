@@ -57,16 +57,30 @@ class LocalArtifacts:
             reject("ARTIFACT_INTEGRITY_FAILURE", "Unsafe object path")
         return target
 
-    def intent(self, tenant, artifact_id, action, generation=None):
-        expires = int(time.time()) + TTL
-        token = jwt.encode({"iss": "forgeworks-artifacts", "aud": "artifact-transfer", "sub": str(artifact_id), "tenant_id": str(tenant), "action": action, "generation": generation, "jti": str(uuid4()), "exp": expires}, self.secret(), algorithm="HS256")
-        return f"/v1/artifact-transfers/{artifact_id}?token={token}", expires
+    def intent(self, tenant, artifact_id, action, generation=None, *, actor=None, session_id=None):
+        # Transfer URLs are bearer capabilities, but a valid signature must not
+        # outlive revocation of the principal that requested the capability.
+        # Require an actor even in synthetic development mode.
+        if not isinstance(actor, str) or not actor:
+            reject("ARTIFACT_ACTOR_REQUIRED", "Artifact capability requires an owner", 403)
+        claims = {"iss": "forgeworks-artifacts", "aud": "artifact-transfer",
+                  "sub": str(artifact_id), "tenant_id": str(tenant), "actor": actor,
+                  "action": action, "generation": generation,
+                  "jti": str(uuid4()), "exp": int(time.time()) + TTL}
+        if session_id is not None:
+            claims["session_id"] = str(session_id)
+        token = jwt.encode(claims, self.secret(), algorithm="HS256")
+        return f"/v1/artifact-transfers/{artifact_id}?token={token}", claims["exp"]
 
     def capability(self, token, artifact_id, action):
         try:
             claims = jwt.decode(token, self.secret(), algorithms=["HS256"], issuer="forgeworks-artifacts", audience="artifact-transfer", options={"require": ["exp", "sub", "tenant_id", "action", "jti"]})
             if claims["sub"] != str(artifact_id) or claims["action"] != action:
                 raise jwt.InvalidTokenError("Wrong capability binding")
+            if not isinstance(claims.get("actor"), str) or not claims["actor"]:
+                raise jwt.InvalidTokenError("Missing capability owner")
+            if "session_id" in claims and (not isinstance(claims["session_id"], str) or not claims["session_id"]):
+                raise jwt.InvalidTokenError("Invalid session binding")
             self.path(claims["tenant_id"], claims["sub"])
             return claims
         except (jwt.PyJWTError, ValueError):
