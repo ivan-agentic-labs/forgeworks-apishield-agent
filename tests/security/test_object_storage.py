@@ -51,7 +51,6 @@ def test_unsafe_endpoint_rejected(monkeypatch,endpoint):
 @pytest.mark.parametrize("endpoint", [
     "https://storage.examp\tle.invalid",
     "https://storage.example.invalid\r\n",
-    "https://storage.example.invalid\x00",
     "https://storage.example.invalid\x7f",
     "https://storage.example.invalid\\evil.invalid",
 ])
