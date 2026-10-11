@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout immutable repository source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify origin-pinned transport and redirect denial without network
+        run: python3 -m unittest discover -s tests/unit -p 'test_staging_probe_transport.py' -v
       - name: Verify all five public HTTPS APIs, Auth alignment, and business access denial
         run: python3 -W error scripts/verify_cross_product_staging.py
       - name: Verify bounded parallel live readiness performance and record p95
