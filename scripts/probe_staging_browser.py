@@ -23,6 +23,7 @@ def probe(product, preview_style_sha=None):
             preview_css = result.read(262145)
         assert len(preview_css) <= 262144, "Candidate stylesheet exceeds preview budget"
         preview_css = preview_css.decode("utf-8", errors="strict")
+    preview_routes = []
     errors = []
     unexpected = []
     with sync_playwright() as runtime:
@@ -32,12 +33,18 @@ def probe(product, preview_style_sha=None):
             if preview_css is not None:
                 # Override only stylesheet bytes inside this isolated browser.
                 # The deployed app is unchanged, and the receipt says PREVIEW.
-                page.route(origin + "/styles.css", lambda route: route.fulfill(status=200, content_type="text/css", body=preview_css))
+                def preview_stylesheet(route):
+                    preview_routes.append(route.request.url)
+                    route.fulfill(status=200, content_type="text/css", body=preview_css)
+                for path in ("/styles.css", "/ui/styles.css"):
+                    page.route(origin + path, preview_stylesheet)
             page.on("pageerror", lambda error: errors.append(type(error).__name__))
             page.on("request", lambda request: unexpected.append(request.url) if request.url.startswith("https://attacker.invalid") else None)
             # The origin override must not redirect the console's requests.
             response = page.goto(origin + "/?apiBaseUrl=https%3A%2F%2Fattacker.invalid", wait_until="networkidle", timeout=60000)
             assert response and response.status == 200, "Deployed UI did not load"
+            if preview_css is not None:
+                assert preview_routes, "Candidate stylesheet was not requested by deployed page"
             page.wait_for_function("window.forgeAuthConfig && !document.getElementById('forge-signin').disabled", timeout=30000)
             assert page.locator("#forge-auth-status").inner_text() == "Masuk dengan akun yang memiliki membership ForgeWorks."
             assert page.locator("#forge-signout").is_hidden()
@@ -62,7 +69,7 @@ def probe(product, preview_style_sha=None):
                 statuses[endpoint] = result.status
             assert not errors, "Uncaught browser JavaScript error"
             assert not unexpected, "Untrusted API origin override was used"
-            return {"product": product, "ui_http_status": response.status, "title": page.title(), "auth_config": "staging-enabled", "api_origin_fenced": True, "anonymous_statuses": statuses, "javascript_errors": len(errors), "stylesheet_preview_sha": preview_style_sha, "scope": "CSS PREVIEW on deployed page; deployment not performed" if preview_style_sha else "credential-free deployed UI; authenticated business acceptance remains open"}
+            return {"product": product, "ui_http_status": response.status, "title": page.title(), "auth_config": "staging-enabled", "api_origin_fenced": True, "anonymous_statuses": statuses, "javascript_errors": len(errors), "stylesheet_preview_sha": preview_style_sha, "stylesheet_preview_routes": preview_routes, "scope": "CSS PREVIEW on deployed page; deployment not performed" if preview_style_sha else "credential-free deployed UI; authenticated business acceptance remains open"}
         finally:
             browser.close()
 
