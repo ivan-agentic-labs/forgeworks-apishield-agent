@@ -39,10 +39,12 @@ def _operations(doc: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
     }
 
 
-def _local_reference(doc: dict[str, Any], value: Any) -> dict[str, Any] | None:
+def _local_reference(doc: dict[str, Any], value: Any, *, schema: bool = False) -> dict[str, Any] | bool | None:
     """Resolve bounded pure local reference chains; never merge assertion siblings."""
     seen = set()
     for _ in range(32):
+        if schema and type(value) is bool:
+            return {} if value else False
         if not isinstance(value, dict):
             return None
         if "$ref" not in value:
@@ -89,8 +91,8 @@ def _schema_required(doc: dict[str, Any], path: str) -> dict[tuple, set[str] | N
                 for media, media_def in content.items():
                     if not isinstance(media_def, dict):
                         raise ValueError("CONTRACT_MEDIA_SHAPE_INVALID")
-                    schema = _local_reference(doc, media_def.get("schema") or {})
-                    if schema is None:
+                    schema = _local_reference(doc, media_def.get("schema", {}), schema=True)
+                    if schema is None or schema is False:
                         result[(path, route, method.lower(), str(code), str(media))] = None
                         continue
                     raw_required = schema.get("required", [])
@@ -119,7 +121,7 @@ def _parameters(doc: dict[str, Any], route: str, method: str, operation: dict[st
     return result
 
 
-def _media_schemas(doc: dict[str, Any], response_or_body: Any) -> dict[str, tuple[dict[str, Any], str]]:
+def _media_schemas(doc: dict[str, Any], response_or_body: Any) -> dict[str, tuple[Any, str]]:
     resolved = _local_reference(doc, response_or_body)
     if not resolved or not isinstance(resolved.get("content"), dict):
         return {}
@@ -127,9 +129,8 @@ def _media_schemas(doc: dict[str, Any], response_or_body: Any) -> dict[str, tupl
     for media, media_def in resolved["content"].items():
         if not isinstance(media_def, dict):
             continue
-        schema = _local_reference(doc, media_def.get("schema") or {})
-        if schema is not None:
-            result[str(media)] = (schema, f"/content/{_escape(media)}/schema")
+        # Keep false and unresolved schemas for the comparison/review path.
+        result[str(media)] = (media_def.get("schema", {}), f"/content/{_escape(media)}/schema")
     return result
 
 
@@ -200,9 +201,18 @@ def _compare_schema_tree(findings, source_digests, before, after, old, new, poin
     if budget is None:
         budget = [512]
     budget[0] -= 1
-    old, new = _local_reference(before, old), _local_reference(after, new)
+    old, new = _local_reference(before, old, schema=True), _local_reference(after, new, schema=True)
     if old is None or new is None:
         _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer, "REVIEW", "UNSUPPORTED")
+        return
+    if old is False or new is False:
+        if old is False and new is False:
+            return
+        if (not response and new is False) or (response and old is False):
+            counterpart = new if response else old
+            coverage = "COVERED" if counterpart == {} and depth == 0 else "LIMITED"
+            rule = "RESPONSE_SCHEMA_NO_LONGER_FALSE" if response else (family or "REQUEST") + "_SCHEMA_BECAME_FALSE"
+            _record_finding(findings, source_digests, rule, pointer, "BREAKING", coverage)
         return
     pair = (id(old), id(new))
     if pair in active or depth > 32 or budget[0] < 0:
@@ -264,10 +274,7 @@ def _compare_request(findings: list[Finding], source_digests: dict[str, str], be
         new_param, new_pointer = new_entry
         if new_param.get("required") is True and old_param.get("required") is not True:
             _record_finding(findings, source_digests, "REQUEST_PARAMETER_BECAME_REQUIRED", new_pointer + "/required")
-        old_schema = _local_reference(before, old_param.get("schema") or {})
-        new_schema = _local_reference(after, new_param.get("schema") or {})
-        if old_schema is not None and new_schema is not None:
-            _compare_schema_tree(findings, source_digests, before, after, old_schema, new_schema, new_pointer + "/schema", response=False, family="REQUEST_PARAMETER")
+        _compare_schema_tree(findings, source_digests, before, after, old_param.get("schema", {}), new_param.get("schema", {}), new_pointer + "/schema", response=False, family="REQUEST_PARAMETER")
     old_body = _local_reference(before, old.get("requestBody", {}))
     new_body = _local_reference(after, new.get("requestBody", {}))
     if old.get("requestBody") is not None and not isinstance(old.get("requestBody"), dict):
@@ -282,6 +289,10 @@ def _compare_request(findings: list[Finding], source_digests: dict[str, str], be
             old_schema, new_schema = old_media[media][0], new_media[media][0]
             pointer = f"/paths/{_escape(route)}/{method}/requestBody/content/{_escape(media)}/schema"
             _compare_schema_tree(findings, source_digests, before, after, old_schema, new_schema, pointer, response=False)
+            old_schema = _local_reference(before, old_schema, schema=True)
+            new_schema = _local_reference(after, new_schema, schema=True)
+            if not isinstance(old_schema, dict) or not isinstance(new_schema, dict):
+                continue
             old_required, new_required = set(old_schema.get("required") or []), set(new_schema.get("required") or [])
             for field in sorted(new_required - old_required):
                 _record_finding(findings, source_digests, "REQUEST_BODY_FIELD_BECAME_REQUIRED", pointer + "/required/" + _escape(field))
@@ -304,10 +315,8 @@ def _compare_responses(findings: list[Finding], source_digests: dict[str, str], 
             _record_finding(findings, source_digests, "RESPONSE_MEDIA_TYPE_REMOVED", f"/paths/{_escape(route)}/{method}/responses/{_escape(code)}/content/{_escape(media)}")
         for media in sorted(set(old_content) & set(new_content), key=str):
             old_media, new_media = old_content[media] if isinstance(old_content[media], dict) else {}, new_content[media] if isinstance(new_content[media], dict) else {}
-            old_schema, new_schema = _local_reference(before, old_media.get("schema") or {}), _local_reference(after, new_media.get("schema") or {})
-            if old_schema is not None and new_schema is not None:
-                pointer = f"/paths/{_escape(route)}/{method}/responses/{_escape(code)}/content/{_escape(media)}/schema"
-                _compare_schema_tree(findings, source_digests, before, after, old_schema, new_schema, pointer, response=True)
+            pointer = f"/paths/{_escape(route)}/{method}/responses/{_escape(code)}/content/{_escape(media)}/schema"
+            _compare_schema_tree(findings, source_digests, before, after, old_media.get("schema", {}), new_media.get("schema", {}), pointer, response=True)
 
 
 def deterministic_openapi_diff(before_path: str | None, after_path: str | None) -> list[Finding]:
