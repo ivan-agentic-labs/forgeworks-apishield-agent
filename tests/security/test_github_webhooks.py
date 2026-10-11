@@ -92,6 +92,9 @@ def test_webhook_requires_dedicated_configuration_and_bounded_payload(tmp_path, 
     b'{"action":{"nested":"suspend"},"installation":{"id":1}}',
     b'{"action":"suspend","installation":{"id":true}}',
     b'{"action":"suspend","installation":{"id":false}}',
+    b'{"action":"suspend","installation":{"id":9223372036854775808}}',
+    b'{"action":"suspend","installation":{"id":-1}}',
+    b'{"action":"suspend","installation":{"id":1.5}}',
 ])
 def test_signed_invalid_webhook_never_changes_installation_state(tmp_path, monkeypatch, body):
     """A valid HMAC never permits ambiguous JSON to change tenant revocation."""
