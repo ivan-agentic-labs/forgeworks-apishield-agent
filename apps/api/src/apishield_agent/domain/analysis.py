@@ -143,6 +143,18 @@ def _compare_schema_pair(findings: list[Finding], source_digests: dict[str, str]
     if isinstance(old_type, str) and isinstance(new_type, str) and old_type != new_type:
         _record_finding(findings, source_digests, (family or ("RESPONSE" if response else "REQUEST")) + "_SCHEMA_TYPE_CHANGED", pointer + "/type")
     old_enum, new_enum = old.get("enum"), new.get("enum")
+    if any("enum" in schema and not isinstance(schema["enum"], list) for schema in (old, new)):
+        raise ValueError("CONTRACT_ENUM_SHAPE_INVALID")
+    if ("enum" in old) != ("enum" in new):
+        values = old_enum if "enum" in old else new_enum
+        if any(value is not None and type(value) not in (str, bool, int, float) for value in values):
+            _record_finding(findings, source_digests, "UNSUPPORTED_ENUM_VALUE", pointer + "/enum", "REVIEW", "UNSUPPORTED")
+        elif (response and "enum" not in new) or (not response and "enum" not in old):
+            # A finite constraint was added to inputs, or removed from outputs.
+            # Other assertions may make it redundant: retain LIMITED coverage
+            # rather than claiming a complete schema-inclusion proof.
+            rule = "RESPONSE_ENUM_CONSTRAINT_REMOVED" if response else (family or "REQUEST") + "_ENUM_CONSTRAINT_ADDED"
+            _record_finding(findings, source_digests, rule, pointer + "/enum", "BREAKING", "LIMITED")
     if isinstance(old_enum, list) and isinstance(new_enum, list):
         def scalar_key(value):
             if type(value) in (int, float):
