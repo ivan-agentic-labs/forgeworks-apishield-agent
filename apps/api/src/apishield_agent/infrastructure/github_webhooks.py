@@ -55,10 +55,23 @@ def verify_webhook(secret: str, signature: str | None, delivery: str | None, eve
         raise WebhookRejected("INVALID_WEBHOOK_DELIVERY", "X-GitHub-Delivery must be a UUID") from error
     if event not in SUPPORTED_EVENTS:
         raise WebhookRejected("UNSUPPORTED_WEBHOOK_EVENT", "Webhook event is not accepted", 422)
+    def unique_keys(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise WebhookRejected("INVALID_WEBHOOK_JSON", "Duplicate webhook JSON keys are forbidden", 422)
+            result[key] = value
+        return result
+
+    def finite_numbers(_value):
+        raise WebhookRejected("INVALID_WEBHOOK_JSON", "Non-finite webhook JSON numbers are forbidden", 422)
+
     try:
-        payload = json.loads(body)
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook body must be valid JSON") from error
+        payload = json.loads(body, object_pairs_hook=unique_keys, parse_constant=finite_numbers)
+    except WebhookRejected:
+        raise
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError) as error:
+        raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook body must be valid bounded JSON", 422) from error
     if not isinstance(payload, dict):
         raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook body must be a JSON object")
     return VerifiedWebhook(delivery_id, event, payload, hashlib.sha256(body).hexdigest())
@@ -69,10 +82,10 @@ def _installation_projection(event: VerifiedWebhook) -> tuple[int, str] | None:
         return None
     installation = event.payload.get("installation")
     action = event.payload.get("action")
-    if not isinstance(installation, dict) or not isinstance(installation.get("id"), int) or installation["id"] <= 0:
-        raise WebhookRejected("INVALID_INSTALLATION_EVENT", "Installation event requires a positive installation.id", 422)
+    if not isinstance(installation, dict) or type(installation.get("id")) is not int or installation["id"] <= 0:
+        raise WebhookRejected("INVALID_INSTALLATION_EVENT", "Installation event requires a positive integer installation.id", 422)
     states = {"created": "ACTIVE", "new_permissions_accepted": "ACTIVE", "suspend": "SUSPENDED", "unsuspend": "ACTIVE", "deleted": "DELETED"}
-    if action not in states:
+    if not isinstance(action, str) or action not in states:
         raise WebhookRejected("UNSUPPORTED_INSTALLATION_ACTION", "Installation action is not accepted", 422)
     return installation["id"], states[action]
 
