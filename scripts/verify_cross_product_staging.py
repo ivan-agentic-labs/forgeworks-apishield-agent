@@ -9,7 +9,15 @@ from __future__ import annotations
 import json
 import sys
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+class _RejectRedirect(HTTPRedirectHandler):
+    """Keep staging checks on their pinned origin; a 3xx must fail."""
+    def redirect_request(self, request, fp, code, msg, headers, newurl):
+        return None
+
+
+_NO_REDIRECT_OPENER = build_opener(_RejectRedirect)
 
 TIMEOUT_SECONDS = 15
 MAX_RESPONSE_BYTES = 4096
@@ -33,7 +41,7 @@ def fetch(host: str, path: str, authorization: str | None = None) -> tuple[int, 
         headers["Authorization"] = authorization
     request = Request(f"https://{host}{path}", headers=headers, method="GET")
     try:
-        with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
+        with _NO_REDIRECT_OPENER.open(request, timeout=TIMEOUT_SECONDS) as response:
             status = response.status
             body = response.read(MAX_RESPONSE_BYTES + 1)
     except HTTPError as error:
