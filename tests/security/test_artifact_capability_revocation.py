@@ -1,5 +1,6 @@
 """Synthetic HTTP regression: a signed URL cannot bypass revocation."""
 import hashlib
+import os
 from uuid import uuid4
 from urllib.parse import parse_qs, urlsplit
 
@@ -64,12 +65,12 @@ def test_unsigned_or_legacy_ownerless_capability_cannot_be_reused(tmp_path):
         url = issued["upload_url"]
         token = parse_qs(urlsplit(url).query)["token"][0]
         payload = jwt.decode(
-            token, app.state.artifacts.secret(), algorithms=["HS256"],
+            token, os.environ["ARTIFACT_SIGNING_SECRET"], algorithms=["HS256"],
             audience="artifact-transfer", issuer="forgeworks-artifacts",
         )
         assert payload["actor"] == USER
         payload.pop("actor")
-        forged = jwt.encode(payload, app.state.artifacts.secret(), algorithm="HS256")
+        forged = jwt.encode(payload, os.environ["ARTIFACT_SIGNING_SECRET"], algorithm="HS256")
         response = client.put(url.split("?")[0] + "?token=" + forged, content=b"synthetic")
         assert response.status_code == 403
         assert response.json()["code"] == "INVALID_ARTIFACT_CAPABILITY"
@@ -83,10 +84,10 @@ def test_supabase_signed_transfer_session_is_rechecked_online(tmp_path, monkeypa
     with TestClient(app) as client:
         issued = make_intent(client, b"synthetic", "session")
         token = parse_qs(urlsplit(issued["upload_url"]).query)["token"][0]
-        claims = jwt.decode(token, app.state.artifacts.secret(), algorithms=["HS256"],
+        claims = jwt.decode(token, os.environ["ARTIFACT_SIGNING_SECRET"], algorithms=["HS256"],
                             audience="artifact-transfer", issuer="forgeworks-artifacts")
         claims["session_id"] = session_id
-        patched = jwt.encode(claims, app.state.artifacts.secret(), algorithm="HS256")
+        patched = jwt.encode(claims, os.environ["ARTIFACT_SIGNING_SECRET"], algorithm="HS256")
         url = issued["upload_url"].split("?")[0] + "?token=" + patched
         monkeypatch.setenv("AUTH_MODE", "supabase")
         monkeypatch.setattr(store, "session_active", lambda tenant, actor, sid: False, raising=False)
