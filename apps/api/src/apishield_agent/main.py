@@ -374,6 +374,18 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
     def create_pull_request(proposal_id: UUID, body: CreatePullRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("github:write", store))):
         return _problem(403, "GITHUB_WRITE_DISABLED", "GitHub writes are not enabled in this MVP")
 
+    def verify_transfer_owner(claims: dict) -> None:
+        """Revalidate capability owner and online session at transfer time."""
+        from apishield_agent.presentation.authentication import verify_session, problem
+        tenant, actor = claims["tenant_id"], claims["actor"]
+        if not store.member(tenant, actor):
+            problem(403, "MEMBERSHIP_REVOKED", "Artifact capability owner is not an active member")
+        if os.getenv("AUTH_MODE") == "supabase" and not claims.get("session_id"):
+            problem(403, "ARTIFACT_SESSION_REQUIRED", "A live session-bound transfer capability is required")
+        if claims.get("session_id"):
+            verify_session(store, {"_supabase_session": True, "tenant_id": tenant,
+                                   "sub": actor, "session_id": claims["session_id"]})
+
     @app.post("/v1/artifacts/upload-intents", status_code=201)
     def upload_intent(body: CreateUploadIntent, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("artifact:create", store))):
         bad = _key(idempotency_key)
@@ -388,7 +400,7 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         else:
             row = store.create_artifact(c["tenant_id"], body.kind, body.filename, body.declared_media_type, body.sha256, body.size_bytes)
             store.create_command(c["tenant_id"], c["sub"], "artifact.intent", idempotency_key, request_sha, row["id"])
-        url, expires = artifacts.intent(c["tenant_id"], row["id"], "upload")
+        url, expires = artifacts.intent(c["tenant_id"], row["id"], "upload", actor=c["sub"], session_id=c.get("session_id"))
         return {"artifact_id": row["id"], "status": "INTENT_ISSUED", "upload_url": url, "expires_at": datetime.fromtimestamp(expires, timezone.utc).isoformat().replace("+00:00", "Z"), "required_headers": {"x-artifact-sha256": row["sha256"]}}
 
     @app.post("/v1/artifacts/{artifact_id}/commit", status_code=202)
@@ -432,12 +444,13 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         if row["status"] != "AVAILABLE":
             return _problem(409, "ARTIFACT_NOT_AVAILABLE", "Artifact is not available for download")
         artifacts.verify(c["tenant_id"], row["id"], row["object_generation"], row["sha256"], row["size_bytes"])
-        url, expires = artifacts.intent(c["tenant_id"], row["id"], "download", row["object_generation"])
+        url, expires = artifacts.intent(c["tenant_id"], row["id"], "download", row["object_generation"], actor=c["sub"], session_id=c.get("session_id"))
         return {"artifact_id": row["id"], "download_url": url, "expires_at": datetime.fromtimestamp(expires, timezone.utc).isoformat().replace("+00:00", "Z"), "object_generation": row["object_generation"]}
 
     @app.put("/v1/artifact-transfers/{artifact_id}", status_code=201)
     async def upload_bytes(artifact_id: UUID, request: Request, token: str = Query(max_length=4096)):
         claims = artifacts.capability(token, artifact_id, "upload")
+        verify_transfer_owner(claims)
         row = store.artifact(claims["tenant_id"], str(artifact_id))
         if not row or row["status"] != "INTENT_ISSUED":
             return _problem(409, "ARTIFACT_NOT_PENDING", "Artifact is not pending upload")
@@ -456,6 +469,7 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
     @app.get("/v1/artifact-transfers/{artifact_id}")
     def download_bytes(artifact_id: UUID, token: str = Query(max_length=4096)):
         claims = artifacts.capability(token, artifact_id, "download")
+        verify_transfer_owner(claims)
         row = store.artifact(claims["tenant_id"], str(artifact_id))
         if not row or row["status"] != "AVAILABLE":
             return _problem(409, "ARTIFACT_NOT_AVAILABLE", "Artifact is not available")
