@@ -106,6 +106,21 @@ def _installation_projection(event: VerifiedWebhook) -> tuple[int, str] | None:
     return installation["id"], states[action]
 
 
+
+def _effective_installation_state(previous: str | None, requested: str, action: str) -> str:
+    """Do not resurrect deleted/suspended installations on late lifecycle events.
+
+    GitHub delivery UUIDs deduplicate exact deliveries, not delayed *different*
+    deliveries. A deleted installation ID is a tombstone; suspended installs
+    need an explicit unsuspend action before becoming active.
+    """
+    if previous == "DELETED":
+        return "DELETED"
+    if previous == "SUSPENDED" and requested == "ACTIVE" and action != "unsuspend":
+        return "SUSPENDED"
+    return requested
+
+
 class SQLiteWebhookInbox:
     """Development/test adapter. Production uses the separate PostgreSQL role."""
 
@@ -129,9 +144,21 @@ class SQLiteWebhookInbox:
                 state = db.execute("SELECT state FROM github_installation_states WHERE installation_id=?", (projection[0],)).fetchone() if projection else None
                 return False, state[0] if state else None
             if projection:
-                installation_id, state = projection
-                db.execute("INSERT INTO github_installation_states VALUES(?,?,?) ON CONFLICT(installation_id) DO UPDATE SET state=excluded.state,updated_at=excluded.updated_at", (installation_id, state, _now()))
-            return True, projection[1] if projection else None
+                installation_id, requested = projection
+                existing = db.execute(
+                    "SELECT state FROM github_installation_states WHERE installation_id=?",
+                    (installation_id,),
+                ).fetchone()
+                effective = _effective_installation_state(
+                    existing[0] if existing else None, requested, webhook.payload["action"]
+                )
+                db.execute(
+                    "INSERT INTO github_installation_states VALUES(?,?,?) "
+                    "ON CONFLICT(installation_id) DO UPDATE SET state=excluded.state,updated_at=excluded.updated_at",
+                    (installation_id, effective, _now()),
+                )
+                return True, effective
+            return True, None
 
 
 class PostgresWebhookInbox:
@@ -165,8 +192,22 @@ class PostgresWebhookInbox:
                 state = db.execute("SELECT state FROM github_installation_states WHERE installation_id=%s", (projection[0],)).fetchone() if projection else None
                 return False, state[0] if state else None
             if projection:
-                installation_id, state = projection
-                db.execute("INSERT INTO github_installation_states(installation_id,state) VALUES(%s,%s) ON CONFLICT(installation_id) DO UPDATE SET state=excluded.state,updated_at=now()", (installation_id, state))
-                if state in {"SUSPENDED", "DELETED"}:
+                installation_id, requested = projection
+                # The conflict UPDATE is atomic across concurrent workers, so a
+                # stale 'created' or permissions event cannot undo revocation.
+                row = db.execute(
+                    "INSERT INTO github_installation_states(installation_id,state) VALUES(%s,%s) "
+                    "ON CONFLICT(installation_id) DO UPDATE SET "
+                    "state=CASE "
+                    "WHEN github_installation_states.state='DELETED' THEN 'DELETED' "
+                    "WHEN github_installation_states.state='SUSPENDED' "
+                    "AND EXCLUDED.state='ACTIVE' AND %s <> 'unsuspend' THEN 'SUSPENDED' "
+                    "ELSE EXCLUDED.state END, updated_at=now() "
+                    "RETURNING state",
+                    (installation_id, requested, webhook.payload["action"]),
+                ).fetchone()
+                effective = row[0]
+                if effective in {"SUSPENDED", "DELETED"}:
                     db.execute("UPDATE repositories SET permission_state='REVOKED' WHERE installation_id=%s", (installation_id,))
-            return True, projection[1] if projection else None
+                return True, effective
+            return True, None
