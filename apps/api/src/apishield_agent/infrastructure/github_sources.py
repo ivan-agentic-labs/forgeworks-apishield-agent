@@ -85,6 +85,17 @@ class GitHubSources:
         permissions = result.get('permissions', {})
         if not isinstance(permissions, dict) or permissions.get('contents') != 'read' or any(key not in {'contents','metadata'} or value != 'read' for key,value in permissions.items()):
             raise SourceError('GITHUB_TOKEN_PERMISSION_MISMATCH')
+        # The requested repository_ids constraint must be reflected in the
+        # minted token response, not merely in the outgoing request. A broader
+        # token is forbidden even if its permissions remain read-only.
+        repositories = result.get('repositories')
+        if (result.get('repository_selection') != 'selected'
+                or not isinstance(repositories, list)
+                or len(repositories) != 1
+                or not isinstance(repositories[0], dict)
+                or type(repositories[0].get('id')) is not int
+                or repositories[0]['id'] != repository_id):
+            raise SourceError('GITHUB_TOKEN_REPOSITORY_SCOPE_MISMATCH')
         try:
             expires_at = result['expires_at']
             if not isinstance(expires_at, str):

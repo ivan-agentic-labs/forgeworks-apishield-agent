@@ -22,7 +22,7 @@ def key():
 
 class MockGitHub:
     def __init__(self,key):
-        self.key=key;self.calls=[];self.bad_blob=False;self.write_token=False
+        self.key=key;self.calls=[];self.bad_blob=False;self.write_token=False;self.selection='selected';self.repository_ids=[456]
     def __call__(self,method,url,headers,body):
         self.calls.append((method,url))
         assert url.startswith('https://api.github.com/')
@@ -31,7 +31,7 @@ class MockGitHub:
             claims=jwt.decode(headers['Authorization'].removeprefix('Bearer '),self.key.public_key(),algorithms=['RS256'],issuer='123')
             assert 0 < claims['exp']-claims['iat'] <= 600
             assert json.loads(body)=={'repository_ids':[456],'permissions':{'contents':'read'}}
-            return 201,{'token':'synthetic-installation-token','expires_at':(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),'permissions':{'contents':'write' if self.write_token else 'read','metadata':'read'}}
+            return 201,{'token':'synthetic-installation-token','expires_at':(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat(),'permissions':{'contents':'write' if self.write_token else 'read','metadata':'read'},'repository_selection':self.selection,'repositories':[{'id':rid} for rid in self.repository_ids]}
         assert headers['Authorization']=='Bearer synthetic-installation-token'
         if '/contents/' not in url:
             return 200,{'id':456,'full_name':'synthetic-owner/synthetic-repo'}
@@ -147,3 +147,21 @@ def test_malformed_commit_identity_fails_before_network(key, field, value):
     with pytest.raises(SourceError, match="GITHUB_IMMUTABLE_REVISION_REQUIRED"):
         GitHubSources("123", key, mapping(), server).snapshot(request, {"installation_id": 1})
     assert server.calls == []
+
+
+@pytest.mark.parametrize("selection,repo_ids", [
+    ("all", [456]),
+    (None, [456]),
+    ("selected", []),
+    ("selected", [456, 789]),
+    ("selected", [789]),
+    ("selected", [True]),
+])
+def test_installation_access_token_must_be_scoped_to_one_expected_repository(key,selection,repo_ids):
+    server = MockGitHub(key)
+    server.selection = selection
+    server.repository_ids = repo_ids
+    with pytest.raises(SourceError, match="GITHUB_TOKEN_REPOSITORY_SCOPE_MISMATCH"):
+        GitHubSources('123',key,mapping(),server).snapshot(analysis(),{'installation_id':1})
+    # Do not contact repository metadata or source endpoints with a broad token.
+    assert len(server.calls) == 1 and server.calls[0][0] == 'POST'
