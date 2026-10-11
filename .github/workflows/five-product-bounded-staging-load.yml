@@ -8,6 +8,10 @@ on:
     - cron: '41 3,15 * * *'
 permissions:
   contents: read
+# Prevent concurrent scheduled, manual and PR runs from multiplying staging load.
+concurrency:
+  group: forgeworks-five-product-bounded-staging
+  cancel-in-progress: true
 jobs:
   bounded-staging-load:
     runs-on: ubuntu-24.04
