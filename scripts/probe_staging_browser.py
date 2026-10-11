@@ -26,10 +26,24 @@ def probe(product, preview_style_sha=None):
     preview_routes = []
     errors = []
     unexpected = []
+    browser_authorization = []
+    # Synthetic storage poisoning proves the deployed login console does not
+    # resurrect a caller-invented bearer or treat browser storage as authority.
+    poison = "forgeworks-synthetic-browser-storage-token-not-an-auth-secret"
     with sync_playwright() as runtime:
         browser = runtime.chromium.launch(headless=True)
         try:
             page = browser.new_page()
+            page.add_init_script("""
+                try {
+                    for (const storage of [localStorage, sessionStorage]) {
+                        storage.setItem('forge-session', 'forgeworks-synthetic-browser-storage-token-not-an-auth-secret');
+                        storage.setItem('forge-access-token', 'forgeworks-synthetic-browser-storage-token-not-an-auth-secret');
+                    }
+                } catch (error) {
+                    // Sandboxed non-http frames may not expose storage.
+                }
+            """)
             if preview_css is not None:
                 # Override only stylesheet bytes inside this isolated browser.
                 # The deployed app is unchanged, and the receipt says PREVIEW.
@@ -40,6 +54,7 @@ def probe(product, preview_style_sha=None):
                     page.route(origin + path, preview_stylesheet)
             page.on("pageerror", lambda error: errors.append(type(error).__name__))
             page.on("request", lambda request: unexpected.append(request.url) if request.url.startswith("https://attacker.invalid") else None)
+            page.on("request", lambda request: browser_authorization.append(request.url) if "authorization" in request.headers else None)
             # The origin override must not redirect the console's requests.
             response = page.goto(origin + "/?apiBaseUrl=https%3A%2F%2Fattacker.invalid", wait_until="networkidle", timeout=60000)
             assert response and response.status == 200, "Deployed UI did not load"
@@ -49,6 +64,11 @@ def probe(product, preview_style_sha=None):
             assert page.locator("#forge-auth-status").inner_text() == "Masuk dengan akun yang memiliki membership ForgeWorks."
             assert page.locator("#forge-signout").is_hidden()
             assert page.locator("#forge-password").input_value() == ""
+            assert page.locator("#forge-password").get_attribute("type") == "password"
+            assert page.locator("#forge-email").get_attribute("type") == "email"
+            assert page.locator("#forge-signin").is_enabled(), "Unauthenticated login must be available"
+            assert page.evaluate("localStorage.getItem('forge-session')") == poison
+            assert page.evaluate("sessionStorage.getItem('forge-access-token')") == poison
             assert page.evaluate("window.forgeAuthConfig.product") == product
             assert page.evaluate("window.forgeAuthConfig.environment") == "staging"
             assert page.evaluate("window.forgeAuthConfig.enabled") is True
@@ -69,7 +89,8 @@ def probe(product, preview_style_sha=None):
                 statuses[endpoint] = result.status
             assert not errors, "Uncaught browser JavaScript error"
             assert not unexpected, "Untrusted API origin override was used"
-            return {"product": product, "ui_http_status": response.status, "title": page.title(), "auth_config": "staging-enabled", "api_origin_fenced": True, "anonymous_statuses": statuses, "javascript_errors": len(errors), "stylesheet_preview_sha": preview_style_sha, "stylesheet_preview_routes": preview_routes, "scope": "CSS PREVIEW on deployed page; deployment not performed" if preview_style_sha else "credential-free deployed UI; authenticated business acceptance remains open"}
+            assert not browser_authorization, "Unauthenticated browser emitted an Authorization header"
+            return {"product": product, "ui_http_status": response.status, "title": page.title(), "auth_config": "staging-enabled", "api_origin_fenced": True, "anonymous_statuses": statuses, "javascript_errors": len(errors), "poisoned_storage_ignored": True, "browser_authorization_headers": len(browser_authorization), "stylesheet_preview_sha": preview_style_sha, "stylesheet_preview_routes": preview_routes, "scope": "CSS PREVIEW on deployed page; deployment not performed" if preview_style_sha else "credential-free deployed UI; authenticated business acceptance remains open"}
         finally:
             browser.close()
 
