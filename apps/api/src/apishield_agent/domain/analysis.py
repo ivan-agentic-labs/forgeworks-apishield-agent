@@ -138,10 +138,32 @@ def _record_finding(findings: list[Finding], source_digests: dict[str, str], rul
     findings.append(Finding(rule, severity, pointer, evidence, coverage))
 
 
+def _type_groups(schema: dict[str, Any]) -> set[str]:
+    """Disjoint JSON instance groups: number includes integer and fractional."""
+    allowed = {"null", "boolean", "object", "array", "number", "integer", "string"}
+    if "type" not in schema:
+        values = allowed
+    else:
+        value = schema["type"]
+        values = [value] if isinstance(value, str) else value
+        if (not isinstance(values, list) or not values
+                or any(not isinstance(item, str) or item not in allowed for item in values)
+                or len(values) != len(set(values))):
+            raise ValueError("CONTRACT_SCHEMA_TYPE_INVALID")
+        values = set(values)
+    groups = set(values) - {"number"}
+    if "number" in values:
+        groups.update({"integer", "fractional_number"})
+    return groups
+
+
 def _compare_schema_pair(findings: list[Finding], source_digests: dict[str, str], old: dict[str, Any], new: dict[str, Any], pointer: str, *, response: bool, family: str | None = None) -> None:
-    old_type, new_type = old.get("type"), new.get("type")
-    if isinstance(old_type, str) and isinstance(new_type, str) and old_type != new_type:
-        _record_finding(findings, source_digests, (family or ("RESPONSE" if response else "REQUEST")) + "_SCHEMA_TYPE_CHANGED", pointer + "/type")
+    if "nullable" in old or "nullable" in new:
+        _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer + "/nullable", "REVIEW", "UNSUPPORTED")
+    old_types, new_types = _type_groups(old), _type_groups(new)
+    if (new_types - old_types if response else old_types - new_types):
+        # Type-set inclusion alone does not solve interacting assertions.
+        _record_finding(findings, source_digests, (family or ("RESPONSE" if response else "REQUEST")) + "_SCHEMA_TYPE_CHANGED", pointer + "/type", "BREAKING", "LIMITED")
     old_enum, new_enum = old.get("enum"), new.get("enum")
     if any("enum" in schema and not isinstance(schema["enum"], list) for schema in (old, new)):
         raise ValueError("CONTRACT_ENUM_SHAPE_INVALID")
