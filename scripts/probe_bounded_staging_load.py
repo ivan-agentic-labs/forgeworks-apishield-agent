@@ -14,7 +14,15 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+class _RejectRedirect(HTTPRedirectHandler):
+    """Never follow a staging response to a different, unverified origin."""
+    def redirect_request(self, request, fp, code, msg, headers, newurl):
+        return None
+
+
+_NO_REDIRECT_OPENER = build_opener(_RejectRedirect)
 
 DOMAINS = {
     "APIShield": "apishield-agent-staging.up.railway.app",
@@ -37,7 +45,7 @@ def request(host: str, path: str, expected: str) -> float:
         "User-Agent": "ForgeWorks-Bounded-Readiness-Probe/1.0",
     }, method="GET")
     try:
-        with urlopen(req, timeout=REQUEST_TIMEOUT) as response:
+        with _NO_REDIRECT_OPENER.open(req, timeout=REQUEST_TIMEOUT) as response:
             status, body = response.status, response.read(MAX_BODY + 1)
     except HTTPError as exc:
         raise AssertionError(f"HTTP {exc.code}: {host}{path}") from None
