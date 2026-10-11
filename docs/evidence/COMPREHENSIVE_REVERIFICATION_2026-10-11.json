@@ -1,0 +1,2859 @@
+{
+  "scope": "Five ForgeWorks repositories and staging only; platform readback, existing exact-commit CI, fresh anonymous HTTP, actual browser rerun, database catalog/advisors; no deployment, grant, customer mutation, load test or production acceptance",
+  "github": {
+    "observed_at": "2026-10-11T01:18:46.420152+00:00",
+    "repos": [
+      {
+        "product": "apishield-agent",
+        "repo": "ivan-agentic-labs/forgeworks-apishield-agent",
+        "main_sha": "9424bf48720e5128e708439738c0b8a1e0859be3",
+        "runs": [
+          {
+            "id": 38101147046,
+            "name": "APIShield Disposable Sandbox Proof",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101147046"
+          },
+          {
+            "id": 38101147069,
+            "name": "G1 Contract Verification",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101147069"
+          },
+          {
+            "id": 38101147067,
+            "name": "APIShield Staging Public Readiness",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101147067"
+          },
+          {
+            "id": 38101147051,
+            "name": "APIShield PostgreSQL Runtime Proof",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101147051"
+          },
+          {
+            "id": 38101147040,
+            "name": "APIShield MVP Application CI",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101147040"
+          }
+        ]
+      },
+      {
+        "product": "accessfix-ai",
+        "repo": "ivan-agentic-labs/forgeworks-accessfix-ai",
+        "main_sha": "087aa38071c71cde57532d1ae001c3a4ba120d36",
+        "runs": [
+          {
+            "id": 38096768298,
+            "name": "G1 Contract Verification",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38096768298"
+          },
+          {
+            "id": 38096768295,
+            "name": "AccessFix Staging Public Readiness",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38096768295"
+          },
+          {
+            "id": 38096768277,
+            "name": "AccessFix Disposable Chromium Patch Proof",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38096768277"
+          },
+          {
+            "id": 38096768290,
+            "name": "AccessFix PostgreSQL Runtime Proof",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38096768290"
+          },
+          {
+            "id": 38096768323,
+            "name": "AccessFix MVP Application CI",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38096768323"
+          }
+        ]
+      },
+      {
+        "product": "specforge-ai",
+        "repo": "ivan-agentic-labs/forgeworks-specforge-ai",
+        "main_sha": "f521c2c3f3b6573b4d390d9f309b077d1d6d6732",
+        "runs": [
+          {
+            "id": 38096777738,
+            "name": "G1 Contract Verification",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-specforge-ai/actions/runs/38096777738"
+          },
+          {
+            "id": 38096777829,
+            "name": "SpecForge Staging Public Readiness",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-specforge-ai/actions/runs/38096777829"
+          },
+          {
+            "id": 38096777746,
+            "name": "SpecForge MVP Application CI",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-specforge-ai/actions/runs/38096777746"
+          },
+          {
+            "id": 38096777808,
+            "name": "SpecForge PostgreSQL Runtime Proof",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-specforge-ai/actions/runs/38096777808"
+          }
+        ]
+      },
+      {
+        "product": "agenttest-lab",
+        "repo": "ivan-agentic-labs/forgeworks-agenttest-lab",
+        "main_sha": "11fde128de2cb4d103434fa088beb91650de5cdc",
+        "runs": [
+          {
+            "id": 38096770984,
+            "name": "AgentTest Staging Public Readiness",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-agenttest-lab/actions/runs/38096770984"
+          },
+          {
+            "id": 38096770946,
+            "name": "G1 Contract Verification",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-agenttest-lab/actions/runs/38096770946"
+          },
+          {
+            "id": 38096770947,
+            "name": "AgentTest MVP Application CI",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-agenttest-lab/actions/runs/38096770947"
+          },
+          {
+            "id": 38096770949,
+            "name": "AgentTest PostgreSQL Runtime Proof",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-agenttest-lab/actions/runs/38096770949"
+          }
+        ]
+      },
+      {
+        "product": "datareconcile-ai",
+        "repo": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+        "main_sha": "eccbf71aed0ff33296bb9d23b7ff14d9c66e5b92",
+        "runs": [
+          {
+            "id": 38096774923,
+            "name": "G1 Contract Verification",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38096774923"
+          },
+          {
+            "id": 38096774922,
+            "name": "DataReconcile Staging Public Readiness",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38096774922"
+          },
+          {
+            "id": 38096774927,
+            "name": "DataReconcile MVP Application CI",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38096774927"
+          },
+          {
+            "id": 38096774938,
+            "name": "G2 Disposable PostgreSQL RLS Negative Test",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38096774938"
+          },
+          {
+            "id": 38096774924,
+            "name": "DataReconcile PostgreSQL Runtime Proof",
+            "status": "completed",
+            "conclusion": "success",
+            "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38096774924"
+          }
+        ]
+      }
+    ]
+  },
+  "http": [
+    {
+      "product": "apishield-agent",
+      "observed_at": "2026-10-11T01:19:29.751720+00:00",
+      "checks": [
+        {
+          "path": "/healthz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://apishield-agent-staging.up.railway.app/healthz",
+          "body": "{\"status\":\"ok\",\"service\":\"apishield-agent\"}"
+        },
+        {
+          "path": "/readyz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://apishield-agent-staging.up.railway.app/readyz",
+          "body": "{\"status\":\"ready\"}"
+        },
+        {
+          "path": "/",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://apishield-agent-staging.up.railway.app/ui/",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://apishield-agent-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://apishield-agent-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        }
+      ]
+    },
+    {
+      "product": "accessfix-ai",
+      "observed_at": "2026-10-11T01:19:29.121666+00:00",
+      "checks": [
+        {
+          "path": "/healthz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://accessfix-ai-staging.up.railway.app/healthz",
+          "body": "{\"status\":\"ok\",\"service\":\"accessfix-ai\"}"
+        },
+        {
+          "path": "/readyz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://accessfix-ai-staging.up.railway.app/readyz",
+          "body": "{\"status\":\"ready\"}"
+        },
+        {
+          "path": "/",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://accessfix-ai-staging.up.railway.app/ui/",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://accessfix-ai-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://accessfix-ai-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        }
+      ]
+    },
+    {
+      "product": "specforge-ai",
+      "observed_at": "2026-10-11T01:19:23.696923+00:00",
+      "checks": [
+        {
+          "path": "/healthz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://specforge-ai-staging.up.railway.app/healthz",
+          "body": "{\"status\":\"ok\",\"service\":\"specforge-ai\"}"
+        },
+        {
+          "path": "/readyz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://specforge-ai-staging.up.railway.app/readyz",
+          "body": "{\"status\":\"ready\"}"
+        },
+        {
+          "path": "/",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://specforge-ai-staging.up.railway.app/",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://specforge-ai-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://specforge-ai-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        }
+      ]
+    },
+    {
+      "product": "agenttest-lab",
+      "observed_at": "2026-10-11T01:19:34.141728+00:00",
+      "checks": [
+        {
+          "path": "/healthz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://agenttest-lab-staging.up.railway.app/healthz",
+          "body": "{\"status\":\"ok\",\"service\":\"agenttest-lab\"}"
+        },
+        {
+          "path": "/readyz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://agenttest-lab-staging.up.railway.app/readyz",
+          "body": "{\"status\":\"ready\"}"
+        },
+        {
+          "path": "/",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://agenttest-lab-staging.up.railway.app/ui/",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://agenttest-lab-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://agenttest-lab-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        }
+      ]
+    },
+    {
+      "product": "datareconcile-ai",
+      "observed_at": "2026-10-11T01:19:36.247712+00:00",
+      "checks": [
+        {
+          "path": "/healthz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://datareconcile-ai-staging.up.railway.app/healthz",
+          "body": "{\"status\":\"ok\",\"service\":\"datareconcile-ai\"}"
+        },
+        {
+          "path": "/readyz",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://datareconcile-ai-staging.up.railway.app/readyz",
+          "body": "{\"status\":\"ready\"}"
+        },
+        {
+          "path": "/",
+          "expected": 200,
+          "actual": 200,
+          "passed": true,
+          "final_url": "https://datareconcile-ai-staging.up.railway.app/ui/",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://datareconcile-ai-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        },
+        {
+          "path": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "expected": 401,
+          "actual": 401,
+          "passed": true,
+          "final_url": "https://datareconcile-ai-staging.up.railway.app/v1/jobs/00000000-0000-0000-0000-000000000001",
+          "body": null
+        }
+      ]
+    }
+  ],
+  "railway": {
+    "environment": {
+      "project": {
+        "id": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
+        "name": "ForgeWorks AI staging",
+        "workspaceName": "ivan-agentic-labs's Projects"
+      },
+      "environment": {
+        "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+        "name": "staging",
+        "isEphemeral": false
+      },
+      "staged": {
+        "patchId": "d7e9d350-5dae-4464-9869-e4103521ce0b",
+        "status": "STAGED",
+        "changeCount": 17,
+        "message": null,
+        "createdAt": "2026-10-10T23:58:28.530Z",
+        "updatedAt": "2026-10-11T01:13:01.812Z"
+      },
+      "region": null,
+      "services": [
+        {
+          "id": "db8b6012-8d48-4cd0-802c-225db1b0a19e",
+          "name": "specforge-ai",
+          "state": "live-with-staged-changes",
+          "source": {
+            "image": null,
+            "repo": "ivan-agentic-labs/forgeworks-specforge-ai",
+            "branch": "main"
+          },
+          "regions": [
+            "iad"
+          ],
+          "numReplicas": 1,
+          "cronSchedule": null,
+          "volumeMounts": [],
+          "latestDeployment": {
+            "id": "99c52422-9698-4159-9cac-8c5e259ef6fd",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:30:42.009Z",
+            "url": null
+          },
+          "stagedChangeCount": 4
+        },
+        {
+          "id": "16693650-fec8-48e4-b934-e032dd391808",
+          "name": "accessfix-ai",
+          "state": "live-with-staged-changes",
+          "source": {
+            "image": null,
+            "repo": "ivan-agentic-labs/forgeworks-accessfix-ai",
+            "branch": "main"
+          },
+          "regions": [
+            "iad"
+          ],
+          "numReplicas": 1,
+          "cronSchedule": null,
+          "volumeMounts": [],
+          "latestDeployment": {
+            "id": "ba261b6d-05ca-4d96-93f0-d07ccd22e910",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:40:50.575Z",
+            "url": null
+          },
+          "stagedChangeCount": 1
+        },
+        {
+          "id": "57d8f010-e38e-4dbe-94bb-05cc5d855229",
+          "name": "apishield-agent",
+          "state": "live-with-staged-changes",
+          "source": {
+            "image": null,
+            "repo": "ivan-agentic-labs/forgeworks-apishield-agent",
+            "branch": "main"
+          },
+          "regions": [
+            "iad"
+          ],
+          "numReplicas": 1,
+          "cronSchedule": null,
+          "volumeMounts": [],
+          "latestDeployment": {
+            "id": "8fe54b26-4019-4baf-94a6-3b02be7b2d23",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:43:33.034Z",
+            "url": null
+          },
+          "stagedChangeCount": 4
+        },
+        {
+          "id": "f2d6c578-ffaf-4682-b81a-8bae13d9c7a3",
+          "name": "agenttest-lab",
+          "state": "live-with-staged-changes",
+          "source": {
+            "image": null,
+            "repo": "ivan-agentic-labs/forgeworks-agenttest-lab",
+            "branch": "main"
+          },
+          "regions": [
+            "iad"
+          ],
+          "numReplicas": 1,
+          "cronSchedule": null,
+          "volumeMounts": [],
+          "latestDeployment": {
+            "id": "bfe30922-ad47-4d00-9431-14a0365197f9",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:31:34.430Z",
+            "url": null
+          },
+          "stagedChangeCount": 4
+        },
+        {
+          "id": "34688a14-872b-43a5-ab5b-8d2e488c7b5f",
+          "name": "datareconcile-ai",
+          "state": "live-with-staged-changes",
+          "source": {
+            "image": null,
+            "repo": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+            "branch": "main"
+          },
+          "regions": [
+            "iad"
+          ],
+          "numReplicas": 1,
+          "cronSchedule": null,
+          "volumeMounts": [],
+          "latestDeployment": {
+            "id": "2270fc89-02d4-4c8a-9b43-1d3461c2e387",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:32:04.298Z",
+            "url": null
+          },
+          "stagedChangeCount": 4
+        }
+      ],
+      "volumes": [],
+      "buckets": [
+        {
+          "id": "2dcba5d3-502d-468e-84a4-1c00ff61e995",
+          "name": "apishield-agent-artifacts",
+          "state": "live",
+          "region": "iad",
+          "stagedChangeCount": 0
+        },
+        {
+          "id": "029b904c-5735-4b98-b38b-a204f4ce5006",
+          "name": "specforge-ai-artifacts",
+          "state": "live",
+          "region": "iad",
+          "stagedChangeCount": 0
+        },
+        {
+          "id": "58edd302-c44a-4aa0-af3c-357560422cd9",
+          "name": "agenttest-lab-artifacts",
+          "state": "live",
+          "region": "iad",
+          "stagedChangeCount": 0
+        }
+      ],
+      "sharedVariableNames": []
+    },
+    "release": {
+      "project": {
+        "id": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
+        "name": "ForgeWorks AI staging"
+      },
+      "environment": {
+        "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+        "name": "staging"
+      },
+      "staged": {
+        "patchId": "d7e9d350-5dae-4464-9869-e4103521ce0b",
+        "status": "STAGED",
+        "changeCount": 17,
+        "message": null,
+        "createdAt": "2026-10-10T23:58:28.530Z",
+        "updatedAt": "2026-10-11T01:13:01.812Z"
+      },
+      "destructive": false,
+      "resources": [
+        {
+          "kind": "service",
+          "id": "16693650-fec8-48e4-b934-e032dd391808",
+          "name": "accessfix-ai",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.16693650-fec8-48e4-b934-e032dd391808.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "c396da079a707b3b2a5ad46de7579cc6594ced60",
+              "to": "087aa38071c71cde57532d1ae001c3a4ba120d36",
+              "destructive": false
+            }
+          ]
+        },
+        {
+          "kind": "service",
+          "id": "34688a14-872b-43a5-ab5b-8d2e488c7b5f",
+          "name": "datareconcile-ai",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "5c679ac742a2ed631464cadcf90e1adb10d3b086",
+              "to": "eccbf71aed0ff33296bb9d23b7ff14d9c66e5b92",
+              "destructive": false
+            },
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+              "to": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+              "destructive": false
+            }
+          ]
+        },
+        {
+          "kind": "service",
+          "id": "57d8f010-e38e-4dbe-94bb-05cc5d855229",
+          "name": "apishield-agent",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "7508a6f26fbf2cd04a8c9ca6b8f5fc7b0ef5fd7b",
+              "to": "0def1b62391f95624cf8756b7a202b314e68aee7",
+              "destructive": false
+            },
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-apishield-agent",
+              "to": "ivan-agentic-labs/forgeworks-apishield-agent",
+              "destructive": false
+            }
+          ]
+        },
+        {
+          "kind": "service",
+          "id": "db8b6012-8d48-4cd0-802c-225db1b0a19e",
+          "name": "specforge-ai",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "41d2b8abbefe82a5d5c502d7339cbed71c4b5f5f",
+              "to": "f521c2c3f3b6573b4d390d9f309b077d1d6d6732",
+              "destructive": false
+            },
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-specforge-ai",
+              "to": "ivan-agentic-labs/forgeworks-specforge-ai",
+              "destructive": false
+            }
+          ]
+        },
+        {
+          "kind": "service",
+          "id": "f2d6c578-ffaf-4682-b81a-8bae13d9c7a3",
+          "name": "agenttest-lab",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "2e6ba172855dc367750e4aa2a2ab55b0e9c1ebbf",
+              "to": "11fde128de2cb4d103434fa088beb91650de5cdc",
+              "destructive": false
+            },
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-agenttest-lab",
+              "to": "ivan-agentic-labs/forgeworks-agenttest-lab",
+              "destructive": false
+            }
+          ]
+        }
+      ],
+      "sharedVariables": [],
+      "privateNetworkDisabled": null
+    },
+    "services": [
+      {
+        "name": "specforge-ai",
+        "config": {
+          "service": {
+            "id": "db8b6012-8d48-4cd0-802c-225db1b0a19e",
+            "name": "specforge-ai",
+            "state": "live-with-staged-changes"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "staged": {
+            "patchId": "d7e9d350-5dae-4464-9869-e4103521ce0b",
+            "status": "STAGED",
+            "changeCount": 17,
+            "message": null,
+            "createdAt": "2026-10-10T23:58:28.530Z",
+            "updatedAt": "2026-10-11T01:13:01.812Z"
+          },
+          "config": {
+            "source": {
+              "repo": "ivan-agentic-labs/forgeworks-specforge-ai",
+              "branch": "main",
+              "commitSha": "f521c2c3f3b6573b4d390d9f309b077d1d6d6732",
+              "image": null
+            },
+            "networking": {
+              "serviceDomains": {
+                "specforge-ai-staging.up.railway.app": {
+                  "port": 8000
+                }
+              }
+            },
+            "build": {
+              "builder": "RAILPACK",
+              "buildEnvironment": "V3"
+            },
+            "deploy": {
+              "preDeployCommand": [
+                "python scripts/storage_probe.py"
+              ],
+              "preDeployTimeoutSeconds": 60,
+              "healthcheckPath": "/readyz",
+              "limitOverride": {
+                "containers": {
+                  "cpu": 1,
+                  "memoryBytes": 500000000
+                }
+              },
+              "healthcheckTimeout": 120,
+              "restartPolicyMaxRetries": 3,
+              "useLegacyStacker": false,
+              "ipv6EgressEnabled": true,
+              "runtime": "V2",
+              "multiRegionConfig": {
+                "iad": {
+                  "numReplicas": 1
+                }
+              }
+            }
+          },
+          "stagedChanges": [
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "41d2b8abbefe82a5d5c502d7339cbed71c4b5f5f",
+              "to": "f521c2c3f3b6573b4d390d9f309b077d1d6d6732",
+              "destructive": false
+            },
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-specforge-ai",
+              "to": "ivan-agentic-labs/forgeworks-specforge-ai",
+              "destructive": false
+            }
+          ],
+          "variableNames": [
+            "APP_ENV",
+            "ARTIFACT_SIGNING_SECRET",
+            "AUTH_MODE",
+            "ENABLE_AGENT_EXECUTION",
+            "PORT",
+            "S3_ACCESS_KEY_ID",
+            "S3_BUCKET",
+            "S3_ENDPOINT",
+            "S3_REGION",
+            "S3_SECRET_ACCESS_KEY",
+            "S3_URL_STYLE",
+            "SPECFORGE_DATABASE_URL",
+            "SPECFORGE_SEED_FIXTURE",
+            "SSL_CERT_FILE",
+            "SUPABASE_PUBLISHABLE_KEY",
+            "SUPABASE_URL"
+          ],
+          "volumes": [],
+          "domains": {
+            "serviceDomains": [
+              {
+                "id": "5119cf46-22c1-4add-9280-947ab264a65e",
+                "domain": "specforge-ai-staging.up.railway.app",
+                "targetPort": 8000
+              }
+            ],
+            "customDomains": []
+          },
+          "tcpProxies": [],
+          "latestDeployment": {
+            "id": "99c52422-9698-4159-9cac-8c5e259ef6fd",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:30:42.009Z",
+            "url": null
+          },
+          "tracing": {
+            "tracingEnabled": false,
+            "autoInstrumentationEnabled": false,
+            "autoInstrumentationActive": false
+          }
+        },
+        "logs": {
+          "scope": "Bounded sample; no all-time or load-test conclusion",
+          "deploymentId": "99c52422-9698-4159-9cac-8c5e259ef6fd",
+          "rows": 14,
+          "statuses": {
+            "200": 11,
+            "401": 3
+          }
+        },
+        "metrics": {
+          "service": {
+            "id": "db8b6012-8d48-4cd0-802c-225db1b0a19e",
+            "name": "specforge-ai"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "metrics": [
+            {
+              "measurement": "CPU_USAGE",
+              "current": 0.0013917833333333333,
+              "average": 0.0011979754098360655,
+              "min": 0,
+              "max": 0.0018969333333333333,
+              "sampleCount": 61
+            },
+            {
+              "measurement": "MEMORY_USAGE_GB",
+              "current": 0.060301312,
+              "average": 0.05774309140983604,
+              "min": 0,
+              "max": 0.060301312,
+              "sampleCount": 61
+            }
+          ]
+        }
+      },
+      {
+        "name": "accessfix-ai",
+        "config": {
+          "service": {
+            "id": "16693650-fec8-48e4-b934-e032dd391808",
+            "name": "accessfix-ai",
+            "state": "live-with-staged-changes"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "staged": {
+            "patchId": "d7e9d350-5dae-4464-9869-e4103521ce0b",
+            "status": "STAGED",
+            "changeCount": 17,
+            "message": null,
+            "createdAt": "2026-10-10T23:58:28.530Z",
+            "updatedAt": "2026-10-11T01:13:01.812Z"
+          },
+          "config": {
+            "source": {
+              "repo": "ivan-agentic-labs/forgeworks-accessfix-ai",
+              "branch": "main",
+              "commitSha": "087aa38071c71cde57532d1ae001c3a4ba120d36"
+            },
+            "networking": {
+              "serviceDomains": {
+                "accessfix-ai-staging.up.railway.app": {
+                  "port": 8000
+                }
+              }
+            },
+            "build": {
+              "builder": "RAILPACK",
+              "buildEnvironment": "V3"
+            },
+            "deploy": {
+              "healthcheckPath": "/readyz",
+              "limitOverride": {
+                "containers": {
+                  "cpu": 1,
+                  "memoryBytes": 500000000
+                }
+              },
+              "healthcheckTimeout": 120,
+              "restartPolicyMaxRetries": 3,
+              "useLegacyStacker": false,
+              "ipv6EgressEnabled": true,
+              "runtime": "V2",
+              "multiRegionConfig": {
+                "iad": {
+                  "numReplicas": 1
+                }
+              }
+            }
+          },
+          "stagedChanges": [
+            {
+              "path": "services.16693650-fec8-48e4-b934-e032dd391808.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "c396da079a707b3b2a5ad46de7579cc6594ced60",
+              "to": "087aa38071c71cde57532d1ae001c3a4ba120d36",
+              "destructive": false
+            }
+          ],
+          "variableNames": [
+            "ACCESSFIX_DATABASE_URL",
+            "ACCESSFIX_SEED_FIXTURE",
+            "APP_ENV",
+            "ARTIFACT_SIGNING_SECRET",
+            "AUTH_MODE",
+            "ENABLE_AGENT_EXECUTION",
+            "OWNERSHIP_VERIFY_MODE",
+            "PORT",
+            "SSL_CERT_FILE",
+            "SUPABASE_PUBLISHABLE_KEY",
+            "SUPABASE_URL"
+          ],
+          "volumes": [],
+          "domains": {
+            "serviceDomains": [
+              {
+                "id": "1326f2e6-8fb3-48cf-9b9c-2e01935aee6f",
+                "domain": "accessfix-ai-staging.up.railway.app",
+                "targetPort": 8000
+              }
+            ],
+            "customDomains": []
+          },
+          "tcpProxies": [],
+          "latestDeployment": {
+            "id": "ba261b6d-05ca-4d96-93f0-d07ccd22e910",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:40:50.575Z",
+            "url": null
+          },
+          "tracing": {
+            "tracingEnabled": false,
+            "autoInstrumentationEnabled": false,
+            "autoInstrumentationActive": false
+          }
+        },
+        "logs": {
+          "scope": "Bounded sample; no all-time or load-test conclusion",
+          "deploymentId": "ba261b6d-05ca-4d96-93f0-d07ccd22e910",
+          "rows": 9,
+          "statuses": {
+            "200": 5,
+            "307": 1,
+            "401": 3
+          }
+        },
+        "metrics": {
+          "service": {
+            "id": "16693650-fec8-48e4-b934-e032dd391808",
+            "name": "accessfix-ai"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "metrics": [
+            {
+              "measurement": "CPU_USAGE",
+              "current": 0.002474633333333333,
+              "average": 0.0030363598360655746,
+              "min": 0,
+              "max": 0.004111116666666667,
+              "sampleCount": 61
+            },
+            {
+              "measurement": "MEMORY_USAGE_GB",
+              "current": 0.08722432,
+              "average": 0.07621709219672133,
+              "min": 0,
+              "max": 0.08722432,
+              "sampleCount": 61
+            }
+          ]
+        }
+      },
+      {
+        "name": "apishield-agent",
+        "config": {
+          "service": {
+            "id": "57d8f010-e38e-4dbe-94bb-05cc5d855229",
+            "name": "apishield-agent",
+            "state": "live-with-staged-changes"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "staged": {
+            "patchId": "d7e9d350-5dae-4464-9869-e4103521ce0b",
+            "status": "STAGED",
+            "changeCount": 17,
+            "message": null,
+            "createdAt": "2026-10-10T23:58:28.530Z",
+            "updatedAt": "2026-10-11T01:13:01.812Z"
+          },
+          "config": {
+            "source": {
+              "repo": "ivan-agentic-labs/forgeworks-apishield-agent",
+              "branch": "main",
+              "commitSha": "0def1b62391f95624cf8756b7a202b314e68aee7",
+              "image": null
+            },
+            "networking": {
+              "serviceDomains": {
+                "apishield-agent-staging.up.railway.app": {
+                  "port": 8000
+                }
+              }
+            },
+            "build": {
+              "builder": "RAILPACK",
+              "buildEnvironment": "V3"
+            },
+            "deploy": {
+              "preDeployCommand": [
+                "python scripts/storage_probe.py"
+              ],
+              "preDeployTimeoutSeconds": 60,
+              "healthcheckPath": "/readyz",
+              "limitOverride": {
+                "containers": {
+                  "cpu": 1,
+                  "memoryBytes": 500000000
+                }
+              },
+              "healthcheckTimeout": 120,
+              "restartPolicyMaxRetries": 3,
+              "useLegacyStacker": false,
+              "ipv6EgressEnabled": true,
+              "runtime": "V2",
+              "multiRegionConfig": {
+                "iad": {
+                  "numReplicas": 1
+                }
+              }
+            }
+          },
+          "stagedChanges": [
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "7508a6f26fbf2cd04a8c9ca6b8f5fc7b0ef5fd7b",
+              "to": "0def1b62391f95624cf8756b7a202b314e68aee7",
+              "destructive": false
+            },
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-apishield-agent",
+              "to": "ivan-agentic-labs/forgeworks-apishield-agent",
+              "destructive": false
+            }
+          ],
+          "variableNames": [
+            "APISHIELD_CURSOR_SECRET",
+            "APISHIELD_DATABASE_URL",
+            "APISHIELD_EMBEDDED_WORKER",
+            "APISHIELD_GITHUB_READS_ENABLED",
+            "APISHIELD_SEED_FIXTURE",
+            "APP_ENV",
+            "ARTIFACT_SIGNING_SECRET",
+            "AUTH_MODE",
+            "ENABLE_AGENT_EXECUTION",
+            "PORT",
+            "S3_ACCESS_KEY_ID",
+            "S3_BUCKET",
+            "S3_ENDPOINT",
+            "S3_REGION",
+            "S3_SECRET_ACCESS_KEY",
+            "S3_URL_STYLE",
+            "SSL_CERT_FILE",
+            "SUPABASE_PUBLISHABLE_KEY",
+            "SUPABASE_URL"
+          ],
+          "volumes": [],
+          "domains": {
+            "serviceDomains": [
+              {
+                "id": "edbe7269-9ed8-4120-89f1-39501d1fa01d",
+                "domain": "apishield-agent-staging.up.railway.app",
+                "targetPort": 8000
+              }
+            ],
+            "customDomains": []
+          },
+          "tcpProxies": [],
+          "latestDeployment": {
+            "id": "8fe54b26-4019-4baf-94a6-3b02be7b2d23",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:43:33.034Z",
+            "url": null
+          },
+          "tracing": {
+            "tracingEnabled": false,
+            "autoInstrumentationEnabled": false,
+            "autoInstrumentationActive": false
+          }
+        },
+        "logs": {
+          "scope": "Bounded sample; no all-time or load-test conclusion",
+          "deploymentId": "8fe54b26-4019-4baf-94a6-3b02be7b2d23",
+          "rows": 31,
+          "statuses": {
+            "200": 18,
+            "307": 2,
+            "401": 11
+          }
+        },
+        "metrics": {
+          "service": {
+            "id": "57d8f010-e38e-4dbe-94bb-05cc5d855229",
+            "name": "apishield-agent"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "metrics": [
+            {
+              "measurement": "CPU_USAGE",
+              "current": 0.0014367666666666667,
+              "average": 0.00131850737704918,
+              "min": 0,
+              "max": 0.002130516666666667,
+              "sampleCount": 61
+            },
+            {
+              "measurement": "MEMORY_USAGE_GB",
+              "current": 0.08484864,
+              "average": 0.07294871921311474,
+              "min": 0,
+              "max": 0.08484864,
+              "sampleCount": 61
+            }
+          ]
+        }
+      },
+      {
+        "name": "agenttest-lab",
+        "config": {
+          "service": {
+            "id": "f2d6c578-ffaf-4682-b81a-8bae13d9c7a3",
+            "name": "agenttest-lab",
+            "state": "live-with-staged-changes"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "staged": {
+            "patchId": "d7e9d350-5dae-4464-9869-e4103521ce0b",
+            "status": "STAGED",
+            "changeCount": 17,
+            "message": null,
+            "createdAt": "2026-10-10T23:58:28.530Z",
+            "updatedAt": "2026-10-11T01:13:01.812Z"
+          },
+          "config": {
+            "source": {
+              "repo": "ivan-agentic-labs/forgeworks-agenttest-lab",
+              "branch": "main",
+              "commitSha": "11fde128de2cb4d103434fa088beb91650de5cdc",
+              "image": null
+            },
+            "networking": {
+              "serviceDomains": {
+                "agenttest-lab-staging.up.railway.app": {
+                  "port": 8000
+                }
+              }
+            },
+            "build": {
+              "builder": "RAILPACK",
+              "buildEnvironment": "V3"
+            },
+            "deploy": {
+              "preDeployCommand": [
+                "python scripts/storage_probe.py"
+              ],
+              "preDeployTimeoutSeconds": 60,
+              "healthcheckPath": "/readyz",
+              "limitOverride": {
+                "containers": {
+                  "cpu": 1,
+                  "memoryBytes": 500000000
+                }
+              },
+              "healthcheckTimeout": 120,
+              "restartPolicyMaxRetries": 3,
+              "useLegacyStacker": false,
+              "ipv6EgressEnabled": true,
+              "runtime": "V2",
+              "multiRegionConfig": {
+                "iad": {
+                  "numReplicas": 1
+                }
+              }
+            }
+          },
+          "stagedChanges": [
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "2e6ba172855dc367750e4aa2a2ab55b0e9c1ebbf",
+              "to": "11fde128de2cb4d103434fa088beb91650de5cdc",
+              "destructive": false
+            },
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-agenttest-lab",
+              "to": "ivan-agentic-labs/forgeworks-agenttest-lab",
+              "destructive": false
+            }
+          ],
+          "variableNames": [
+            "AGENTTEST_DATABASE_URL",
+            "AGENTTEST_SEED_FIXTURE",
+            "APP_ENV",
+            "ARTIFACT_SIGNING_SECRET",
+            "AUTH_MODE",
+            "CI_VERDICT_SIGNING_KEY_PEM",
+            "ENABLE_AGENT_EXECUTION",
+            "PORT",
+            "S3_ACCESS_KEY_ID",
+            "S3_BUCKET",
+            "S3_ENDPOINT",
+            "S3_REGION",
+            "S3_SECRET_ACCESS_KEY",
+            "S3_URL_STYLE",
+            "SSL_CERT_FILE",
+            "SUPABASE_PUBLISHABLE_KEY",
+            "SUPABASE_URL"
+          ],
+          "volumes": [],
+          "domains": {
+            "serviceDomains": [
+              {
+                "id": "36aefad1-c6a9-4a33-b6eb-aae307f0cbeb",
+                "domain": "agenttest-lab-staging.up.railway.app",
+                "targetPort": 8000
+              }
+            ],
+            "customDomains": []
+          },
+          "tcpProxies": [],
+          "latestDeployment": {
+            "id": "bfe30922-ad47-4d00-9431-14a0365197f9",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:31:34.430Z",
+            "url": null
+          },
+          "tracing": {
+            "tracingEnabled": false,
+            "autoInstrumentationEnabled": false,
+            "autoInstrumentationActive": false
+          }
+        },
+        "logs": {
+          "scope": "Bounded sample; no all-time or load-test conclusion",
+          "deploymentId": "bfe30922-ad47-4d00-9431-14a0365197f9",
+          "rows": 9,
+          "statuses": {
+            "200": 5,
+            "307": 1,
+            "401": 3
+          }
+        },
+        "metrics": {
+          "service": {
+            "id": "f2d6c578-ffaf-4682-b81a-8bae13d9c7a3",
+            "name": "agenttest-lab"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "metrics": [
+            {
+              "measurement": "CPU_USAGE",
+              "current": 0.0013532833333333332,
+              "average": 0.0012775620218579231,
+              "min": 0,
+              "max": 0.0020370333333333333,
+              "sampleCount": 61
+            },
+            {
+              "measurement": "MEMORY_USAGE_GB",
+              "current": 0.053518336,
+              "average": 0.052566351737704964,
+              "min": 0,
+              "max": 0.053518336,
+              "sampleCount": 61
+            }
+          ]
+        }
+      },
+      {
+        "name": "datareconcile-ai",
+        "config": {
+          "service": {
+            "id": "34688a14-872b-43a5-ab5b-8d2e488c7b5f",
+            "name": "datareconcile-ai",
+            "state": "live-with-staged-changes"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "staged": {
+            "patchId": "d7e9d350-5dae-4464-9869-e4103521ce0b",
+            "status": "STAGED",
+            "changeCount": 17,
+            "message": null,
+            "createdAt": "2026-10-10T23:58:28.530Z",
+            "updatedAt": "2026-10-11T01:13:01.812Z"
+          },
+          "config": {
+            "source": {
+              "repo": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+              "branch": "main",
+              "commitSha": "eccbf71aed0ff33296bb9d23b7ff14d9c66e5b92",
+              "image": null
+            },
+            "networking": {
+              "serviceDomains": {
+                "datareconcile-ai-staging.up.railway.app": {
+                  "port": 8000
+                }
+              }
+            },
+            "build": {
+              "builder": "RAILPACK",
+              "buildEnvironment": "V3"
+            },
+            "deploy": {
+              "preDeployCommand": [
+                "python scripts/storage_probe.py"
+              ],
+              "preDeployTimeoutSeconds": 60,
+              "healthcheckPath": "/readyz",
+              "limitOverride": {
+                "containers": {
+                  "cpu": 1,
+                  "memoryBytes": 500000000
+                }
+              },
+              "healthcheckTimeout": 120,
+              "restartPolicyMaxRetries": 3,
+              "useLegacyStacker": false,
+              "ipv6EgressEnabled": true,
+              "runtime": "V2",
+              "multiRegionConfig": {
+                "iad": {
+                  "numReplicas": 1
+                }
+              }
+            }
+          },
+          "stagedChanges": [
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "5c679ac742a2ed631464cadcf90e1adb10d3b086",
+              "to": "eccbf71aed0ff33296bb9d23b7ff14d9c66e5b92",
+              "destructive": false
+            },
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+              "to": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+              "destructive": false
+            }
+          ],
+          "variableNames": [
+            "APP_ENV",
+            "ARTIFACT_SIGNING_SECRET",
+            "AUTH_MODE",
+            "ENABLE_AGENT_EXECUTION",
+            "PORT",
+            "RECONCILE_DATABASE_URL",
+            "RECONCILE_SEED_FIXTURE",
+            "S3_ACCESS_KEY_ID",
+            "S3_BUCKET",
+            "S3_ENDPOINT",
+            "S3_REGION",
+            "S3_SECRET_ACCESS_KEY",
+            "S3_URL_STYLE",
+            "SSL_CERT_FILE",
+            "SUPABASE_PUBLISHABLE_KEY",
+            "SUPABASE_URL"
+          ],
+          "volumes": [],
+          "domains": {
+            "serviceDomains": [
+              {
+                "id": "324db82d-838f-4216-b1f0-8541f0ce8646",
+                "domain": "datareconcile-ai-staging.up.railway.app",
+                "targetPort": 8000
+              }
+            ],
+            "customDomains": []
+          },
+          "tcpProxies": [],
+          "latestDeployment": {
+            "id": "2270fc89-02d4-4c8a-9b43-1d3461c2e387",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-10T23:32:04.298Z",
+            "url": null
+          },
+          "tracing": {
+            "tracingEnabled": false,
+            "autoInstrumentationEnabled": false,
+            "autoInstrumentationActive": false
+          }
+        },
+        "logs": {
+          "scope": "Bounded sample; no all-time or load-test conclusion",
+          "deploymentId": "2270fc89-02d4-4c8a-9b43-1d3461c2e387",
+          "rows": 9,
+          "statuses": {
+            "200": 5,
+            "307": 1,
+            "401": 3
+          }
+        },
+        "metrics": {
+          "service": {
+            "id": "34688a14-872b-43a5-ab5b-8d2e488c7b5f",
+            "name": "datareconcile-ai"
+          },
+          "environment": {
+            "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+            "name": "staging"
+          },
+          "metrics": [
+            {
+              "measurement": "CPU_USAGE",
+              "current": 0.0011814500000000001,
+              "average": 0.0012272095628415296,
+              "min": 0.0006173166666666668,
+              "max": 0.0017871333333333334,
+              "sampleCount": 61
+            },
+            {
+              "measurement": "MEMORY_USAGE_GB",
+              "current": 0.083070976,
+              "average": 0.07325917586885244,
+              "min": 0.070262784,
+              "max": 0.083070976,
+              "sampleCount": 61
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "supabase": {
+    "project_id": "fljekuwplgkrpdoajyhn",
+    "catalog": {
+      "rls": [
+        {
+          "schema": "fw_accessfix_ai",
+          "tables": 11,
+          "forced_rls": 11
+        },
+        {
+          "schema": "fw_agenttest_lab",
+          "tables": 12,
+          "forced_rls": 12
+        },
+        {
+          "schema": "fw_apishield_agent",
+          "tables": 16,
+          "forced_rls": 16
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "tables": 12,
+          "forced_rls": 12
+        },
+        {
+          "schema": "fw_specforge_ai",
+          "tables": 11,
+          "forced_rls": 11
+        }
+      ],
+      "memberships": [
+        {
+          "schema": "fw_apishield_agent",
+          "status": "REVOKED",
+          "count": 2
+        },
+        {
+          "schema": "fw_accessfix_ai",
+          "status": "REVOKED",
+          "count": 2
+        },
+        {
+          "schema": "fw_specforge_ai",
+          "status": "REVOKED",
+          "count": 2
+        },
+        {
+          "schema": "fw_agenttest_lab",
+          "status": "REVOKED",
+          "count": 2
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "status": "REVOKED",
+          "count": 2
+        }
+      ],
+      "roles": [
+        {
+          "rolname": "fw_accessfix_ai_login",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_accessfix_ai_rw",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_agenttest_lab_login",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_agenttest_lab_rw",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_apishield_agent_login",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_apishield_agent_rw",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_apishield_webhook",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_datareconcile_ai_login",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_datareconcile_ai_rw",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_specforge_ai_login",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        },
+        {
+          "rolname": "fw_specforge_ai_rw",
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreaterole": false,
+          "rolcreatedb": false,
+          "rolreplication": false
+        }
+      ],
+      "client_grants": [
+        {
+          "schema": "fw_accessfix_ai",
+          "anon_tables": 0,
+          "authenticated_tables": 0
+        },
+        {
+          "schema": "fw_agenttest_lab",
+          "anon_tables": 0,
+          "authenticated_tables": 0
+        },
+        {
+          "schema": "fw_apishield_agent",
+          "anon_tables": 0,
+          "authenticated_tables": 0
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "anon_tables": 0,
+          "authenticated_tables": 0
+        },
+        {
+          "schema": "fw_specforge_ai",
+          "anon_tables": 0,
+          "authenticated_tables": 0
+        }
+      ],
+      "apishield_repository_policies": [
+        {
+          "policyname": "repositories_tenant",
+          "roles": [
+            "fw_apishield_agent_rw"
+          ],
+          "cmd": "ALL",
+          "qual": "(tenant_id = (NULLIF(( SELECT current_setting('app.tenant_id'::text, true) AS current_setting), ''::text))::uuid)",
+          "with_check": "(tenant_id = (NULLIF(( SELECT current_setting('app.tenant_id'::text, true) AS current_setting), ''::text))::uuid)"
+        },
+        {
+          "policyname": "webhook_revoke",
+          "roles": [
+            "fw_apishield_webhook"
+          ],
+          "cmd": "UPDATE",
+          "qual": "true",
+          "with_check": "(permission_state = 'REVOKED'::text)"
+        },
+        {
+          "policyname": "webhook_visible_for_revoke",
+          "roles": [
+            "fw_apishield_webhook"
+          ],
+          "cmd": "SELECT",
+          "qual": "true",
+          "with_check": null
+        }
+      ],
+      "product_definer_functions": [
+        {
+          "schema": "fw_agenttest_lab",
+          "proname": "session_active"
+        },
+        {
+          "schema": "fw_apishield_agent",
+          "proname": "session_active"
+        },
+        {
+          "schema": "fw_specforge_ai",
+          "proname": "session_active"
+        },
+        {
+          "schema": "fw_accessfix_ai",
+          "proname": "session_active"
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "proname": "session_active"
+        }
+      ],
+      "definer_details": [
+        {
+          "schema": "fw_accessfix_ai",
+          "proname": "session_active",
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "proacl": "{postgres=X/postgres,fw_accessfix_ai_rw=X/postgres}",
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "anon_schema_usage": false,
+          "authenticated_schema_usage": false,
+          "definition": "CREATE OR REPLACE FUNCTION fw_accessfix_ai.session_active(session_id uuid, user_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog'\nAS $function$\n SELECT auth.uid() = $2 AND EXISTS (\n   SELECT 1 FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id\n   WHERE s.id=$1 AND s.user_id=$2\n     AND (s.not_after IS NULL OR s.not_after > now())\n     AND u.deleted_at IS NULL AND (u.banned_until IS NULL OR u.banned_until <= now())\n );\n$function$\n"
+        },
+        {
+          "schema": "fw_agenttest_lab",
+          "proname": "session_active",
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "proacl": "{postgres=X/postgres,fw_agenttest_lab_rw=X/postgres}",
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "anon_schema_usage": false,
+          "authenticated_schema_usage": false,
+          "definition": "CREATE OR REPLACE FUNCTION fw_agenttest_lab.session_active(session_id uuid, user_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog'\nAS $function$\n SELECT auth.uid() = $2 AND EXISTS (\n   SELECT 1 FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id\n   WHERE s.id=$1 AND s.user_id=$2\n     AND (s.not_after IS NULL OR s.not_after > now())\n     AND u.deleted_at IS NULL AND (u.banned_until IS NULL OR u.banned_until <= now())\n );\n$function$\n"
+        },
+        {
+          "schema": "fw_apishield_agent",
+          "proname": "session_active",
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "proacl": "{postgres=X/postgres,fw_apishield_agent_rw=X/postgres}",
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "anon_schema_usage": false,
+          "authenticated_schema_usage": false,
+          "definition": "CREATE OR REPLACE FUNCTION fw_apishield_agent.session_active(session_id uuid, user_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog'\nAS $function$\n SELECT auth.uid() = $2 AND EXISTS (\n   SELECT 1 FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id\n   WHERE s.id=$1 AND s.user_id=$2\n     AND (s.not_after IS NULL OR s.not_after > now())\n     AND u.deleted_at IS NULL AND (u.banned_until IS NULL OR u.banned_until <= now())\n );\n$function$\n"
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "proname": "session_active",
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "proacl": "{postgres=X/postgres,fw_datareconcile_ai_rw=X/postgres}",
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "anon_schema_usage": false,
+          "authenticated_schema_usage": false,
+          "definition": "CREATE OR REPLACE FUNCTION fw_datareconcile_ai.session_active(session_id uuid, user_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog'\nAS $function$\n SELECT auth.uid() = $2 AND EXISTS (\n   SELECT 1 FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id\n   WHERE s.id=$1 AND s.user_id=$2\n     AND (s.not_after IS NULL OR s.not_after > now())\n     AND u.deleted_at IS NULL AND (u.banned_until IS NULL OR u.banned_until <= now())\n );\n$function$\n"
+        },
+        {
+          "schema": "fw_specforge_ai",
+          "proname": "session_active",
+          "owner": "postgres",
+          "proconfig": [
+            "search_path=pg_catalog"
+          ],
+          "proacl": "{postgres=X/postgres,fw_specforge_ai_rw=X/postgres}",
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "anon_schema_usage": false,
+          "authenticated_schema_usage": false,
+          "definition": "CREATE OR REPLACE FUNCTION fw_specforge_ai.session_active(session_id uuid, user_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog'\nAS $function$\n SELECT auth.uid() = $2 AND EXISTS (\n   SELECT 1 FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id\n   WHERE s.id=$1 AND s.user_id=$2\n     AND (s.not_after IS NULL OR s.not_after > now())\n     AND u.deleted_at IS NULL AND (u.banned_until IS NULL OR u.banned_until <= now())\n );\n$function$\n"
+        }
+      ],
+      "indexes": [
+        {
+          "schema": "fw_accessfix_ai",
+          "index_name": "idx_verification_challenges_tenant_site",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_agenttest_lab",
+          "index_name": "idx_artifact_exports_tenant_artifact",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_agenttest_lab",
+          "index_name": "idx_comparisons_tenant_artifact",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_agenttest_lab",
+          "index_name": "idx_comparisons_tenant_candidate",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_agenttest_lab",
+          "index_name": "idx_evaluation_runs_tenant_agent_build",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_apishield_agent",
+          "index_name": "idx_approvals_tenant_proposal",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_apishield_agent",
+          "index_name": "idx_idempotency_tenant_analysis",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_apishield_agent",
+          "index_name": "idx_proposals_tenant_analysis",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_apishield_agent",
+          "index_name": "idx_pull_requests_tenant_proposal",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "index_name": "idx_allocations_tenant_left",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "index_name": "idx_allocations_tenant_right",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "index_name": "idx_exception_cases_tenant_left_transaction",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "index_name": "idx_exception_cases_tenant_right_transaction",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "index_name": "idx_reconcile_runs_tenant_right_batch",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_datareconcile_ai",
+          "index_name": "idx_source_artifact_commands_tenant_artifact",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_specforge_ai",
+          "index_name": "idx_acceptance_cases_tenant_requirement",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_specforge_ai",
+          "index_name": "idx_ambiguities_tenant_requirement",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_specforge_ai",
+          "index_name": "idx_jobs_tenant_revision",
+          "indisvalid": true,
+          "indisready": true
+        },
+        {
+          "schema": "fw_specforge_ai",
+          "index_name": "idx_spec_revisions_tenant_set",
+          "indisvalid": true,
+          "indisready": true
+        }
+      ],
+      "role_inheritance": [
+        {
+          "member": "fw_accessfix_ai_login",
+          "granted_role": "fw_accessfix_ai_rw"
+        },
+        {
+          "member": "fw_agenttest_lab_login",
+          "granted_role": "fw_agenttest_lab_rw"
+        },
+        {
+          "member": "fw_apishield_agent_login",
+          "granted_role": "fw_apishield_agent_rw"
+        },
+        {
+          "member": "fw_datareconcile_ai_login",
+          "granted_role": "fw_datareconcile_ai_rw"
+        },
+        {
+          "member": "fw_specforge_ai_login",
+          "granted_role": "fw_specforge_ai_rw"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_accessfix_ai_login"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_accessfix_ai_rw"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_agenttest_lab_login"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_agenttest_lab_rw"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_apishield_agent_login"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_apishield_agent_rw"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_apishield_webhook"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_datareconcile_ai_login"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_datareconcile_ai_rw"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_specforge_ai_login"
+        },
+        {
+          "member": "postgres",
+          "granted_role": "fw_specforge_ai_rw"
+        }
+      ]
+    },
+    "security": {
+      "lints": [
+        {
+          "name": "rls_enabled_no_policy",
+          "title": "RLS Enabled No Policy",
+          "level": "INFO",
+          "facing": "EXTERNAL",
+          "categories": [
+            "SECURITY"
+          ],
+          "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+          "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+          "count": 7,
+          "findings": [
+            {
+              "detail": "Table \\`fw_accessfix_ai.tenants\\` has RLS enabled, but no policies exist",
+              "metadata": {
+                "name": "tenants",
+                "type": "table",
+                "schema": "fw_accessfix_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.846Z"
+            },
+            {
+              "detail": "Table \\`fw_agenttest_lab.tenants\\` has RLS enabled, but no policies exist",
+              "metadata": {
+                "name": "tenants",
+                "type": "table",
+                "schema": "fw_agenttest_lab"
+              },
+              "observed_at": "2026-10-11T01:18:27.846Z"
+            },
+            {
+              "detail": "Table \\`fw_apishield_agent.github_installation_states\\` has RLS enabled, but no policies exist",
+              "metadata": {
+                "name": "github_installation_states",
+                "type": "table",
+                "schema": "fw_apishield_agent"
+              },
+              "observed_at": "2026-10-11T01:18:27.846Z"
+            },
+            {
+              "detail": "Table \\`fw_apishield_agent.github_webhook_deliveries\\` has RLS enabled, but no policies exist",
+              "metadata": {
+                "name": "github_webhook_deliveries",
+                "type": "table",
+                "schema": "fw_apishield_agent"
+              },
+              "observed_at": "2026-10-11T01:18:27.846Z"
+            },
+            {
+              "detail": "Table \\`fw_apishield_agent.tenants\\` has RLS enabled, but no policies exist",
+              "metadata": {
+                "name": "tenants",
+                "type": "table",
+                "schema": "fw_apishield_agent"
+              },
+              "observed_at": "2026-10-11T01:18:27.846Z"
+            },
+            {
+              "detail": "Table \\`fw_datareconcile_ai.tenants\\` has RLS enabled, but no policies exist",
+              "metadata": {
+                "name": "tenants",
+                "type": "table",
+                "schema": "fw_datareconcile_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.846Z"
+            },
+            {
+              "detail": "Table \\`fw_specforge_ai.tenants\\` has RLS enabled, but no policies exist",
+              "metadata": {
+                "name": "tenants",
+                "type": "table",
+                "schema": "fw_specforge_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.846Z"
+            }
+          ]
+        },
+        {
+          "name": "auth_leaked_password_protection",
+          "title": "Leaked Password Protection Disabled",
+          "level": "WARN",
+          "facing": "EXTERNAL",
+          "categories": [
+            "SECURITY"
+          ],
+          "description": "Leaked password protection is currently disabled.",
+          "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+          "count": 1,
+          "findings": [
+            {
+              "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+              "metadata": {
+                "type": "auth",
+                "entity": "Auth"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "performance": {
+      "lints": [
+        {
+          "name": "unused_index",
+          "title": "Unused Index",
+          "level": "INFO",
+          "facing": "EXTERNAL",
+          "categories": [
+            "PERFORMANCE"
+          ],
+          "description": "Detects if an index has never been used and may be a candidate for removal.",
+          "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index",
+          "count": 25,
+          "findings": [
+            {
+              "detail": "Index \\`audit_aggregate\\` on table \\`fw_datareconcile_ai.audit_events\\` has not been used",
+              "metadata": {
+                "name": "audit_events",
+                "type": "table",
+                "schema": "fw_datareconcile_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_exception_cases_tenant_run\\` on table \\`fw_datareconcile_ai.exception_cases\\` has not been used",
+              "metadata": {
+                "name": "exception_cases",
+                "type": "table",
+                "schema": "fw_datareconcile_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_analysis_jobs_tenant_repository\\` on table \\`fw_apishield_agent.analysis_jobs\\` has not been used",
+              "metadata": {
+                "name": "analysis_jobs",
+                "type": "table",
+                "schema": "fw_apishield_agent"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_scan_jobs_tenant_site\\` on table \\`fw_accessfix_ai.scan_jobs\\` has not been used",
+              "metadata": {
+                "name": "scan_jobs",
+                "type": "table",
+                "schema": "fw_accessfix_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_requirements_tenant_set\\` on table \\`fw_specforge_ai.requirements\\` has not been used",
+              "metadata": {
+                "name": "requirements",
+                "type": "table",
+                "schema": "fw_specforge_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_evaluation_runs_tenant_dataset_version\\` on table \\`fw_agenttest_lab.evaluation_runs\\` has not been used",
+              "metadata": {
+                "name": "evaluation_runs",
+                "type": "table",
+                "schema": "fw_agenttest_lab"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_verification_challenges_tenant_site\\` on table \\`fw_accessfix_ai.verification_challenges\\` has not been used",
+              "metadata": {
+                "name": "verification_challenges",
+                "type": "table",
+                "schema": "fw_accessfix_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_artifact_exports_tenant_artifact\\` on table \\`fw_agenttest_lab.artifact_exports\\` has not been used",
+              "metadata": {
+                "name": "artifact_exports",
+                "type": "table",
+                "schema": "fw_agenttest_lab"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_comparisons_tenant_artifact\\` on table \\`fw_agenttest_lab.comparisons\\` has not been used",
+              "metadata": {
+                "name": "comparisons",
+                "type": "table",
+                "schema": "fw_agenttest_lab"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_comparisons_tenant_candidate\\` on table \\`fw_agenttest_lab.comparisons\\` has not been used",
+              "metadata": {
+                "name": "comparisons",
+                "type": "table",
+                "schema": "fw_agenttest_lab"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_evaluation_runs_tenant_agent_build\\` on table \\`fw_agenttest_lab.evaluation_runs\\` has not been used",
+              "metadata": {
+                "name": "evaluation_runs",
+                "type": "table",
+                "schema": "fw_agenttest_lab"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_approvals_tenant_proposal\\` on table \\`fw_apishield_agent.approvals\\` has not been used",
+              "metadata": {
+                "name": "approvals",
+                "type": "table",
+                "schema": "fw_apishield_agent"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_idempotency_tenant_analysis\\` on table \\`fw_apishield_agent.idempotency\\` has not been used",
+              "metadata": {
+                "name": "idempotency",
+                "type": "table",
+                "schema": "fw_apishield_agent"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_proposals_tenant_analysis\\` on table \\`fw_apishield_agent.proposals\\` has not been used",
+              "metadata": {
+                "name": "proposals",
+                "type": "table",
+                "schema": "fw_apishield_agent"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_pull_requests_tenant_proposal\\` on table \\`fw_apishield_agent.pull_requests\\` has not been used",
+              "metadata": {
+                "name": "pull_requests",
+                "type": "table",
+                "schema": "fw_apishield_agent"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_allocations_tenant_left\\` on table \\`fw_datareconcile_ai.allocations\\` has not been used",
+              "metadata": {
+                "name": "allocations",
+                "type": "table",
+                "schema": "fw_datareconcile_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_allocations_tenant_right\\` on table \\`fw_datareconcile_ai.allocations\\` has not been used",
+              "metadata": {
+                "name": "allocations",
+                "type": "table",
+                "schema": "fw_datareconcile_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_exception_cases_tenant_left_transaction\\` on table \\`fw_datareconcile_ai.exception_cases\\` has not been used",
+              "metadata": {
+                "name": "exception_cases",
+                "type": "table",
+                "schema": "fw_datareconcile_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_exception_cases_tenant_right_transaction\\` on table \\`fw_datareconcile_ai.exception_cases\\` has not been used",
+              "metadata": {
+                "name": "exception_cases",
+                "type": "table",
+                "schema": "fw_datareconcile_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_reconcile_runs_tenant_right_batch\\` on table \\`fw_datareconcile_ai.reconcile_runs\\` has not been used",
+              "metadata": {
+                "name": "reconcile_runs",
+                "type": "table",
+                "schema": "fw_datareconcile_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_source_artifact_commands_tenant_artifact\\` on table \\`fw_datareconcile_ai.source_artifact_commands\\` has not been used",
+              "metadata": {
+                "name": "source_artifact_commands",
+                "type": "table",
+                "schema": "fw_datareconcile_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_acceptance_cases_tenant_requirement\\` on table \\`fw_specforge_ai.acceptance_cases\\` has not been used",
+              "metadata": {
+                "name": "acceptance_cases",
+                "type": "table",
+                "schema": "fw_specforge_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_ambiguities_tenant_requirement\\` on table \\`fw_specforge_ai.ambiguities\\` has not been used",
+              "metadata": {
+                "name": "ambiguities",
+                "type": "table",
+                "schema": "fw_specforge_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_jobs_tenant_revision\\` on table \\`fw_specforge_ai.jobs\\` has not been used",
+              "metadata": {
+                "name": "jobs",
+                "type": "table",
+                "schema": "fw_specforge_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            },
+            {
+              "detail": "Index \\`idx_spec_revisions_tenant_set\\` on table \\`fw_specforge_ai.spec_revisions\\` has not been used",
+              "metadata": {
+                "name": "spec_revisions",
+                "type": "table",
+                "schema": "fw_specforge_ai"
+              },
+              "observed_at": "2026-10-11T01:18:27.842Z"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "browser": {
+    "workflow_run": 38097144473,
+    "jobs": [
+      {
+        "id": 114358233373,
+        "name": "deployed-browser (accessfix-ai)",
+        "status": "completed",
+        "conclusion": "success",
+        "run_id": 38097144473,
+        "logs_url": null,
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Run python -m pip install playwright==1.63.0",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Run python -m playwright install --with-deps chromium",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5
+          },
+          {
+            "name": "Check actual public console and anonymous API boundary",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6
+          },
+          {
+            "name": "Post Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 11
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13
+          }
+        ]
+      },
+      {
+        "id": 114358233755,
+        "name": "deployed-browser (specforge-ai)",
+        "status": "completed",
+        "conclusion": "failure",
+        "run_id": 38097144473,
+        "logs_url": null,
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Run python -m pip install playwright==1.63.0",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Run python -m playwright install --with-deps chromium",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5
+          },
+          {
+            "name": "Check actual public console and anonymous API boundary",
+            "status": "completed",
+            "conclusion": "failure",
+            "number": 6
+          },
+          {
+            "name": "Post Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 11
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13
+          }
+        ]
+      },
+      {
+        "id": 114358234059,
+        "name": "deployed-browser (datareconcile-ai)",
+        "status": "completed",
+        "conclusion": "failure",
+        "run_id": 38097144473,
+        "logs_url": null,
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Run python -m pip install playwright==1.63.0",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Run python -m playwright install --with-deps chromium",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5
+          },
+          {
+            "name": "Check actual public console and anonymous API boundary",
+            "status": "completed",
+            "conclusion": "failure",
+            "number": 6
+          },
+          {
+            "name": "Post Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 11
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13
+          }
+        ]
+      },
+      {
+        "id": 114358234060,
+        "name": "deployed-browser (agenttest-lab)",
+        "status": "completed",
+        "conclusion": "failure",
+        "run_id": 38097144473,
+        "logs_url": null,
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Run python -m pip install playwright==1.63.0",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Run python -m playwright install --with-deps chromium",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5
+          },
+          {
+            "name": "Check actual public console and anonymous API boundary",
+            "status": "completed",
+            "conclusion": "failure",
+            "number": 6
+          },
+          {
+            "name": "Post Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 11
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13
+          }
+        ]
+      },
+      {
+        "id": 114358258112,
+        "name": "deployed-browser (apishield-agent)",
+        "status": "completed",
+        "conclusion": "failure",
+        "run_id": 38097144473,
+        "logs_url": null,
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Run python -m pip install playwright==1.63.0",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Run python -m playwright install --with-deps chromium",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5
+          },
+          {
+            "name": "Check actual public console and anonymous API boundary",
+            "status": "completed",
+            "conclusion": "failure",
+            "number": 6
+          },
+          {
+            "name": "Post Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 11
+          },
+          {
+            "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13
+          }
+        ]
+      }
+    ],
+    "scope": "Fresh failed-job rerun and separate successful AccessFix job rerun; carried-forward jobs retain prior timestamps",
+    "accessfix_fresh_receipt": "2026-10-11T01:21:15.9650871Z {\"anonymous_statuses\": {\"healthz\": 200, \"readyz\": 200, \"v1/jobs/00000000-0000-0000-0000-000000000001\": 401}, \"api_origin_fenced\": true, \"auth_config\": \"staging-enabled\", \"javascript_errors\": 0, \"product\": \"accessfix-ai\", \"scope\": \"credential-free deployed UI; authenticated business acceptance remains open\", \"stylesheet_preview_routes\": [], \"stylesheet_preview_sha\": null, \"title\": \"AccessFix AI \\u2014 Fixture workflow\", \"ui_http_status\": 200}",
+    "fresh_failure_logs": [
+      {
+        "job_id": 114357935245,
+        "lines": [
+          "2026-10-11T01:19:25.3260078Z Traceback (most recent call last):",
+          "2026-10-11T01:19:25.3281637Z     assert field.is_hidden(), \"Staging exposed manual development token input\"",
+          "2026-10-11T01:19:25.3282395Z AssertionError: Staging exposed manual development token input"
+        ]
+      },
+      {
+        "job_id": 114357935280,
+        "lines": [
+          "2026-10-11T01:19:26.2777511Z Traceback (most recent call last):",
+          "2026-10-11T01:19:26.2787323Z     assert field.is_hidden(), \"Staging exposed manual development token input\"",
+          "2026-10-11T01:19:26.2787950Z AssertionError: Staging exposed manual development token input"
+        ]
+      },
+      {
+        "job_id": 114357935147,
+        "lines": [
+          "2026-10-11T01:20:03.1438516Z     assert field.is_hidden(), \"Staging exposed manual development token input\"",
+          "2026-10-11T01:20:03.1439631Z AssertionError: Staging exposed manual development token input"
+        ]
+      },
+      {
+        "job_id": 114357935287,
+        "lines": [
+          "2026-10-11T01:19:56.8877504Z     assert field.is_hidden(), \"Staging exposed manual development token input\"",
+          "2026-10-11T01:19:56.8878236Z AssertionError: Staging exposed manual development token input"
+        ]
+      }
+    ],
+    "conclusions": {
+      "passed": [
+        "accessfix-ai"
+      ],
+      "failed": [
+        "apishield-agent",
+        "agenttest-lab",
+        "specforge-ai",
+        "datareconcile-ai"
+      ],
+      "failure_reason": "Staging exposed manual development token input"
+    }
+  },
+  "production_decision": "NO-GO",
+  "deployment_denial": {
+    "observed_previously": "Cancelled — the user did not approve this action. No changes were made.",
+    "interpretation": "The connector provides no deeper cause. Owner authorization exists in conversation; do not infer a code/test failure or a hidden policy reason.",
+    "deployment_attempted_in_this_audit": false
+  }
+}
