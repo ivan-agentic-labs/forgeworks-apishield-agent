@@ -4,20 +4,35 @@ No login, upload, customer data, access grant or business mutation is performed.
 """
 import argparse
 import json
+import re
+import urllib.request
 
 from playwright.sync_api import sync_playwright
 
 PRODUCTS = ("apishield-agent", "accessfix-ai", "specforge-ai", "agenttest-lab", "datareconcile-ai")
 
 
-def probe(product):
+def probe(product, preview_style_sha=None):
     origin = f"https://{product}-staging.up.railway.app"
+    preview_css = None
+    if preview_style_sha is not None:
+        if not re.fullmatch(r"[0-9a-f]{40}", preview_style_sha):
+            raise ValueError("Preview requires an immutable full Git SHA")
+        source = f"https://raw.githubusercontent.com/ivan-agentic-labs/forgeworks-{product}/{preview_style_sha}/apps/web/styles.css"
+        with urllib.request.urlopen(source, timeout=30) as result:
+            preview_css = result.read(262145)
+        assert len(preview_css) <= 262144, "Candidate stylesheet exceeds preview budget"
+        preview_css = preview_css.decode("utf-8", errors="strict")
     errors = []
     unexpected = []
     with sync_playwright() as runtime:
         browser = runtime.chromium.launch(headless=True)
         try:
             page = browser.new_page()
+            if preview_css is not None:
+                # Override only stylesheet bytes inside this isolated browser.
+                # The deployed app is unchanged, and the receipt says PREVIEW.
+                page.route(origin + "/styles.css", lambda route: route.fulfill(status=200, content_type="text/css", body=preview_css))
             page.on("pageerror", lambda error: errors.append(type(error).__name__))
             page.on("request", lambda request: unexpected.append(request.url) if request.url.startswith("https://attacker.invalid") else None)
             # The origin override must not redirect the console's requests.
@@ -47,7 +62,7 @@ def probe(product):
                 statuses[endpoint] = result.status
             assert not errors, "Uncaught browser JavaScript error"
             assert not unexpected, "Untrusted API origin override was used"
-            return {"product": product, "ui_http_status": response.status, "title": page.title(), "auth_config": "staging-enabled", "api_origin_fenced": True, "anonymous_statuses": statuses, "javascript_errors": len(errors), "scope": "credential-free deployed UI; authenticated business acceptance remains open"}
+            return {"product": product, "ui_http_status": response.status, "title": page.title(), "auth_config": "staging-enabled", "api_origin_fenced": True, "anonymous_statuses": statuses, "javascript_errors": len(errors), "stylesheet_preview_sha": preview_style_sha, "scope": "CSS PREVIEW on deployed page; deployment not performed" if preview_style_sha else "credential-free deployed UI; authenticated business acceptance remains open"}
         finally:
             browser.close()
 
@@ -55,4 +70,6 @@ def probe(product):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("product", choices=PRODUCTS)
-    print(json.dumps(probe(parser.parse_args().product), sort_keys=True))
+    parser.add_argument("--preview-style-sha")
+    args = parser.parse_args()
+    print(json.dumps(probe(args.product, args.preview_style_sha), sort_keys=True))

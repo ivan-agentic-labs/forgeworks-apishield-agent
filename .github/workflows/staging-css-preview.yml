@@ -1,0 +1,40 @@
+name: ForgeWorks Candidate CSS Preview
+on:
+  pull_request:
+    paths:
+      - scripts/probe_staging_browser.py
+      - .github/workflows/staging-css-preview.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - product: apishield-agent
+            sha: ac2c0173f86f274e097b210c34f65828daad3384
+          - product: accessfix-ai
+            sha: 087aa38071c71cde57532d1ae001c3a4ba120d36
+          - product: specforge-ai
+            sha: f521c2c3f3b6573b4d390d9f309b077d1d6d6732
+          - product: agenttest-lab
+            sha: 11fde128de2cb4d103434fa088beb91650de5cdc
+          - product: datareconcile-ai
+            sha: eccbf71aed0ff33296bb9d23b7ff14d9c66e5b92
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - run: python -m pip install playwright==1.63.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Verify immutable candidate CSS on actual staging page
+        env:
+          FW_PROBE_PRODUCT: ${{ matrix.product }}
+          FW_PREVIEW_SHA: ${{ matrix.sha }}
+        run: python scripts/probe_staging_browser.py "$FW_PROBE_PRODUCT" --preview-style-sha "$FW_PREVIEW_SHA"
