@@ -1,6 +1,8 @@
-# Current G1/G2 evidence — 2026-10-09
+# G1/G2 evidence and acceptance register
 
-The owner authorizes engineering directly on main. Owner design approval is permission to proceed; it is not an independent domain/security/legal signoff or a G1-E test result. Five repositories remain independent/private. No production deployment or customer data is included.
+Latest live checkpoint: [2026-10-11 database, CI and browser evidence](../evidence/STAGING_DATABASE_AND_BROWSER_CHECKPOINT_2026-10-11.md). Historical receipts below retain their original scope and timestamps.
+
+The owner authorizes engineering directly on main. Owner design approval is permission to proceed; it is not an independent domain/security/legal signoff or a G1-E test result. Five repositories remain independent and public. No production deployment or customer data is included.
 
 | Area | Status | Evidence and limit |
 |---|---|---|
@@ -54,6 +56,6 @@ Analysis now detects operation removal even without required response fields, an
 2. Configure external private storage/scanning/retention/deletion and implement remaining source/dataset/upload adapters; do not treat placeholder metadata or quarantined objects as verified bytes.
 3. Supply an isolated runner/network policy and installed test GitHub App; exercise the implemented webhook/revocation path against GitHub, then implement and prove repository reads and approval-bound remote effects before enabling them.
 4. Supply approved evaluation corpora/thresholds and provider budget; implement real source/scanner/agent paths and establish observed quality/cost/load/recovery results.
-5. Obtain domain/legal/privacy/operations/independent acceptance. Production remains outside this authorized execution scope.
+5. Obtain domain/legal/privacy/operations/independent acceptance. Production acceptance remains blocked on these unresolved gates.
 
 No background completion, production readiness or full-G1-E PASS is asserted.

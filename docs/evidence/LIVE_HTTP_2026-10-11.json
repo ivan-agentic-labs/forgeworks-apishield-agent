@@ -1,0 +1,127 @@
+[
+  {
+    "observed_at": "2026-10-11T00:01:17.999441+00:00",
+    "product": "accessfix-ai",
+    "scope": "Post-migration live anonymous HTTP only; authenticated business flows remain unverified",
+    "checks": [
+      {
+        "endpoint": "/healthz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/readyz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+        "expected": 401,
+        "observed": 401,
+        "pass": true
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-10-11T00:01:20.571809+00:00",
+    "product": "agenttest-lab",
+    "scope": "Post-migration live anonymous HTTP only; authenticated business flows remain unverified",
+    "checks": [
+      {
+        "endpoint": "/healthz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/readyz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+        "expected": 401,
+        "observed": 401,
+        "pass": true
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-10-11T00:01:19.870697+00:00",
+    "product": "apishield-agent",
+    "scope": "Post-migration live anonymous HTTP only; authenticated business flows remain unverified",
+    "checks": [
+      {
+        "endpoint": "/healthz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/readyz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+        "expected": 401,
+        "observed": 401,
+        "pass": true
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-10-11T00:01:21.075491+00:00",
+    "product": "datareconcile-ai",
+    "scope": "Post-migration live anonymous HTTP only; authenticated business flows remain unverified",
+    "checks": [
+      {
+        "endpoint": "/healthz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/readyz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+        "expected": 401,
+        "observed": 401,
+        "pass": true
+      }
+    ]
+  },
+  {
+    "observed_at": "2026-10-11T00:01:31.007706+00:00",
+    "product": "specforge-ai",
+    "scope": "Post-migration live anonymous HTTP only; authenticated business flows remain unverified",
+    "checks": [
+      {
+        "endpoint": "/healthz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/readyz",
+        "expected": 200,
+        "observed": 200,
+        "pass": true
+      },
+      {
+        "endpoint": "/v1/jobs/00000000-0000-0000-0000-000000000001",
+        "expected": 401,
+        "observed": 401,
+        "pass": true
+      }
+    ]
+  }
+]
