@@ -14,6 +14,8 @@ from uuid import UUID
 import psycopg
 
 MAX_WEBHOOK_BYTES = 1024 * 1024
+MAX_WEBHOOK_DEPTH = 64
+MAX_WEBHOOK_NODES = 50000
 SIGNATURE = re.compile(r"^sha256=([0-9a-f]{64})$")
 SUPPORTED_EVENTS = {"installation", "ping"}
 
@@ -74,6 +76,20 @@ def verify_webhook(secret: str, signature: str | None, delivery: str | None, eve
         raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook body must be valid bounded JSON", 422) from error
     if not isinstance(payload, dict):
         raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook body must be a JSON object")
+    # A syntactically valid JSON document can still have excessive depth or
+    # complexity. Python's parser limit is runtime-dependent, so enforce the
+    # same bounded budget across CI and production before changing any state.
+    pending = [(payload, 0)]
+    nodes = 0
+    while pending:
+        item, depth = pending.pop()
+        nodes += 1
+        if depth > MAX_WEBHOOK_DEPTH or nodes > MAX_WEBHOOK_NODES:
+            raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook structure budget exceeded", 422)
+        if isinstance(item, dict):
+            pending.extend((value, depth + 1) for value in item.values())
+        elif isinstance(item, list):
+            pending.extend((value, depth + 1) for value in item)
     return VerifiedWebhook(delivery_id, event, payload, hashlib.sha256(body).hexdigest())
 
 
