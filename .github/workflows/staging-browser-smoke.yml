@@ -1,0 +1,43 @@
+name: ForgeWorks Five-Product Deployed Chromium Proof
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '47 4 * * *'
+  push:
+    branches: [main]
+    paths:
+      - scripts/probe_staging_browser.py
+      - .github/workflows/staging-browser-smoke.yml
+  pull_request:
+    paths:
+      - scripts/probe_staging_browser.py
+      - .github/workflows/staging-browser-smoke.yml
+permissions:
+  contents: read
+concurrency:
+  group: forgeworks-five-product-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  deployed-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        product: [apishield-agent, accessfix-ai, specforge-ai, agenttest-lab, datareconcile-ai]
+    steps:
+      - name: Checkout pinned source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.2.0
+        with:
+          python-version: '3.12'
+      - name: Install pinned browser runner
+        run: python -m pip install playwright==1.63.0
+      - name: Install isolated Chromium
+        run: python -m playwright install --with-deps chromium
+      - name: Check deployed page login and anonymous API boundaries
+        env:
+          FW_PROBE_PRODUCT: ${{ matrix.product }}
+        run: python scripts/probe_staging_browser.py "$FW_PROBE_PRODUCT"
