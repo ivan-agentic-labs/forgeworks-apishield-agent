@@ -46,3 +46,26 @@ def test_signing_and_no_redirects(objects):
 def test_unsafe_endpoint_rejected(monkeypatch,endpoint):
     monkeypatch.setenv("S3_ENDPOINT",endpoint)
     with pytest.raises(HTTPException):ObjectStorage("apishield-agent")
+
+
+@pytest.mark.parametrize("endpoint", [
+    "https://storage.examp\tle.invalid",
+    "https://storage.example.invalid\r\n",
+    "https://storage.example.invalid\x7f",
+    "https://storage.example.invalid\\evil.invalid",
+])
+def test_storage_origin_must_not_be_silently_normalized(monkeypatch, endpoint):
+    # urllib.parse.urlsplit can silently remove ASCII control characters
+    # from the authority. Never sign requests to a modified destination.
+    for key, value in {
+        "S3_BUCKET": "private-bucket",
+        "S3_REGION": "auto",
+        "S3_ACCESS_KEY_ID": "synthetic-access-key",
+        "S3_SECRET_ACCESS_KEY": "synthetic-secret-for-offline-tests",
+    }.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("S3_ENDPOINT", endpoint)
+    with pytest.raises(HTTPException) as error:
+        ObjectStorage("apishield-agent")
+    assert error.value.status_code == 503
+    assert error.value.detail["code"] == "STORAGE_NOT_CONFIGURED"

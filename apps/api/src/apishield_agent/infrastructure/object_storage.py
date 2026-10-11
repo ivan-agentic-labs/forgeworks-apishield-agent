@@ -32,6 +32,10 @@ class ObjectStorage:
         self.access=os.environ.get("S3_ACCESS_KEY_ID", "")
         self.secret=os.environ.get("S3_SECRET_ACCESS_KEY", "")
         self.style=os.environ.get("S3_URL_STYLE", "virtual-host")
+        # Reject URL-parser normalization of whitespace/control bytes before
+        # signing private S3 requests to any configured destination.
+        if any(ord(ch) <= 0x20 or ord(ch) == 0x7f or ch == "\\" for ch in self.endpoint):
+            reject("STORAGE_NOT_CONFIGURED", 503)
         parsed=urllib.parse.urlsplit(self.endpoint)
         if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment or parsed.port:
             reject("STORAGE_NOT_CONFIGURED",503)
