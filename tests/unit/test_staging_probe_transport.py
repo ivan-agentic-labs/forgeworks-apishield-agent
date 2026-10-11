@@ -68,3 +68,40 @@ class StagingProbeTransportTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ForgedAuthProbeTests(unittest.TestCase):
+    def test_synthetic_tokens_have_full_fake_grant_but_no_provider_credentials(self) -> None:
+        import base64
+        import json
+
+        origin = "https://synthetic.supabase.co"
+        for product in ("apishield-agent", "accessfix-ai", "specforge-ai",
+                        "agenttest-lab", "datareconcile-ai"):
+            for algorithm in ("none", "HS256"):
+                with self.subTest(product=product, algorithm=algorithm):
+                    token = contract.forged_access_token(origin, product, algorithm)
+                    segments = token.split(".")
+                    self.assertEqual(len(segments), 3)
+
+                    def decode(encoded):
+                        return json.loads(base64.urlsafe_b64decode(
+                            encoded + "=" * (-len(encoded) % 4)
+                        ))
+
+                    header, claims = decode(segments[0]), decode(segments[1])
+                    self.assertEqual(header["alg"], algorithm)
+                    self.assertEqual(claims["iss"], origin + "/auth/v1")
+                    self.assertEqual(claims["role"], "authenticated")
+                    self.assertEqual(
+                        claims["app_metadata"]["forgeworks"][product]["scopes"],
+                        ["*:read"],
+                    )
+                    self.assertLessEqual(claims["exp"] - claims["iat"], 120)
+                    self.assertGreater(claims["exp"], claims["iat"])
+                    self.assertEqual(segments[2] == "", algorithm == "none")
+
+    def test_forgery_helper_rejects_unreviewed_algorithms(self):
+        for algorithm in ("RS256", "ES256", "HS512", ""):
+            with self.subTest(algorithm=algorithm), self.assertRaises(ValueError):
+                contract.forged_access_token("https://synthetic.supabase.co", "apishield-agent", algorithm)
