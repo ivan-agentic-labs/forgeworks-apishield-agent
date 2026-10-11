@@ -1,0 +1,183 @@
+{
+  "recorded_date": "2026-10-11",
+  "production_ready": false,
+  "scope": "Strict JSON integer version tokens and safe request validation envelopes across four products",
+  "compatibility_note": "Boolean, text and floating JSON version tokens (including 1.0) are now rejected; positive JSON integer tokens retain existing bounds. This intentionally tightens HTTP input behavior.",
+  "new_regression_cases": 60,
+  "changes": [
+    {
+      "repository": "ivan-agentic-labs/forgeworks-accessfix-ai",
+      "pull_request": 21,
+      "ci_head": "bc33a143091c087b3d8390beb96a993af579ae36",
+      "merge_sha": "820d7b2450cc4454f9351ade0d5eaeb4c8c72516",
+      "ci_runs": [
+        {
+          "id": 38107468659,
+          "name": "AccessFix Disposable Chromium Patch Proof",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107468700,
+          "name": "AccessFix PostgreSQL Runtime Proof",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107468650,
+          "name": "G1 Contract Verification",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107468671,
+          "name": "AccessFix MVP Application CI",
+          "conclusion": "success"
+        }
+      ],
+      "application_receipt": [
+        "2026-10-11T03:09:40.1097308Z ======================== 232 passed, 8 skipped in 4.90s ========================",
+        "2026-10-11T03:09:42.3100156Z # tests 3",
+        "2026-10-11T03:09:42.3102494Z # pass 3",
+        "2026-10-11T03:09:42.3102902Z # fail 0"
+      ],
+      "merged_files_verified": true
+    },
+    {
+      "repository": "ivan-agentic-labs/forgeworks-specforge-ai",
+      "pull_request": 18,
+      "ci_head": "983dc735a5fa26a2405cb8a3ac1675b5a448995c",
+      "merge_sha": "14ef654fac1d43308dde688518959a1939716f93",
+      "ci_runs": [
+        {
+          "id": 38107475675,
+          "name": "G1 Contract Verification",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107475676,
+          "name": "SpecForge PostgreSQL Runtime Proof",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107475667,
+          "name": "SpecForge MVP Application CI",
+          "conclusion": "success"
+        }
+      ],
+      "application_receipt": [
+        "2026-10-11T03:09:47.5053298Z ======================== 226 passed, 1 skipped in 2.49s ========================",
+        "2026-10-11T03:09:51.3410060Z # tests 11",
+        "2026-10-11T03:09:51.3410290Z # pass 11",
+        "2026-10-11T03:09:51.3410409Z # fail 0"
+      ],
+      "merged_files_verified": true
+    },
+    {
+      "repository": "ivan-agentic-labs/forgeworks-apishield-agent",
+      "pull_request": 27,
+      "ci_head": "446a44367fac4e1ad4dda4a88abac46e127d96f8",
+      "merge_sha": "d38d40bd58db6d05be36bccc5cabb11f4d97de45",
+      "ci_runs": [
+        {
+          "id": 38107598873,
+          "name": "APIShield Disposable Sandbox Proof",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107598816,
+          "name": "G1 Contract Verification",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107598862,
+          "name": "APIShield PostgreSQL Runtime Proof",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107598857,
+          "name": "APIShield MVP Application CI",
+          "conclusion": "success"
+        }
+      ],
+      "application_receipt": [
+        "2026-10-11T03:13:14.3157188Z ================== 352 passed, 6 skipped in 66.41s (0:01:06) ===================",
+        "2026-10-11T03:13:15.9872439Z # tests 11",
+        "2026-10-11T03:13:15.9873245Z # pass 11",
+        "2026-10-11T03:13:15.9873468Z # fail 0",
+        "2026-10-11T03:13:20.9693186Z # tests 42",
+        "2026-10-11T03:13:20.9693788Z # pass 42",
+        "2026-10-11T03:13:20.9694106Z # fail 0"
+      ],
+      "merged_files_verified": true
+    },
+    {
+      "repository": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+      "pull_request": 20,
+      "ci_head": "904d65ad7f07b1373c8cc7f45c3edbc225ee9c4d",
+      "merge_sha": "4049c3ed22567fce27539fd83b5b7bacf9f714fd",
+      "ci_runs": [
+        {
+          "id": 38107603156,
+          "name": "DataReconcile PostgreSQL Runtime Proof",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107603076,
+          "name": "G1 Contract Verification",
+          "conclusion": "success"
+        },
+        {
+          "id": 38107603132,
+          "name": "DataReconcile MVP Application CI",
+          "conclusion": "success"
+        }
+      ],
+      "application_receipt": [
+        "2026-10-11T03:12:18.3299400Z {\"result\": \"PASS\", \"browser\": \"153.0.8010.12\", \"amount_minor\": \"9223372036854775807\", \"total_minor\": \"18446744073709551614\", \"javascript_errors\": [], \"scope\": \"Actual console, Chromium fetch and DOM over synthetic local HTTP; no staging/customer acceptance\"}",
+        "2026-10-11T03:12:23.7690405Z ======================== 231 passed, 1 skipped in 4.77s ========================",
+        "2026-10-11T03:12:25.7482560Z # tests 15",
+        "2026-10-11T03:12:25.7498126Z # pass 15",
+        "2026-10-11T03:12:25.7511355Z # fail 0"
+      ],
+      "merged_files_verified": true
+    }
+  ],
+  "railway": {
+    "project_id": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
+    "environment": {
+      "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+      "name": "staging"
+    },
+    "patch_id": "d7e9d350-5dae-4464-9869-e4103521ce0b",
+    "status": "STAGED",
+    "destructive": false,
+    "change_count": 20,
+    "pins": [
+      {
+        "name": "accessfix-ai",
+        "commit_sha": "820d7b2450cc4454f9351ade0d5eaeb4c8c72516"
+      },
+      {
+        "name": "datareconcile-ai",
+        "commit_sha": "4049c3ed22567fce27539fd83b5b7bacf9f714fd"
+      },
+      {
+        "name": "apishield-agent",
+        "commit_sha": "d38d40bd58db6d05be36bccc5cabb11f4d97de45"
+      },
+      {
+        "name": "specforge-ai",
+        "commit_sha": "14ef654fac1d43308dde688518959a1939716f93"
+      },
+      {
+        "name": "agenttest-lab",
+        "commit_sha": "7fa72024bd4c761590b5474f5453697d4007e711"
+      }
+    ]
+  },
+  "limits": [
+    "CI covers exact PR heads; merged changed files matched candidates",
+    "Rejected-input HTTP tests use synthetic authorization and missing resources to isolate validation",
+    "Browser and PostgreSQL proofs run in disposable environments, not live customer flows",
+    "No accept-deploy, live-connect or redeploy action performed",
+    "Real identities, end-to-end business acceptance, load and production recovery remain unverified"
+  ]
+}
