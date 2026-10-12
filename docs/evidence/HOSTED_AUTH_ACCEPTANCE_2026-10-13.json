@@ -1,0 +1,352 @@
+{
+  "schema": "forgeworks-hosted-auth-acceptance-evidence-v1",
+  "product": "apishield-agent",
+  "environment": "staging",
+  "runtime_revision_sha": "00ecc7182d7f555b7a122e2f69d991d1c71a2558",
+  "runtime_manifest": {
+    "profile": "forgeworks-runtime-manifest-v1",
+    "file_count": 41,
+    "sha256": "2cf3f1959d4ad21c419a8cfc3abc391602c087e7d5480208daee034adf915381"
+  },
+  "deployment_id": "64f7b6cf-c0d5-4e0a-86f8-5c2adf3e670b",
+  "supabase_project_ref": "fljekuwplgkrpdoajyhn",
+  "test_window_utc": {
+    "end": "2026-10-12T18:00:26Z"
+  },
+  "identity_provenance": {
+    "method": "Supabase Auth Admin createUser with random password, then signInWithPassword; provider-issued non-anonymous sessions validated by hosted API",
+    "test_accounts": 3,
+    "distinct_tenants": 2,
+    "roles": [
+      "editor",
+      "editor",
+      "viewer"
+    ],
+    "email_confirmation": "Admin-confirmed reserved-domain test accounts; no email delivered, no mailbox ownership or MFA claim",
+    "server_credentials": "Stayed within Supabase Edge runtime; not returned or published",
+    "original_revoked_memberships": "Not activated or modified"
+  },
+  "reports": [
+    {
+      "schema": "forgeworks-hosted-auth-proof-v1",
+      "product": "apishield-agent",
+      "environment": "staging",
+      "phase": "base",
+      "verified_at": "2026-10-12T17:59:22Z",
+      "result": "PASS",
+      "checks": [
+        {
+          "check": "own tenant 0 create",
+          "status": 202,
+          "expected": [
+            202
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "own tenant 0 idempotency replay",
+          "status": 202,
+          "expected": [
+            202
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "same persisted analysis on replay 0",
+          "result": "PASS"
+        },
+        {
+          "check": "own tenant 1 create",
+          "status": 202,
+          "expected": [
+            202
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "own tenant 1 idempotency replay",
+          "status": 202,
+          "expected": [
+            202
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "same persisted analysis on replay 1",
+          "result": "PASS"
+        },
+        {
+          "check": "own tenant 0 read",
+          "status": 200,
+          "expected": [
+            200
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "cross tenant 0 read denied",
+          "status": 404,
+          "expected": [
+            403,
+            404
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "cross tenant 0 create denied",
+          "status": 404,
+          "expected": [
+            403,
+            404
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "own tenant 1 read",
+          "status": 200,
+          "expected": [
+            200
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "cross tenant 1 read denied",
+          "status": 404,
+          "expected": [
+            403,
+            404
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "cross tenant 1 create denied",
+          "status": 404,
+          "expected": [
+            403,
+            404
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "viewer own tenant read",
+          "status": 200,
+          "expected": [
+            200
+          ],
+          "result": "PASS"
+        },
+        {
+          "check": "viewer write denied despite signed analyze scope",
+          "status": 403,
+          "expected": [
+            403
+          ],
+          "result": "PASS"
+        }
+      ],
+      "limits": [
+        "Dedicated admin-created synthetic accounts; no email-delivery/MFA proof.",
+        "Synthetic repository records; no actual GitHub installation or successful analysis worker acceptance.",
+        "Selected HTTP authorization tests, not full production acceptance."
+      ]
+    },
+    {
+      "schema": "forgeworks-hosted-auth-proof-v1",
+      "product": "apishield-agent",
+      "environment": "staging",
+      "phase": "membership",
+      "verified_at": "2026-10-12T18:00:05Z",
+      "result": "PASS",
+      "checks": [
+        {
+          "check": "revoked membership rejects existing valid session",
+          "status": 403,
+          "expected": [
+            403
+          ],
+          "result": "PASS"
+        }
+      ],
+      "limits": [
+        "Dedicated admin-created synthetic accounts; no email-delivery/MFA proof.",
+        "Synthetic repository records; no actual GitHub installation or successful analysis worker acceptance.",
+        "Selected HTTP authorization tests, not full production acceptance."
+      ]
+    },
+    {
+      "schema": "forgeworks-hosted-auth-proof-v1",
+      "product": "apishield-agent",
+      "environment": "staging",
+      "phase": "logout",
+      "verified_at": "2026-10-12T18:00:26Z",
+      "result": "PASS",
+      "checks": [
+        {
+          "check": "logged out session rejects unexpired access token",
+          "status": 401,
+          "expected": [
+            401
+          ],
+          "result": "PASS"
+        }
+      ],
+      "limits": [
+        "Dedicated admin-created synthetic accounts; no email-delivery/MFA proof.",
+        "Synthetic repository records; no actual GitHub installation or successful analysis worker acceptance.",
+        "Selected HTTP authorization tests, not full production acceptance."
+      ]
+    },
+    {
+      "result": "PASS",
+      "global_logout": true,
+      "refresh_token_rejected": 400,
+      "tokens_omitted": true
+    }
+  ],
+  "observed_http_samples": [
+    {
+      "method": "GET",
+      "http_status": 401,
+      "duration_ms": 3
+    },
+    {
+      "method": "GET",
+      "http_status": 401,
+      "duration_ms": 2
+    },
+    {
+      "method": "GET",
+      "http_status": 401,
+      "duration_ms": 6
+    },
+    {
+      "method": "GET",
+      "http_status": 401,
+      "duration_ms": 1
+    },
+    {
+      "method": "GET",
+      "http_status": 401,
+      "duration_ms": 4
+    },
+    {
+      "method": "POST",
+      "http_status": 499,
+      "duration_ms": 14846
+    },
+    {
+      "method": "POST",
+      "http_status": 202,
+      "duration_ms": 13754
+    },
+    {
+      "method": "POST",
+      "http_status": 202,
+      "duration_ms": 13670
+    },
+    {
+      "method": "GET",
+      "http_status": 404,
+      "duration_ms": 8771
+    },
+    {
+      "method": "POST",
+      "http_status": 202,
+      "duration_ms": 15921
+    },
+    {
+      "method": "POST",
+      "http_status": 202,
+      "duration_ms": 13728
+    },
+    {
+      "method": "GET",
+      "http_status": 200,
+      "duration_ms": 13696
+    },
+    {
+      "method": "GET",
+      "http_status": 404,
+      "duration_ms": 8753
+    },
+    {
+      "method": "POST",
+      "http_status": 404,
+      "duration_ms": 8522
+    },
+    {
+      "method": "GET",
+      "http_status": 200,
+      "duration_ms": 13713
+    },
+    {
+      "method": "GET",
+      "http_status": 404,
+      "duration_ms": 8355
+    },
+    {
+      "method": "POST",
+      "http_status": 404,
+      "duration_ms": 8739
+    },
+    {
+      "method": "GET",
+      "http_status": 200,
+      "duration_ms": 13719
+    },
+    {
+      "method": "POST",
+      "http_status": 403,
+      "duration_ms": 5808
+    },
+    {
+      "method": "GET",
+      "http_status": 403,
+      "duration_ms": 6125
+    }
+  ],
+  "performance": {
+    "accepted": false,
+    "successful_own_read_write_sample_ms": [
+      13754,
+      13670,
+      15921,
+      13728,
+      13696,
+      13713,
+      13719
+    ],
+    "initial_failure": "Initial own-create request timed out at 15s; Railway recorded HTTP 499. Retried with the same idempotency key and 45s client timeout; subsequent assertions passed.",
+    "limits": "Small samples only, not workload SLO, capacity or production p95."
+  },
+  "product_execution": {
+    "accepted": false,
+    "observed_jobs": "2 PENDING jobs after authentication checks; later marked FAILED_TERMINAL/AUTH_PROOF_RETIRED during cleanup",
+    "limits": "Synthetic repository records have no live GitHub installation. Write acceptance/persistence is tested; successful worker/product execution is not."
+  },
+  "cleanup": {
+    "auth_users_remaining": 0,
+    "auth_sessions_remaining": 0,
+    "active_memberships_remaining": 0,
+    "test_tenants_disabled": 2,
+    "test_repositories_revoked": 2,
+    "test_jobs_retired": 2,
+    "test_fixtures_physically_deleted": false,
+    "fixture_deletion_attempt": "SQL deletion call returned Invalid or expired requestState; read-back found fixtures still present. Applied verified reversible retirement instead.",
+    "temporary_provisioning": {
+      "admin_operations_removed": true,
+      "version": 2,
+      "verify_jwt": true,
+      "post_retirement_request_status": 401
+    },
+    "existing_memberships": "The 2 previously revoked memberships stayed revoked."
+  },
+  "production_acceptance": "NOT_ACCEPTED",
+  "remaining": [
+    "Successful product integration and GitHub source/runner proof",
+    "Authenticated performance and SLO remediation",
+    "Hosted restore/DR and storage lifecycle",
+    "Email verification/MFA and broader security review",
+    "Domain/privacy/legal and owner production release review"
+  ]
+}
