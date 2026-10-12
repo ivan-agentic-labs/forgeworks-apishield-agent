@@ -304,6 +304,13 @@ def _compare_request(findings: list[Finding], source_digests: dict[str, str], be
         if new_body.get("required") is True and old_body.get("required") is not True:
             _record_finding(findings, source_digests, "REQUEST_BODY_BECAME_REQUIRED", f"/paths/{_escape(route)}/{method}/requestBody/required")
         old_media, new_media = _media_schemas(before, old_body), _media_schemas(after, new_body)
+        # Removing an accepted request representation breaks clients still
+        # sending that Content-Type, even if the surviving schema is unchanged.
+        for media in sorted(set(old_media) - set(new_media)):
+            _record_finding(
+                findings, source_digests, "REQUEST_MEDIA_TYPE_REMOVED",
+                f"/paths/{_escape(route)}/{method}/requestBody/content/{_escape(media)}",
+            )
         for media in sorted(set(old_media) & set(new_media)):
             old_schema, new_schema = old_media[media][0], new_media[media][0]
             pointer = f"/paths/{_escape(route)}/{method}/requestBody/content/{_escape(media)}/schema"
