@@ -37,7 +37,7 @@ class ObjectStorage:
         if any(ord(ch) <= 0x20 or ord(ch) == 0x7f or ch == "\\" for ch in self.endpoint):
             reject("STORAGE_NOT_CONFIGURED", 503)
         parsed=urllib.parse.urlsplit(self.endpoint)
-        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment or parsed.port:
+        if parsed.scheme != "https" or not parsed.hostname or "@" in parsed.netloc or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment or parsed.port:
             reject("STORAGE_NOT_CONFIGURED",503)
         if not re.fullmatch(r"[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]",self.bucket) or not self.access or not self.secret or self.style not in {"path","virtual-host"}:
             reject("STORAGE_NOT_CONFIGURED",503)
