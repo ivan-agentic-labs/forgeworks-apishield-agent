@@ -73,6 +73,15 @@ def main():
         raise SystemExit('Refusing non-disposable database configuration')
     restored = {**info,'dbname':'forgeworks_restore'}
     before, after = snapshot(make_conninfo(**info)), snapshot(make_conninfo(**restored))
+    # A source and its restored copy could both lose the same tenant fence,
+    # making an equality-only backup check falsely report success.
+    # Enforce the mandatory memberships boundary independently in both.
+    if any(
+        image.get("memberships", {}).get("rls_flags") != (True, True)
+        for image in (before, after)
+    ):
+        raise SystemExit("RESTORED_TENANT_RLS_REQUIRED: memberships must have RLS and FORCE RLS")
+
     if not before or before!=after:
         raise SystemExit('RESTORED_TABLE_OR_POLICY_DRIFT: logical data, table definitions or RLS differ')
     catalog_before = schema_catalog(make_conninfo(**info))
