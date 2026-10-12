@@ -59,3 +59,9 @@ Analysis now detects operation removal even without required response fields, an
 5. Obtain domain/legal/privacy/operations/independent acceptance. Production acceptance remains blocked on these unresolved gates.
 
 No background completion, production readiness or full-G1-E PASS is asserted.
+
+## Runtime release controls — engineering continuation 2026-10-12
+
+This change implements hosted revision/fingerprint identity, bounded private metrics, sanitized request logs, a fixed-origin deployment proof and a trusted-key production acceptance validator. Negative tests cover tampered/wrong-target receipts, open controls, invalid timing, staging relabelling, metric secrecy and incomplete responses. The production template remains unsigned and OPEN; no actual reviewer, production receipt, or authenticated hosted acceptance is asserted.
+
+The local executor disconnected before publication. The publishable patch was reconstructed through the GitHub API; GitHub Actions at its exact committed bytes is the required regression evidence before promotion. Earlier local test counts are not proof for the reconstructed commit. Read the exact CI jobs and deployment source pin for current status.

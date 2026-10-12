@@ -7,12 +7,20 @@ API change impact analysis, verified patch proposals and GitHub PR approval work
 The first executable slice accepts an authorized analysis request, persists a tenant-scoped job, runs a deterministic OpenAPI fixture diff through a local worker, and exposes findings/status. It does not perform GitHub writes, arbitrary code execution, AI provider calls, or customer-data processing.
 
 ## MVP run and test
+
 ```bash
-python -m pip install -e 'apps/api[test]'
+python -m pip install --require-hashes -r requirements-runtime.lock
+python -m pip install -e 'apps/api[test]' -r scripts/requirements-verification.txt
+export APP_ENV=development AUTH_MODE=development
+export AUTH_ISSUER=https://issuer.synthetic.invalid AUTH_AUDIENCE=forgeworks-api
+export DEV_AUTH_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+export ARTIFACT_SIGNING_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+python scripts/development_token.py
 APISHIELD_SEED_FIXTURE=1 PYTHONPATH=apps/api/src uvicorn apishield_agent.main:app --reload
-python -W error -m pytest tests/unit tests/integration
 ```
-The default SQLite store, synthetic HS256 issuer, and golden fixture are development/test-only. See `docs/evidence/MVP_CHECKPOINT.md`.
+
+The printed token lasts 15 minutes and belongs to the local synthetic tenant/user. Use a second terminal with the same explicit development environment to run python -W error -m pytest tests. Never enable fixtures or reuse the development token on hosted infrastructure or customer data.
+
 
 ## Static blueprint viewer
 `apps/web/` contains a vanilla HTML/JS read-only viewer for the canonical analysis, job, and findings endpoints. Run the API and static server as documented in `apps/web/README.md`; the viewer requires an analysis ID and job ID from the analysis response. GitHub writes remain disabled.
@@ -36,7 +44,7 @@ python scripts/validate_openapi_independent.py
 CI runs on main and verifies the complete test tree, OpenAPI/event contracts, generated TypeScript client, implemented PostgreSQL MVP runtime, tenant RLS/concurrency and disposable logical backup/restore. These are scoped synthetic proofs; full G1-E and production operations remain open.
 
 ## Non-goals at this stage
-No production deployment, customer data, code-execution agent, public access, financial mutation, license assertion or fake passing tests.
+No production deployment, customer data, code-execution agent, customer production access, financial mutation, license assertion or fake passing tests.
 
 ## Governance
 The owner approved proceeding with GitHub bootstrap. Technical G1-E controls are still pending until their tests actually pass and evidence is reviewed. See `docs/governance/MASTER_G1_DECISION.md` for pre-approval baseline language; the owner approval is recorded here as a later decision.
@@ -54,3 +62,7 @@ GitHub App webhook intake now verifies `sha256` signatures over the exact body, 
 
 
 A bounded [TypeScript caller profile](docs/architecture/TYPESCRIPT_CALLER_PROFILE.md) can now propose actual source diffs for literal global-fetch endpoint relocations. It remains an offline review tool; product worker/approval integration and sandbox build proof are still unfinished.
+
+## Hosted release verification
+
+See [runtime identity, private telemetry and production acceptance](ops/runbooks/RUNTIME_RELEASE_VERIFICATION.md). Hosted releases expose a bounded source fingerprint and require a separate server-only metrics credential. Production startup requires separate infrastructure and an actual trusted, signed acceptance receipt. An unsigned template or passing synthetic CI does not establish production acceptance.

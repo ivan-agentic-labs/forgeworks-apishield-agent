@@ -185,6 +185,8 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
 
     app = FastAPI(title="APIShield Agent MVP", version="0.2.0", lifespan=lifespan)
     app.add_middleware(BodyBudgetMiddleware)
+    from apishield_agent.presentation.operations import register_operations
+    register_operations(app, ROOT, "apishield-agent")
     cors_origins = [origin.strip() for origin in os.getenv("APISHIELD_CORS_ORIGINS", "").split(",") if origin.strip()]
     if cors_origins:
         app.add_middleware(
