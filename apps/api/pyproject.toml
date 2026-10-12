@@ -1,7 +1,7 @@
 [project]
 name = "forgeworks-apishield-agent"
 version = "0.1.0"
-description = "Synthetic MVP for deterministic API change analysis"
+description = "Deterministic API compatibility analysis and approval-bound patch proposals"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115,<1",

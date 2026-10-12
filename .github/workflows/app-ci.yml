@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install MVP and verification dependencies
-        run: python -m pip install -e 'apps/api[test]' -r scripts/requirements-verification.txt
+        run: python -m pip install --require-hashes -r requirements-runtime.lock && python -m pip install -e 'apps/api[test]' -r scripts/requirements-verification.txt
       - name: Install browser for live static UI smoke test
         run: python -m playwright install chromium
       - name: Run unit, integration, resilience, and E2E acceptance tests
@@ -43,3 +43,5 @@ jobs:
           npm ci --ignore-scripts --prefix packages/caller-analysis
           npm test --prefix packages/caller-analysis
           APISHIELD_CALLER_CLI_PROOF=yes python -W error -m pytest tests/unit/test_typescript_caller_cli.py
+      - name: Print runtime manifest for exact source verification
+        run: python scripts/runtime_manifest.py
