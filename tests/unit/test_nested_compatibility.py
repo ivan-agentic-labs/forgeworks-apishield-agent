@@ -141,3 +141,43 @@ def test_operation_parameter_invalid_container_has_typed_failure():
     new["paths"]["/items"]["post"]["parameters"] = {"bad": "shape"}
     with pytest.raises(ValueError, match="CONTRACT_PARAMETER_SHAPE_INVALID"):
         diff(old, new)
+
+
+@pytest.mark.parametrize("keyword,before,after", [
+    ("pattern", "^a", "^b"),
+    ("format", "email", "uuid"),
+    ("multipleOf", 1, 2),
+    ("const", "ready", "done"),
+    ("uniqueItems", False, True),
+    ("contains", {"type": "string"}, {"type": "integer"}),
+    ("patternProperties", {"^a": {"type": "string"}}, {"^b": {"type": "string"}}),
+    ("propertyNames", {"pattern": "^[a-z]+$"}, {"pattern": "^[A-Z]+$"}),
+    ("readOnly", False, True),
+])
+def test_changed_unsupported_schema_assertions_require_review(keyword, before, after):
+    old = contract({"type": "object", keyword: before}, True)
+    new = contract({"type": "object", keyword: after}, True)
+    findings = diff(old, new)
+    assert any(
+        f.rule_id == "UNSUPPORTED_SCHEMA_ASSERTION_CHANGED"
+        and f.severity == "REVIEW"
+        and f.coverage == "UNSUPPORTED"
+        and f.pointer.endswith("/" + keyword)
+        for f in findings
+    ), findings
+
+
+def test_unmodified_unsupported_assertion_does_not_invent_change():
+    spec = contract({"type": "string", "pattern": "^owned-[a-z]+$"})
+    assert diff(spec, deepcopy(spec)) == []
+
+
+def test_nested_unsupported_assertion_uses_escaped_json_pointer():
+    old = contract({"type": "object", "properties": {"a/b~c": {"type": "string", "pattern": "^a"}}}, True)
+    new = deepcopy(old)
+    schema(new, True)["properties"]["a/b~c"]["pattern"] = "^b"
+    assert any(
+        f.rule_id == "UNSUPPORTED_SCHEMA_ASSERTION_CHANGED"
+        and f.pointer.endswith("/properties/a~1b~0c/pattern")
+        for f in diff(old, new)
+    )
