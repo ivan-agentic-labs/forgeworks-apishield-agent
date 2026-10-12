@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import uuid
 
 CANARY = r'''
@@ -64,6 +65,22 @@ def run(command, timeout):
     return result.stdout
 
 
+def pull_image_with_bounded_retry(image):
+    """Retry only the fixed upstream image pull; never bypass sandbox canaries.
+
+    Hosted runner / registry network outages can be transient. Three attempts
+    are allowed, with fixed short delays. A persistent failure remains FAIL,
+    not an unverified skip or locally cached replacement.
+    """
+    for attempt in range(3):
+        try:
+            return run(['docker', 'pull', image], 90)
+        except RuntimeError as exc:
+            if attempt == 2:
+                raise RuntimeError('Required sandbox image pull failed after 3 bounded attempts; proof BLOCKED') from exc
+            time.sleep(2 * (attempt + 1))
+
+
 def sandbox_command(image_id, name):
     if not image_id.startswith('sha256:') or len(image_id) != 71 or any(c not in '0123456789abcdef' for c in image_id[7:]):
         raise ValueError('An immutable local image ID is required')
@@ -82,7 +99,7 @@ def main():
         raise SystemExit('Docker unavailable: BLOCKED, not PASS')
     # Pull a named upstream version, then execute only its resolved immutable ID.
     # This records provenance but is NOT an independently approved image digest.
-    run(['docker','pull','public.ecr.aws/docker/library/python:3.12-alpine'],120)
+    pull_image_with_bounded_retry('public.ecr.aws/docker/library/python:3.12-alpine')
     image = json.loads(run(['docker','image','inspect','public.ecr.aws/docker/library/python:3.12-alpine'],10))[0]
     image_id=image['Id'];name='fw-synthetic-sandbox-'+uuid.uuid4().hex
     try:
