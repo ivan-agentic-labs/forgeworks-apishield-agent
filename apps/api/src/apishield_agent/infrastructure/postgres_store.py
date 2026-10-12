@@ -14,6 +14,7 @@ from uuid import UUID, uuid4
 
 import psycopg
 from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 
 from apishield_agent.infrastructure.store import Store, now, later
 
@@ -57,6 +58,11 @@ class Connection:
             statement = statement.replace("INSERT OR IGNORE INTO", "INSERT INTO", 1) + " ON CONFLICT DO NOTHING"
         statement = statement.replace("?", "%s")
         try:
+            # Reads and transaction-local settings do not need a recoverable
+            # write savepoint. An unexpected read error rolls back the outer
+            # transaction before its connection is returned to the pool.
+            if statement.lstrip().upper().startswith(("SELECT ", "SET ")):
+                return Cursor(self.connection.execute(statement, parameters))
             # A savepoint preserves SQLite's recoverable statement-failure semantics.
             with self.connection.transaction():
                 cursor = self.connection.execute(statement, parameters)
@@ -96,6 +102,18 @@ class PostgresStore(Store):
                 raise ValueError("Apply migration 002 with the migration role before starting runtime")
             if not db.execute("SELECT to_regclass('analysis_source_snapshots') AS present").fetchone()['present']:
                 raise ValueError('Apply migration 004 before starting snapshot-backed analysis runtime')
+        self._pool = ConnectionPool(
+            dsn, kwargs={"row_factory": dict_row, "connect_timeout": 5,
+                         "prepare_threshold": None},
+            min_size=1, max_size=4, timeout=5, max_waiting=16,
+            open=False, name="apishield-runtime",
+        )
+
+    def start_pool(self):
+        self._pool.open(wait=True, timeout=8)
+
+    def close(self):
+        self._pool.close()
 
     @tenant_method
     def session_active(self, tenant, user, session_id):
@@ -133,11 +151,13 @@ class PostgresStore(Store):
         if tenant is None:
             raise ValueError("A transaction requires an explicit tenant context")
         tenant = str(UUID(str(tenant)))
-        with psycopg.connect(self.dsn, row_factory=dict_row, connect_timeout=5) as db:
+        self._pool.open()
+        with self._pool.connection() as db:
             db.execute("SET LOCAL ROLE fw_apishield_agent_rw")
             db.execute("SELECT set_config('app.tenant_id', %s, true)", (tenant,))
             yield Connection(db)
-        # The connection is closed and its transaction-local context cannot leak.
+        # Commit/rollback clears SET LOCAL role, tenant and JWT subject before
+        # the connection returns to the bounded pool. No session context cache.
 
     def seed_demo(self, before, after):
         raise ValueError("PostgreSQL identity provisioning requires the separate migration/provisioning role")

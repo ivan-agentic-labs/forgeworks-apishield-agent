@@ -71,7 +71,12 @@ def main():
     stop = threading.Event()
     for event in (signal.SIGINT, signal.SIGTERM):
         signal.signal(event, lambda *_: stop.set())
-    worker.serve(stop)
+    try:
+        worker.serve(stop)
+    finally:
+        close_store = getattr(store, 'close', None)
+        if close_store:
+            close_store()
 
 
 if __name__ == '__main__':
