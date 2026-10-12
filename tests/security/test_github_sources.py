@@ -165,3 +165,27 @@ def test_installation_access_token_must_be_scoped_to_one_expected_repository(key
         GitHubSources('123',key,mapping(),server).snapshot(analysis(),{'installation_id':1})
     # Do not contact repository metadata or source endpoints with a broad token.
     assert len(server.calls) == 1 and server.calls[0][0] == 'POST'
+
+
+@pytest.mark.parametrize("raw", [
+    '{"a":{}, "a":{"repository_id":456}}',
+    '{"mapping":{"repository_id":456,"repository_id":789}}',
+    '{"mapping":{"nested":{"owner":"one","owner":"two"}}}',
+])
+def test_provisioned_source_mapping_rejects_duplicate_json_keys(monkeypatch, raw):
+    monkeypatch.setenv("APISHIELD_GITHUB_READS_ENABLED", "1")
+    monkeypatch.setenv("APISHIELD_GITHUB_APP_ID", "123")
+    monkeypatch.setenv("APISHIELD_GITHUB_APP_PRIVATE_KEY", "synthetic-nonsecret")
+    monkeypatch.setenv("APISHIELD_GITHUB_SOURCE_MAP_JSON", raw)
+    with pytest.raises(SourceError, match="GITHUB_APP_CONFIGURATION_REQUIRED"):
+        GitHubSources.from_environment()
+
+
+def test_unique_provisioned_mapping_remains_accepted(monkeypatch):
+    monkeypatch.setenv("APISHIELD_GITHUB_READS_ENABLED", "1")
+    monkeypatch.setenv("APISHIELD_GITHUB_APP_ID", "123")
+    monkeypatch.setenv("APISHIELD_GITHUB_APP_PRIVATE_KEY", "synthetic-nonsecret")
+    monkeypatch.setenv("APISHIELD_GITHUB_SOURCE_MAP_JSON", json.dumps(mapping()))
+    source = GitHubSources.from_environment()
+    assert source is not None
+    assert source.mappings == mapping()

@@ -59,7 +59,15 @@ class GitHubSources:
             raw = os.environ['APISHIELD_GITHUB_SOURCE_MAP_JSON']
             if len(raw.encode()) > 65536:
                 raise ValueError('limit')
-            mappings = json.loads(raw)
+            def unique_pairs(pairs):
+                result = {}
+                for key, value in pairs:
+                    if key in result:
+                        raise ValueError('duplicate mapping key')
+                    result[key] = value
+                return result
+
+            mappings = json.loads(raw, object_pairs_hook=unique_pairs)
             if not isinstance(mappings, dict):
                 raise ValueError('shape')
             return cls(os.environ['APISHIELD_GITHUB_APP_ID'], os.environ['APISHIELD_GITHUB_APP_PRIVATE_KEY'], mappings)
