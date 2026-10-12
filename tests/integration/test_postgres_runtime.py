@@ -89,6 +89,32 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
     with pytest.raises(ValueError,match='superuser'):
         PostgresStore(owner)
     store=PostgresStore(runtime)
+    # Force one backend so reuse, rollback and tenant/JWT cleanup are tested,
+    # rather than accidentally receiving a fresh connection for each tenant.
+    store._pool.resize(1, 1)
+    with store.conn(TENANT) as db:
+        backend = db.execute('SELECT pg_backend_pid()').fetchone()[0]
+        db.execute("SELECT set_config('request.jwt.claim.sub', ?, true)", (USER,))
+    with store.conn(other) as db:
+        assert db.execute('SELECT pg_backend_pid()').fetchone()[0] == backend
+        assert db.execute("SELECT nullif(current_setting('request.jwt.claim.sub', true), '')").fetchone()[0] is None
+        assert len(db.execute('SELECT * FROM repositories').fetchall()) == 1
+    with store._pool.connection() as db:
+        assert db.execute('SELECT current_user').fetchone()['current_user'] == 'fw_runtime_test'
+        assert db.execute("SELECT nullif(current_setting('app.tenant_id', true), '') AS tenant").fetchone()['tenant'] is None
+        assert db.execute('SELECT count(*) AS count FROM repositories').fetchone()['count'] == 0
+    with pytest.raises(RuntimeError, match='rollback fixture'):
+        with store.conn(TENANT) as db:
+            db.execute("UPDATE repositories SET default_branch='must-rollback'")
+            raise RuntimeError('rollback fixture')
+    with store.conn(TENANT) as db:
+        assert db.execute('SELECT default_branch FROM repositories').fetchone()[0] == 'main'
+    with pytest.raises(psycopg.errors.DivisionByZero):
+        with store.conn(TENANT) as db:
+            db.execute('SELECT 1/0')
+    with store.conn(other) as db:
+        assert db.execute('SELECT pg_backend_pid()').fetchone()[0] == backend
+        assert len(db.execute('SELECT * FROM repositories').fetchall()) == 1
     assert store.member_role(TENANT, USER) == 'editor'
     # Verify an actual status change revokes authorization immediately.
     # This runs against the explicitly disposable localhost PostgreSQL fixture.
@@ -248,3 +274,6 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
             db.execute("UPDATE analysis_source_snapshots SET before_base64='tampered'")
     with store.conn(other) as db:
         assert db.execute('SELECT count(*) FROM analysis_source_snapshots').fetchone()[0]==0
+    for peer in peers:
+        peer.close()
+    store.close()

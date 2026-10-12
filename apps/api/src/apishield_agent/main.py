@@ -172,6 +172,9 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        start_pool = getattr(store, "start_pool", None)
+        if start_pool:
+            start_pool()
         t = threading.Thread(target=worker, name="apishield-worker", daemon=True)
         embedded = os.getenv("APISHIELD_EMBEDDED_WORKER", "1") == "1"
         if embedded:
@@ -182,6 +185,9 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             stop.set()
             if embedded:
                 t.join(timeout=5)
+            close_store = getattr(store, "close", None)
+            if close_store:
+                close_store()
 
     app = FastAPI(title="APIShield Agent MVP", version="0.2.0", lifespan=lifespan)
     app.add_middleware(BodyBudgetMiddleware)
@@ -265,6 +271,10 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
                 return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
             row = store.get_analysis(c["tenant_id"], previous["analysis_id"])
         else:
+            from apishield_agent.application.execution_readiness import hosted_execution_error
+            unavailable = hosted_execution_error(c["tenant_id"], store, analysis_worker.source_reader)
+            if unavailable:
+                return _problem(503, unavailable, "Analysis execution is not configured for this tenant")
             try:
                 row = store.create_analysis(c["tenant_id"], c["sub"], str(repository_id), body.base_sha, body.head_sha, body.capability_profile, idempotency_key, request_sha)
             except ValueError as error:
