@@ -364,8 +364,23 @@ def deterministic_openapi_diff_bytes(before_bytes: bytes, after_bytes: bytes) ->
         if new is None:
             _record_finding(findings, source_digests, "OPERATION_REMOVED", pointer)
             continue
+        # Auth scheme requirements may be inherited from document-level
+        # security, overridden at operation level, or explicitly disabled with
+        # []. Changes can lock out customers and are not covered by schemas.
+        old_security = old.get("security", before.get("security", []))
+        new_security = new.get("security", after.get("security", []))
+        if old_security != new_security:
+            _record_finding(findings, source_digests,
+                            "SECURITY_REQUIREMENT_CHANGED", pointer + "/security",
+                            "REVIEW", "UNSUPPORTED")
         _compare_request(findings, source_digests, before, after, route, method, old, new)
         _compare_responses(findings, source_digests, before, after, route, method, old, new)
+    before_schemes = (before.get("components") or {}).get("securitySchemes", {})
+    after_schemes = (after.get("components") or {}).get("securitySchemes", {})
+    if before_schemes != after_schemes:
+        _record_finding(findings, source_digests,
+                        "SECURITY_SCHEME_DEFINITION_CHANGED",
+                        "/components/securitySchemes", "REVIEW", "UNSUPPORTED")
     for pointer in sorted(set(unsupported_constructs(before)) | set(unsupported_constructs(after))):
         _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer, "REVIEW", "UNSUPPORTED")
     keys = {key[1:] for key in before_required} | {key[1:] for key in after_required}
