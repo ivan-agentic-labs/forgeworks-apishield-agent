@@ -222,6 +222,25 @@ def _compare_schema_tree(findings, source_digests, before, after, old, new, poin
         _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer, "REVIEW", "UNSUPPORTED")
         return
     _compare_schema_pair(findings, source_digests, old, new, pointer, response=response, family=family)
+    # These JSON Schema/OpenAPI assertions affect accepted instances but the
+    # bounded comparator does not prove their implication or satisfiability.
+    # A changed unsupported assertion must never be silently reported as
+    # compatible simply because the supported type/enum checks are unchanged.
+    unsupported_assertions = {
+        "pattern", "format", "multipleOf", "const", "uniqueItems",
+        "contains", "minContains", "maxContains", "prefixItems",
+        "patternProperties", "propertyNames", "dependentRequired",
+        "dependentSchemas", "unevaluatedProperties", "unevaluatedItems",
+        "contentEncoding", "contentMediaType", "contentSchema",
+        "readOnly", "writeOnly",
+    }
+    absent = object()
+    for keyword in sorted(unsupported_assertions):
+        if old.get(keyword, absent) != new.get(keyword, absent):
+            _record_finding(
+                findings, source_digests, "UNSUPPORTED_SCHEMA_ASSERTION_CHANGED",
+                pointer + "/" + keyword, "REVIEW", "UNSUPPORTED",
+            )
     lower_bounds = {"minimum", "exclusiveMinimum", "minLength", "minItems", "minProperties"}
     upper_bounds = {"maximum", "exclusiveMaximum", "maxLength", "maxItems", "maxProperties"}
     for keyword in sorted(lower_bounds | upper_bounds):
