@@ -1,0 +1,51 @@
+{
+  "schema": "forgeworks-fleet-staging-candidate-v1",
+  "environment": "staging",
+  "products": [
+    {
+      "product": "apishield-agent",
+      "runtime_manifest": {
+        "file_count": 44,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "ca1813c6b374ed84b504a7a6282cb588e68fc8896dc9138662550725e6b95711"
+      },
+      "revision_sha": "7a1d16f829d80e85603ffcd83ddc40fecddbe148"
+    },
+    {
+      "product": "accessfix-ai",
+      "runtime_manifest": {
+        "file_count": 37,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "cd226a9777e79c9edd12bd3ff8ca8d30202308d47e790ea5a60f3c02ba597bf4"
+      },
+      "revision_sha": "895926525216620e87e3f7c88bef8b7b0849e731"
+    },
+    {
+      "product": "specforge-ai",
+      "runtime_manifest": {
+        "file_count": 34,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "5fed4eadc1be7b44c4686896971aca4900447c323ca8d043d7574cc35cebfbc7"
+      },
+      "revision_sha": "c0238e3656c31befc96af5e47a40d61599b2ce59"
+    },
+    {
+      "product": "agenttest-lab",
+      "runtime_manifest": {
+        "file_count": 37,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "8f6624384a8b69d127f898d0b750aad523a9c93fd70382a05cab36f9fde569a8"
+      },
+      "revision_sha": "75de8e7676a79c9b72f62b85afec40653e23deae"
+    },
+    {
+      "product": "datareconcile-ai",
+      "runtime_manifest": {
+        "file_count": 37,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "180ef48d72db4b31143af16da02589f2c20ab6d2ca1fd64339e1a63abaf4b830"
+      },
+      "revision_sha": "535d6014478da110ac96dc6f701d9c6a5a677e28"
+    }
+  ]
+}
