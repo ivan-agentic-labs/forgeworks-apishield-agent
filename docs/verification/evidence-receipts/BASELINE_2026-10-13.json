@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "record_id": "apishield.baseline.2026-10-13",
+  "repository": "ivan-agentic-labs/forgeworks-apishield-agent",
+  "product": "APIShield Agent",
+  "record_type": "baseline_snapshot",
+  "recorded_on": "2026-10-14",
+  "evaluated_source_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+  "gate_assessment": {
+    "g1_d": "CONDITIONAL_PENDING_SIGNOFF",
+    "g1_e": "PARTIAL_OPEN_BLOCKED",
+    "production_acceptance": "NOT_ACCEPTED"
+  },
+  "evidence": [
+    {
+      "kind": "application_ci",
+      "name": "APIShield MVP Application CI",
+      "status": "PASS",
+      "run_id": "38428557947",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38428557947",
+      "environment": "CI",
+      "workflow_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+      "subject_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+      "subject_identity": "VERIFIED",
+      "scope": "Automated application test suite and configured CI checks for the exact checkout SHA.",
+      "limitations": ["A green CI run is not authenticated customer acceptance or production readiness."]
+    },
+    {
+      "kind": "contract_validation",
+      "name": "G1 Contract Verification",
+      "status": "PASS",
+      "run_id": "38428558211",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38428558211",
+      "environment": "CI",
+      "workflow_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+      "subject_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+      "subject_identity": "VERIFIED",
+      "scope": "Bootstrap/sensitive-content checks, contract shape, event schema, and independent OpenAPI validation.",
+      "limitations": ["Contract checks do not establish complete OpenAPI compatibility or product acceptance."]
+    },
+    {
+      "kind": "postgres_runtime",
+      "name": "APIShield PostgreSQL Runtime Proof",
+      "status": "PASS",
+      "run_id": "38428557907",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38428557907",
+      "environment": "DISPOSABLE",
+      "workflow_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+      "subject_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+      "subject_identity": "VERIFIED",
+      "scope": "Disposable PostgreSQL runtime and configured integration/RLS proof for the exact checkout SHA.",
+      "limitations": ["Disposable database evidence does not prove production PITR, regional recovery, or operational RTO/RPO."]
+    },
+    {
+      "kind": "other",
+      "name": "Disposable sandbox canary",
+      "status": "PASS",
+      "run_id": "38428558166",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38428558166",
+      "environment": "DISPOSABLE",
+      "workflow_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+      "subject_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+      "subject_identity": "VERIFIED",
+      "scope": "Disposable CI sandbox checks defined by the repository workflow.",
+      "limitations": ["A CI canary is not an independent sandbox escape/egress audit or a production runner."]
+    },
+    {
+      "kind": "staging_readiness",
+      "name": "Staging public readiness smoke",
+      "status": "PASS",
+      "run_id": "38428557942",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38428557942",
+      "environment": "STAGING",
+      "workflow_commit": "8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa",
+      "subject_commit": null,
+      "subject_identity": "UNKNOWN",
+      "scope": "Public liveness/readiness and configured anonymous-denial checks against the staging endpoint.",
+      "limitations": ["The deployed service SHA is not proven by this smoke record.", "This is not authenticated business-flow or customer acceptance."]
+    }
+  ],
+  "limitations": [
+    "G1-D is conditional/pending signoff and G1-E remains partial/open/blocked; this receipt does not change either gate.",
+    "The repository's scoped CI and readiness checks do not establish production readiness, customer acceptance, or permission to enable external effects.",
+    "The staging smoke workflow commit does not identify the deployed application commit."
+  ],
+  "source_documents": [
+    {"path": "docs/verification/CURRENT_GATE_EVIDENCE.md", "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/blob/8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa/docs/verification/CURRENT_GATE_EVIDENCE.md"},
+    {"path": "docs/verification/DESIGN_GATE_STATUS.md", "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/blob/8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa/docs/verification/DESIGN_GATE_STATUS.md"},
+    {"path": "docs/verification/TEST_PLAN.md", "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/blob/8cfc17c4b7bf9e3d0b5ecd62cb0084ecbbc1aafa/docs/verification/TEST_PLAN.md"}
+  ]
+}
