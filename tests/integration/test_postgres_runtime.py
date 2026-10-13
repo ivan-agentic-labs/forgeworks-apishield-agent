@@ -6,6 +6,7 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event
 from uuid import uuid4
 
 import psycopg
@@ -116,6 +117,32 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         assert db.execute('SELECT pg_backend_pid()').fetchone()[0] == backend
         assert len(db.execute('SELECT * FROM repositories').fetchall()) == 1
     assert store.member_role(TENANT, USER) == 'editor'
+    # Reproduce the repeatable-read/row-lock race that PostgreSQL rejects with 40001.
+    snapshot_ready, continue_to_lock = Event(), Event()
+    def lock_after_concurrent_revoke():
+        try:
+            with store.conn(TENANT, repeatable_read=True) as db:
+                assert db.execute('SELECT permission_state FROM repositories WHERE tenant_id=? AND id=?',(TENANT,REPOSITORY)).fetchone()[0]=='READ'
+                snapshot_ready.set()
+                if not continue_to_lock.wait(10):
+                    raise RuntimeError('timed out waiting for concurrent repository update')
+                db.execute('SELECT id FROM repositories WHERE tenant_id=? AND id=? FOR SHARE',(TENANT,REPOSITORY)).fetchone()
+            return None
+        except Exception as error:
+            return error
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        reader=executor.submit(lock_after_concurrent_revoke)
+        assert snapshot_ready.wait(10)
+        try:
+            with psycopg.connect(owner) as provisioning:
+                changed=provisioning.execute("UPDATE repositories SET permission_state='REVOKED' WHERE tenant_id=%s AND id=%s",(TENANT,REPOSITORY))
+                assert changed.rowcount==1
+        finally:
+            continue_to_lock.set()
+        race_error=reader.result(timeout=10)
+        assert getattr(race_error,'sqlstate',None)=='40001',repr(race_error)
+    with psycopg.connect(owner) as provisioning:
+        provisioning.execute("UPDATE repositories SET permission_state='READ' WHERE tenant_id=%s AND id=%s",(TENANT,REPOSITORY))
     # Verify an actual status change revokes authorization immediately.
     # This runs against the explicitly disposable localhost PostgreSQL fixture.
     with psycopg.connect(owner) as provisioning:
@@ -184,6 +211,43 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
         assert patch.status_code==200 and hashlib.sha256(patch.content).hexdigest()==proposed['patch_sha256']
         approved=client.post(f"/v1/proposals/{proposed['id']}/approvals",headers=headers('patch:approve','pg-approve-key-001'),json={'patch_sha256':proposed['patch_sha256'],'base_sha':'a'*40,'decision':'approve','expected_version':1})
         assert approved.status_code==201,approved.text
+        evidence=client.get(f"/v1/analyses/{aid}/evidence-export",headers=headers('evidence:read','pg-evidence-read-001'))
+        assert evidence.status_code==200,evidence.text
+        bundle=evidence.json()
+        supplied=bundle.pop('bundle_sha256')
+        canonical=json.dumps(bundle,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False).encode('utf-8')
+        assert hashlib.sha256(canonical).hexdigest()==supplied
+        assert bundle['tenant_id']==TENANT and bundle['evidence_status']=='PARTIAL'
+        assert bundle['decisions']['proposals'][0]['approval_records'][0]['id']==approved.json()['id']
+        assert 'APPROVAL_DECISION_AUDIT_EVENT_NOT_PERSISTED' in bundle['missing_components']
+        assert evidence.headers['cache-control']=='no-store'
+        assert b'before_base64' not in evidence.content and b'patch_text' not in evidence.content
+        api_store=client.app.state.store
+        original_snapshot=api_store.analysis_evidence_snapshot
+        snapshot_attempts=0
+        def serialization_then_revoke(tenant,analysis_id):
+            nonlocal snapshot_attempts
+            snapshot_attempts+=1
+            if snapshot_attempts==1:
+                with psycopg.connect(owner) as provisioning:
+                    provisioning.execute("UPDATE repositories SET permission_state='REVOKED' WHERE tenant_id=%s AND id=%s",(TENANT,REPOSITORY))
+                conflict=RuntimeError('synthetic serialization failure after concurrent revocation')
+                conflict.sqlstate='40001'
+                raise conflict
+            return original_snapshot(tenant,analysis_id)
+        monkeypatch.setattr(api_store,'analysis_evidence_snapshot',serialization_then_revoke)
+        raced_evidence=client.get(f"/v1/analyses/{aid}/evidence-export",headers=headers('evidence:read','pg-evidence-race-001'))
+        assert snapshot_attempts==2 and raced_evidence.status_code==403
+        assert raced_evidence.json()['code']=='REPOSITORY_ACCESS_REVOKED'
+        monkeypatch.setattr(api_store,'analysis_evidence_snapshot',original_snapshot)
+        with psycopg.connect(owner) as provisioning:
+            provisioning.execute("UPDATE repositories SET permission_state='READ' WHERE tenant_id=%s AND id=%s",(TENANT,REPOSITORY))
+        with psycopg.connect(owner) as provisioning:
+            provisioning.execute("UPDATE repositories SET permission_state='REVOKED' WHERE tenant_id=%s AND id=%s",(TENANT,REPOSITORY))
+        revoked_evidence=client.get(f"/v1/analyses/{aid}/evidence-export",headers=headers('evidence:read','pg-evidence-revoked-001'))
+        assert revoked_evidence.status_code==403 and revoked_evidence.json()['code']=='REPOSITORY_ACCESS_REVOKED'
+        with psycopg.connect(owner) as provisioning:
+            provisioning.execute("UPDATE repositories SET permission_state='READ' WHERE tenant_id=%s AND id=%s",(TENANT,REPOSITORY))
         blocked=client.post(f"/v1/proposals/{proposed['id']}/pull-requests",headers=headers('github:write','pg-github-key-001'),json={'approval_id':approved.json()['id'],'target_branch':'main'})
         assert blocked.status_code==403 and blocked.json()['code']=='GITHUB_WRITE_DISABLED'
         content=(ROOT/'fixtures/golden/before.yaml').read_bytes()

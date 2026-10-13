@@ -55,6 +55,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analyses/{analysis_id}/evidence-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export bounded tenant-scoped metadata-only analysis evidence
+         * @description Returns a canonical JSON attachment containing source/output digests, findings, proposals, approvals and existing audit event references. Raw source and patch bytes are never included. Each collection is limited to 1000 items and the response to 2 MiB; oversized exports fail rather than truncate. Current completeness is PARTIAL when actor/version/audit/retention evidence is not persisted.
+         */
+        get: operations["get_v1_analyses_analysis_id_evidence_export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/analyses/{analysis_id}/proposals": {
         parameters: {
             query?: never;
@@ -337,6 +357,102 @@ export interface components {
             items: components["schemas"]["BreakingFinding"][];
             next_cursor: string | null;
             has_more: boolean;
+        };
+        /** @description Canonical JSON manifest whose bundle_sha256 covers the UTF-8 canonical serialization of all other fields; PARTIAL is an explicit finding, not a successful completeness claim. */
+        AnalysisEvidenceBundle: {
+            /** @constant */
+            schema_version: "1";
+            /** @enum {string} */
+            evidence_status: "PARTIAL" | "COMPLETE";
+            /** Format: uuid */
+            tenant_id: string;
+            analysis: components["schemas"]["EvidenceAnalysis"];
+            input_digests: components["schemas"]["EvidenceInputDigests"];
+            processing: components["schemas"]["EvidenceProcessing"];
+            decisions: components["schemas"]["EvidenceDecisions"];
+            output: components["schemas"]["EvidenceOutput"];
+            audit_events: components["schemas"]["EvidenceAuditEvent"][];
+            missing_components: ("ANALYSIS_ACTOR_OR_REQUEST_DIGEST_NOT_PERSISTED" | "INPUT_SOURCE_DIGESTS_NOT_PERSISTED" | "OUTPUT_DIGEST_NOT_PERSISTED" | "TERMINAL_OUTCOME_AUDIT_EVENT_NOT_PERSISTED" | "FINDING_RULE_VERSION_NOT_PERSISTED" | "PROPOSAL_AUDIT_EVENT_NOT_PERSISTED" | "APPROVAL_DECISION_AUDIT_EVENT_NOT_PERSISTED" | "ANALYZER_VERSION_NOT_PERSISTED" | "POLICY_VERSION_NOT_PERSISTED" | "TWO_YEAR_RETENTION_NOT_IMPLEMENTED" | "EXPORT_ACCESS_NOT_AUDITED")[];
+            bundle_sha256: string;
+        };
+        EvidenceAnalysis: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "SUCCEEDED" | "FAILED_TERMINAL" | "CANCELLED";
+            /** Format: uuid */
+            repository_id: string;
+            base_sha: string;
+            head_sha: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            completed_at: string | null;
+            last_error_code: string | null;
+            /** Format: uuid */
+            actor_id: string | null;
+            request_sha256: string | null;
+        };
+        EvidenceInputDigests: {
+            base_contract_sha256: string | null;
+            head_contract_sha256: string | null;
+        };
+        EvidenceProcessing: {
+            declared_capability_profile: string;
+            analyzer_version: string | null;
+            policy_version: string | null;
+        };
+        EvidenceDecisions: {
+            findings: components["schemas"]["EvidenceFinding"][];
+            proposals: components["schemas"]["EvidenceProposal"][];
+        };
+        EvidenceFinding: {
+            /** Format: uuid */
+            id: string;
+            rule_id: string;
+            severity: string;
+            openapi_pointer: string;
+            evidence_digest: string;
+            coverage: string;
+        };
+        EvidenceProposal: {
+            /** Format: uuid */
+            id: string;
+            status: string;
+            /** Format: date-time */
+            created_at: string;
+            base_sha: string;
+            patch_sha256: string;
+            sandbox_status: string;
+            approval_status: string;
+            version: number;
+            approval_records: components["schemas"]["EvidenceApproval"][];
+        };
+        EvidenceApproval: {
+            /** Format: uuid */
+            id: string;
+            status: string;
+            /** Format: date-time */
+            created_at: string;
+            patch_sha256: string;
+            base_sha: string;
+            /** Format: uuid */
+            reviewer_id: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        EvidenceOutput: {
+            result_sha256: string | null;
+        };
+        EvidenceAuditEvent: {
+            /** Format: uuid */
+            id: string;
+            event_type: string;
+            /** Format: uuid */
+            aggregate_id: string;
+            /** Format: date-time */
+            created_at: string;
+            payload_sha256: string;
         };
         /**
          * @description RFC 9457 problem details, with stable application extension code and correlation request_id
@@ -714,6 +830,86 @@ export interface operations {
             };
             /** @description Dependency unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_v1_analyses_analysis_id_evidence_export: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bounded evidence export; response is not persisted and is not an audit-completeness attestation */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    "X-Content-Type-Options"?: "nosniff";
+                    /** @description Attachment filename contains the validated analysis UUID */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisEvidenceBundle"];
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden, missing scope, inactive membership, or revoked repository access */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Analysis is not visible in the verified tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Analysis is not terminal, stored evidence is invalid, or a concurrent repository change could not be retried safely */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Evidence exceeds the bounded item or response-size limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid analysis UUID or request validation failure */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

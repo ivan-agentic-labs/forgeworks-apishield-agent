@@ -146,13 +146,15 @@ class PostgresStore(Store):
             return db.execute("SELECT 1 FROM memberships WHERE tenant_id=? AND user_id=? AND status='ACTIVE'", (tenant, user)).fetchone() is not None
 
     @contextmanager
-    def conn(self, tenant=None):
+    def conn(self, tenant=None, *, repeatable_read=False):
         tenant = tenant or TENANT_CONTEXT.get()
         if tenant is None:
             raise ValueError("A transaction requires an explicit tenant context")
         tenant = str(UUID(str(tenant)))
         self._pool.open()
         with self._pool.connection() as db:
+            if repeatable_read:
+                db.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
             db.execute("SET LOCAL ROLE fw_apishield_agent_rw")
             db.execute("SELECT set_config('app.tenant_id', %s, true)", (tenant,))
             yield Connection(db)
