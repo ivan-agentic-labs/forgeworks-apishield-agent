@@ -1,6 +1,6 @@
 # APIShield Evidence Export Change Advisory — 2026-10-13
 
-**Status:** Candidate implementation on `agent/apishield-metadata-evidence-export`; independent read-only review found no issues. PostgreSQL runtime CI remains pending. This advisory does not change the G1 gate or claim deployment readiness.
+**Status:** Candidate implementation on `agent/apishield-metadata-evidence-export`; independent read-only review found no issues. All six checks on PR #50 passed, including PostgreSQL runtime proof. This advisory does not change the G1 gate or claim deployment readiness.
 
 ## Change classification and scope
 
@@ -46,4 +46,4 @@ Rollback is a code revert of this branch/PR; no migration or persistent export d
 - Independent OpenAPI validation: pass. This is not a runtime test.
 - `git diff --check`: pass.
 
-No disposable PostgreSQL service is configured in this local sandbox; its pytest skip is not a runtime pass. The disposable PostgreSQL CI workflow must execute the updated `test_postgres_runtime.py` on the PR head before the change is treated as verified. Independent review is complete with no findings; owner/release signoffs remain pending.
+No disposable PostgreSQL service is configured in this local sandbox; its pytest skip is not a local runtime pass. The PR workflow ran the updated `tests/integration/test_postgres_runtime.py` against fresh PostgreSQL 17 and reported **1 passed in 1.53s**. All six required PR checks passed. Independent review is complete with no findings; owner/release signoffs remain pending.
