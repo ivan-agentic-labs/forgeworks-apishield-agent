@@ -97,3 +97,95 @@ def test_request_body_required_property_and_response_surface_changes_are_breakin
     assert "RESPONSE_SCHEMA_TYPE_CHANGED" in rules
     assert "RESPONSE_ENUM_VALUE_REMOVED" in rules
     assert "RESPONSE_STATUS_REMOVED" in rules
+
+
+def test_removed_request_media_type_is_breaking_even_when_remaining_schema_is_same():
+    before = document()
+    old_operation = before["paths"]["/items"]["get"]
+    old_operation["requestBody"] = {"content": {
+        "application/json": {"schema": {"type": "object"}},
+        "application/vnd.synthetic+json": {"schema": {"type": "object"}},
+    }}
+    after = deepcopy(before)
+    del after["paths"]["/items"]["get"]["requestBody"]["content"]["application/vnd.synthetic+json"]
+    results = diff(before, after)
+    removed = [row for row in results if row.rule_id == "REQUEST_MEDIA_TYPE_REMOVED"]
+    assert len(removed) == 1, results
+    assert removed[0].severity == "BREAKING"
+    assert removed[0].pointer == "/paths/~1items/get/requestBody/content/application~1vnd.synthetic+json"
+    assert removed[0].evidence_digest == diff(before, after)[0].evidence_digest
+
+
+def test_new_request_media_type_is_not_a_removed_media_break():
+    old = document()
+    old["paths"]["/items"]["get"]["requestBody"] = {
+        "content": {"application/json": {"schema": {"type": "object"}}}
+    }
+    new = deepcopy(old)
+    new["paths"]["/items"]["get"]["requestBody"]["content"]["application/xml"] = {
+        "schema": {"type": "string"}
+    }
+    assert not any(result.rule_id == "REQUEST_MEDIA_TYPE_REMOVED" for result in diff(old, new))
+
+
+def test_removing_entire_request_body_does_not_hide_lost_media_support():
+    old = document()
+    old["paths"]["/items"]["get"]["requestBody"] = {
+        "content": {"application/json": {"schema": {"type": "object"}}}
+    }
+    new = deepcopy(old)
+    del new["paths"]["/items"]["get"]["requestBody"]
+    assert any(result.rule_id == "REQUEST_MEDIA_TYPE_REMOVED" for result in diff(old, new))
+
+
+
+@pytest.mark.parametrize("before_security,after_security", [
+    ([{"ApiKeyAuth": []}], [{"Oauth": ["records:read"]}]),
+    ([{"Oauth": ["records:read"]}], []),
+    ([], [{"ApiKeyAuth": []}]),
+])
+def test_effective_root_security_requirement_change_cannot_be_invisible(before_security, after_security):
+    old = document()
+    new = deepcopy(old)
+    old["security"] = before_security
+    new["security"] = after_security
+    findings = diff(old, new)
+    auth = [entry for entry in findings if entry.rule_id == "SECURITY_REQUIREMENT_CHANGED"]
+    assert len(auth) == 1, findings
+    assert auth[0].pointer == "/paths/~1items/get/security"
+    assert auth[0].severity == "REVIEW"
+    assert auth[0].coverage == "UNSUPPORTED"
+
+
+def test_operation_security_override_inherited_or_disabled_changes_review():
+    old = document()
+    old["security"] = [{"ApiKeyAuth": []}]
+    new = deepcopy(old)
+    new["paths"]["/items"]["get"]["security"] = []
+    assert any(entry.rule_id == "SECURITY_REQUIREMENT_CHANGED" for entry in diff(old, new))
+    # Explicitly overriding the root with the exact inherited requirement
+    # should not invent an authentication incompatibility.
+    new["paths"]["/items"]["get"]["security"] = [{"ApiKeyAuth": []}]
+    assert not any(entry.rule_id == "SECURITY_REQUIREMENT_CHANGED" for entry in diff(old, new))
+
+
+def test_changed_security_scheme_definition_is_reviewable_even_with_same_reference():
+    old = document()
+    old["components"] = {"securitySchemes": {
+        "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "X-Api-Key"}
+    }}
+    old["security"] = [{"ApiKeyAuth": []}]
+    new = deepcopy(old)
+    new["components"]["securitySchemes"]["ApiKeyAuth"]["name"] = "X-New-Key"
+    findings = diff(old, new)
+    changed = [f for f in findings if f.rule_id == "SECURITY_SCHEME_DEFINITION_CHANGED"]
+    assert len(changed) == 1, findings
+    assert changed[0].pointer == "/components/securitySchemes"
+    assert changed[0].coverage == "UNSUPPORTED"
+
+
+def test_unchanged_effective_auth_does_not_raise_false_security_drift():
+    old = document()
+    old["security"] = [{"ApiKeyAuth": []}]
+    new = deepcopy(old)
+    assert not any("SECURITY_" in row.rule_id for row in diff(old, new))

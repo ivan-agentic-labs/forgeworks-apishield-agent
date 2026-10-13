@@ -50,3 +50,6 @@ footer { font-size: .85rem; padding: .5rem 0 2rem; }
   .shell { width: min(100% - 1rem, 980px); padding-top: 1.5rem; }
   .form-grid, .cards { grid-template-columns: 1fr; }
 }
+
+/* Author layout rules must never override the HTML hidden state. */
+[hidden] { display: none !important; }

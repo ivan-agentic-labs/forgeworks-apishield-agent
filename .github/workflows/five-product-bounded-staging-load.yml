@@ -1,0 +1,23 @@
+name: ForgeWorks Five-Product Bounded Staging Performance Proof
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '41 3,15 * * *'
+permissions:
+  contents: read
+# Prevent concurrent scheduled, manual and PR runs from multiplying staging load.
+concurrency:
+  group: forgeworks-five-product-bounded-staging
+  cancel-in-progress: true
+jobs:
+  bounded-staging-load:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Probe live staging with bounded concurrency and report latency
+        run: python3 -W error scripts/probe_bounded_staging_load.py

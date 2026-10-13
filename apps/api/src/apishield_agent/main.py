@@ -14,6 +14,7 @@ from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -54,7 +55,7 @@ class ApproveProposal(StrictModel):
     patch_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     base_sha: str = Field(pattern=r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
     decision: str = Field(pattern=r"^(approve|reject)$")
-    expected_version: int = Field(ge=1)
+    expected_version: int = Field(ge=1, strict=True)
 
 
 class CreatePullRequest(StrictModel):
@@ -171,6 +172,9 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        start_pool = getattr(store, "start_pool", None)
+        if start_pool:
+            start_pool()
         t = threading.Thread(target=worker, name="apishield-worker", daemon=True)
         embedded = os.getenv("APISHIELD_EMBEDDED_WORKER", "1") == "1"
         if embedded:
@@ -181,9 +185,14 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             stop.set()
             if embedded:
                 t.join(timeout=5)
+            close_store = getattr(store, "close", None)
+            if close_store:
+                close_store()
 
     app = FastAPI(title="APIShield Agent MVP", version="0.2.0", lifespan=lifespan)
     app.add_middleware(BodyBudgetMiddleware)
+    from apishield_agent.presentation.operations import register_operations
+    register_operations(app, ROOT, "apishield-agent")
     cors_origins = [origin.strip() for origin in os.getenv("APISHIELD_CORS_ORIGINS", "").split(",") if origin.strip()]
     if cors_origins:
         app.add_middleware(
@@ -194,6 +203,15 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             allow_headers=["Authorization", "Accept", "Content-Type"],
         )
     app.state.store = store
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(_, error: RequestValidationError):
+        # Do not echo raw input or attempt to serialize non-finite values.
+        return JSONResponse(status_code=422, content={
+            "type": "about:blank", "title": "Request rejected", "status": 422,
+            "code": "INVALID_REQUEST", "detail": "Request does not match the input contract",
+            "request_id": "runtime",
+        })
 
     @app.exception_handler(HTTPException)
     async def http_error(_, exc: HTTPException):
@@ -253,6 +271,10 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
                 return _problem(409, "IDEMPOTENCY_CONFLICT", "Idempotency key was used with a different request")
             row = store.get_analysis(c["tenant_id"], previous["analysis_id"])
         else:
+            from apishield_agent.application.execution_readiness import hosted_execution_error
+            unavailable = hosted_execution_error(c["tenant_id"], store, analysis_worker.source_reader)
+            if unavailable:
+                return _problem(503, unavailable, "Analysis execution is not configured for this tenant")
             try:
                 row = store.create_analysis(c["tenant_id"], c["sub"], str(repository_id), body.base_sha, body.head_sha, body.capability_profile, idempotency_key, request_sha)
             except ValueError as error:
@@ -364,6 +386,18 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
     def create_pull_request(proposal_id: UUID, body: CreatePullRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("github:write", store))):
         return _problem(403, "GITHUB_WRITE_DISABLED", "GitHub writes are not enabled in this MVP")
 
+    def verify_transfer_owner(claims: dict) -> None:
+        """Revalidate capability owner and online session at transfer time."""
+        from apishield_agent.presentation.authentication import verify_session, problem
+        tenant, actor = claims["tenant_id"], claims["actor"]
+        if not store.member(tenant, actor):
+            problem(403, "MEMBERSHIP_REVOKED", "Artifact capability owner is not an active member")
+        if os.getenv("AUTH_MODE") == "supabase" and not claims.get("session_id"):
+            problem(403, "ARTIFACT_SESSION_REQUIRED", "A live session-bound transfer capability is required")
+        if claims.get("session_id"):
+            verify_session(store, {"_supabase_session": True, "tenant_id": tenant,
+                                   "sub": actor, "session_id": claims["session_id"]})
+
     @app.post("/v1/artifacts/upload-intents", status_code=201)
     def upload_intent(body: CreateUploadIntent, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("artifact:create", store))):
         bad = _key(idempotency_key)
@@ -378,7 +412,7 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         else:
             row = store.create_artifact(c["tenant_id"], body.kind, body.filename, body.declared_media_type, body.sha256, body.size_bytes)
             store.create_command(c["tenant_id"], c["sub"], "artifact.intent", idempotency_key, request_sha, row["id"])
-        url, expires = artifacts.intent(c["tenant_id"], row["id"], "upload")
+        url, expires = artifacts.intent(c["tenant_id"], row["id"], "upload", actor=c["sub"], session_id=c.get("session_id"))
         return {"artifact_id": row["id"], "status": "INTENT_ISSUED", "upload_url": url, "expires_at": datetime.fromtimestamp(expires, timezone.utc).isoformat().replace("+00:00", "Z"), "required_headers": {"x-artifact-sha256": row["sha256"]}}
 
     @app.post("/v1/artifacts/{artifact_id}/commit", status_code=202)
@@ -422,12 +456,13 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         if row["status"] != "AVAILABLE":
             return _problem(409, "ARTIFACT_NOT_AVAILABLE", "Artifact is not available for download")
         artifacts.verify(c["tenant_id"], row["id"], row["object_generation"], row["sha256"], row["size_bytes"])
-        url, expires = artifacts.intent(c["tenant_id"], row["id"], "download", row["object_generation"])
+        url, expires = artifacts.intent(c["tenant_id"], row["id"], "download", row["object_generation"], actor=c["sub"], session_id=c.get("session_id"))
         return {"artifact_id": row["id"], "download_url": url, "expires_at": datetime.fromtimestamp(expires, timezone.utc).isoformat().replace("+00:00", "Z"), "object_generation": row["object_generation"]}
 
     @app.put("/v1/artifact-transfers/{artifact_id}", status_code=201)
     async def upload_bytes(artifact_id: UUID, request: Request, token: str = Query(max_length=4096)):
         claims = artifacts.capability(token, artifact_id, "upload")
+        verify_transfer_owner(claims)
         row = store.artifact(claims["tenant_id"], str(artifact_id))
         if not row or row["status"] != "INTENT_ISSUED":
             return _problem(409, "ARTIFACT_NOT_PENDING", "Artifact is not pending upload")
@@ -446,6 +481,7 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
     @app.get("/v1/artifact-transfers/{artifact_id}")
     def download_bytes(artifact_id: UUID, token: str = Query(max_length=4096)):
         claims = artifacts.capability(token, artifact_id, "download")
+        verify_transfer_owner(claims)
         row = store.artifact(claims["tenant_id"], str(artifact_id))
         if not row or row["status"] != "AVAILABLE":
             return _problem(409, "ARTIFACT_NOT_AVAILABLE", "Artifact is not available")

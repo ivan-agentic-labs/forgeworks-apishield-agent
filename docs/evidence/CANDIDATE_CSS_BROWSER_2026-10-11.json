@@ -1,0 +1,112 @@
+{
+  "probe_sha": "0d4d9822d57b1d14545d0ebf35b842ce1804fb92",
+  "workflow_run": 38097144466,
+  "scope": "Candidate stylesheet preview only; deployment not performed",
+  "receipts": [
+    {
+      "job_id": 114345277084,
+      "receipt": {
+        "anonymous_statuses": {
+          "healthz": 200,
+          "readyz": 200,
+          "v1/jobs/00000000-0000-0000-0000-000000000001": 401
+        },
+        "api_origin_fenced": true,
+        "auth_config": "staging-enabled",
+        "javascript_errors": 0,
+        "product": "specforge-ai",
+        "scope": "CSS PREVIEW on deployed page; deployment not performed",
+        "stylesheet_preview_routes": [
+          "https://specforge-ai-staging.up.railway.app/styles.css"
+        ],
+        "stylesheet_preview_sha": "f521c2c3f3b6573b4d390d9f309b077d1d6d6732",
+        "title": "SpecForge AI · Review Console",
+        "ui_http_status": 200
+      }
+    },
+    {
+      "job_id": 114345277170,
+      "receipt": {
+        "anonymous_statuses": {
+          "healthz": 200,
+          "readyz": 200,
+          "v1/jobs/00000000-0000-0000-0000-000000000001": 401
+        },
+        "api_origin_fenced": true,
+        "auth_config": "staging-enabled",
+        "javascript_errors": 0,
+        "product": "agenttest-lab",
+        "scope": "CSS PREVIEW on deployed page; deployment not performed",
+        "stylesheet_preview_routes": [
+          "https://agenttest-lab-staging.up.railway.app/ui/styles.css"
+        ],
+        "stylesheet_preview_sha": "11fde128de2cb4d103434fa088beb91650de5cdc",
+        "title": "AgentTest Lab | Deterministic Evaluation Console",
+        "ui_http_status": 200
+      }
+    },
+    {
+      "job_id": 114345277178,
+      "receipt": {
+        "anonymous_statuses": {
+          "healthz": 200,
+          "readyz": 200,
+          "v1/jobs/00000000-0000-0000-0000-000000000001": 401
+        },
+        "api_origin_fenced": true,
+        "auth_config": "staging-enabled",
+        "javascript_errors": 0,
+        "product": "accessfix-ai",
+        "scope": "CSS PREVIEW on deployed page; deployment not performed",
+        "stylesheet_preview_routes": [
+          "https://accessfix-ai-staging.up.railway.app/ui/styles.css"
+        ],
+        "stylesheet_preview_sha": "087aa38071c71cde57532d1ae001c3a4ba120d36",
+        "title": "AccessFix AI — Fixture workflow",
+        "ui_http_status": 200
+      }
+    },
+    {
+      "job_id": 114345277201,
+      "receipt": {
+        "anonymous_statuses": {
+          "healthz": 200,
+          "readyz": 200,
+          "v1/jobs/00000000-0000-0000-0000-000000000001": 401
+        },
+        "api_origin_fenced": true,
+        "auth_config": "staging-enabled",
+        "javascript_errors": 0,
+        "product": "apishield-agent",
+        "scope": "CSS PREVIEW on deployed page; deployment not performed",
+        "stylesheet_preview_routes": [
+          "https://apishield-agent-staging.up.railway.app/ui/styles.css"
+        ],
+        "stylesheet_preview_sha": "ac2c0173f86f274e097b210c34f65828daad3384",
+        "title": "APIShield analysis viewer",
+        "ui_http_status": 200
+      }
+    },
+    {
+      "job_id": 114345277184,
+      "receipt": {
+        "anonymous_statuses": {
+          "healthz": 200,
+          "readyz": 200,
+          "v1/jobs/00000000-0000-0000-0000-000000000001": 401
+        },
+        "api_origin_fenced": true,
+        "auth_config": "staging-enabled",
+        "javascript_errors": 0,
+        "product": "datareconcile-ai",
+        "scope": "CSS PREVIEW on deployed page; deployment not performed",
+        "stylesheet_preview_routes": [
+          "https://datareconcile-ai-staging.up.railway.app/ui/styles.css"
+        ],
+        "stylesheet_preview_sha": "eccbf71aed0ff33296bb9d23b7ff14d9c66e5b92",
+        "title": "ForgeWorks DataReconcile AI",
+        "ui_http_status": 200
+      }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 """Read-only GitHub App source adapter; live installation proof is still required."""
 import base64
+import binascii
 import hashlib
 import json
 import os
@@ -38,7 +39,7 @@ def transport(method, url, headers, body):
             return response.status, json.loads(content)
     except HTTPError as error:
         raise SourceError(f'GITHUB_HTTP_{error.code}') from None
-    except (URLError, OSError, ValueError) as error:
+    except (URLError, OSError, ValueError, RecursionError, UnicodeError) as error:
         if isinstance(error, SourceError):
             raise
         raise SourceError('GITHUB_TRANSPORT_FAILURE') from None
@@ -58,7 +59,15 @@ class GitHubSources:
             raw = os.environ['APISHIELD_GITHUB_SOURCE_MAP_JSON']
             if len(raw.encode()) > 65536:
                 raise ValueError('limit')
-            mappings = json.loads(raw)
+            def unique_pairs(pairs):
+                result = {}
+                for key, value in pairs:
+                    if key in result:
+                        raise ValueError('duplicate mapping key')
+                    result[key] = value
+                return result
+
+            mappings = json.loads(raw, object_pairs_hook=unique_pairs)
             if not isinstance(mappings, dict):
                 raise ValueError('shape')
             return cls(os.environ['APISHIELD_GITHUB_APP_ID'], os.environ['APISHIELD_GITHUB_APP_PRIVATE_KEY'], mappings)
@@ -84,19 +93,33 @@ class GitHubSources:
         permissions = result.get('permissions', {})
         if not isinstance(permissions, dict) or permissions.get('contents') != 'read' or any(key not in {'contents','metadata'} or value != 'read' for key,value in permissions.items()):
             raise SourceError('GITHUB_TOKEN_PERMISSION_MISMATCH')
+        # The requested repository_ids constraint must be reflected in the
+        # minted token response, not merely in the outgoing request. A broader
+        # token is forbidden even if its permissions remain read-only.
+        repositories = result.get('repositories')
+        if (result.get('repository_selection') != 'selected'
+                or not isinstance(repositories, list)
+                or len(repositories) != 1
+                or not isinstance(repositories[0], dict)
+                or type(repositories[0].get('id')) is not int
+                or repositories[0]['id'] != repository_id):
+            raise SourceError('GITHUB_TOKEN_REPOSITORY_SCOPE_MISMATCH')
         try:
-            expiry = datetime.fromisoformat(result['expires_at'].replace('Z','+00:00'))
+            expires_at = result['expires_at']
+            if not isinstance(expires_at, str):
+                raise ValueError('expiry type')
+            expiry = datetime.fromisoformat(expires_at.replace('Z','+00:00'))
             if expiry.tzinfo is None or not timestamp+30 < expiry.timestamp() <= timestamp+3660:
                 raise ValueError('expiry')
             token = result['token']
             if not isinstance(token, str) or not token or len(token) > 4096 or any(ord(c)<33 for c in token):
                 raise ValueError('token')
-        except (KeyError, ValueError, TypeError):
+        except (KeyError, ValueError, TypeError, OverflowError):
             raise SourceError('GITHUB_TOKEN_RESPONSE_INVALID') from None
         return token
 
     def content(self, full_name, path, revision, token):
-        if not re.fullmatch(r'[0-9a-fA-F]{40}', revision):
+        if not isinstance(revision, str) or not re.fullmatch(r'[0-9a-fA-F]{40}', revision):
             raise SourceError('GITHUB_IMMUTABLE_REVISION_REQUIRED')
         encoded = '/'.join(quote(part, safe='') for part in path.split('/'))
         result = self.request('GET', f'/repos/{full_name}/contents/{encoded}?ref={revision}', token)
@@ -110,7 +133,7 @@ class GitHubSources:
             if not isinstance(encoded_body,str) or len(encoded_body)>MAX_RESPONSE:
                 raise ValueError('encoding')
             body = base64.b64decode(''.join(encoded_body.split()), validate=True)
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, TypeError, binascii.Error):
             raise SourceError('GITHUB_SOURCE_ENCODING_INVALID') from None
         blob_sha = hashlib.sha1(b'blob ' + str(len(body)).encode() + b'\0' + body).hexdigest()
         if len(body) != size or result.get('sha') != blob_sha:
@@ -132,7 +155,11 @@ class GitHubSources:
         if type(installation) is not int or installation<=0 or installation != repository['installation_id'] or type(repository_id) is not int or repository_id<=0:
             raise SourceError('GITHUB_INSTALLATION_BINDING_INVALID')
         # Reject mutable refs before any network/token minting.
-        if any(not re.fullmatch(r'[0-9a-fA-F]{40}',analysis[name]) for name in ('base_sha','head_sha')):
+        try:
+            revisions = (analysis['base_sha'], analysis['head_sha'])
+        except (KeyError, IndexError, TypeError):
+            raise SourceError('GITHUB_IMMUTABLE_REVISION_REQUIRED') from None
+        if any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-fA-F]{40}', value) for value in revisions):
             raise SourceError('GITHUB_IMMUTABLE_REVISION_REQUIRED')
         token = self.installation_token(installation, repository_id)
         metadata = self.request('GET', f'/repos/{full_name}', token)

@@ -14,6 +14,8 @@ from uuid import UUID
 import psycopg
 
 MAX_WEBHOOK_BYTES = 1024 * 1024
+MAX_WEBHOOK_DEPTH = 64
+MAX_WEBHOOK_NODES = 50000
 SIGNATURE = re.compile(r"^sha256=([0-9a-f]{64})$")
 SUPPORTED_EVENTS = {"installation", "ping"}
 
@@ -55,12 +57,39 @@ def verify_webhook(secret: str, signature: str | None, delivery: str | None, eve
         raise WebhookRejected("INVALID_WEBHOOK_DELIVERY", "X-GitHub-Delivery must be a UUID") from error
     if event not in SUPPORTED_EVENTS:
         raise WebhookRejected("UNSUPPORTED_WEBHOOK_EVENT", "Webhook event is not accepted", 422)
+    def unique_keys(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise WebhookRejected("INVALID_WEBHOOK_JSON", "Duplicate webhook JSON keys are forbidden", 422)
+            result[key] = value
+        return result
+
+    def finite_numbers(_value):
+        raise WebhookRejected("INVALID_WEBHOOK_JSON", "Non-finite webhook JSON numbers are forbidden", 422)
+
     try:
-        payload = json.loads(body)
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook body must be valid JSON") from error
+        payload = json.loads(body, object_pairs_hook=unique_keys, parse_constant=finite_numbers)
+    except WebhookRejected:
+        raise
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError) as error:
+        raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook body must be valid bounded JSON", 422) from error
     if not isinstance(payload, dict):
         raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook body must be a JSON object")
+    # A syntactically valid JSON document can still have excessive depth or
+    # complexity. Python's parser limit is runtime-dependent, so enforce the
+    # same bounded budget across CI and production before changing any state.
+    pending = [(payload, 0)]
+    nodes = 0
+    while pending:
+        item, depth = pending.pop()
+        nodes += 1
+        if depth > MAX_WEBHOOK_DEPTH or nodes > MAX_WEBHOOK_NODES:
+            raise WebhookRejected("INVALID_WEBHOOK_JSON", "Webhook structure budget exceeded", 422)
+        if isinstance(item, dict):
+            pending.extend((value, depth + 1) for value in item.values())
+        elif isinstance(item, list):
+            pending.extend((value, depth + 1) for value in item)
     return VerifiedWebhook(delivery_id, event, payload, hashlib.sha256(body).hexdigest())
 
 
@@ -69,12 +98,27 @@ def _installation_projection(event: VerifiedWebhook) -> tuple[int, str] | None:
         return None
     installation = event.payload.get("installation")
     action = event.payload.get("action")
-    if not isinstance(installation, dict) or not isinstance(installation.get("id"), int) or installation["id"] <= 0:
-        raise WebhookRejected("INVALID_INSTALLATION_EVENT", "Installation event requires a positive installation.id", 422)
+    if not isinstance(installation, dict) or type(installation.get("id")) is not int or not (0 < installation["id"] <= 2**63 - 1):
+        raise WebhookRejected("INVALID_INSTALLATION_EVENT", "Installation event requires a positive integer installation.id", 422)
     states = {"created": "ACTIVE", "new_permissions_accepted": "ACTIVE", "suspend": "SUSPENDED", "unsuspend": "ACTIVE", "deleted": "DELETED"}
-    if action not in states:
+    if not isinstance(action, str) or action not in states:
         raise WebhookRejected("UNSUPPORTED_INSTALLATION_ACTION", "Installation action is not accepted", 422)
     return installation["id"], states[action]
+
+
+
+def _effective_installation_state(previous: str | None, requested: str, action: str) -> str:
+    """Do not resurrect deleted/suspended installations on late lifecycle events.
+
+    GitHub delivery UUIDs deduplicate exact deliveries, not delayed *different*
+    deliveries. A deleted installation ID is a tombstone; suspended installs
+    need an explicit unsuspend action before becoming active.
+    """
+    if previous == "DELETED":
+        return "DELETED"
+    if previous == "SUSPENDED" and requested == "ACTIVE" and action != "unsuspend":
+        return "SUSPENDED"
+    return requested
 
 
 class SQLiteWebhookInbox:
@@ -100,9 +144,21 @@ class SQLiteWebhookInbox:
                 state = db.execute("SELECT state FROM github_installation_states WHERE installation_id=?", (projection[0],)).fetchone() if projection else None
                 return False, state[0] if state else None
             if projection:
-                installation_id, state = projection
-                db.execute("INSERT INTO github_installation_states VALUES(?,?,?) ON CONFLICT(installation_id) DO UPDATE SET state=excluded.state,updated_at=excluded.updated_at", (installation_id, state, _now()))
-            return True, projection[1] if projection else None
+                installation_id, requested = projection
+                existing = db.execute(
+                    "SELECT state FROM github_installation_states WHERE installation_id=?",
+                    (installation_id,),
+                ).fetchone()
+                effective = _effective_installation_state(
+                    existing[0] if existing else None, requested, webhook.payload["action"]
+                )
+                db.execute(
+                    "INSERT INTO github_installation_states VALUES(?,?,?) "
+                    "ON CONFLICT(installation_id) DO UPDATE SET state=excluded.state,updated_at=excluded.updated_at",
+                    (installation_id, effective, _now()),
+                )
+                return True, effective
+            return True, None
 
 
 class PostgresWebhookInbox:
@@ -136,8 +192,22 @@ class PostgresWebhookInbox:
                 state = db.execute("SELECT state FROM github_installation_states WHERE installation_id=%s", (projection[0],)).fetchone() if projection else None
                 return False, state[0] if state else None
             if projection:
-                installation_id, state = projection
-                db.execute("INSERT INTO github_installation_states(installation_id,state) VALUES(%s,%s) ON CONFLICT(installation_id) DO UPDATE SET state=excluded.state,updated_at=now()", (installation_id, state))
-                if state in {"SUSPENDED", "DELETED"}:
+                installation_id, requested = projection
+                # The conflict UPDATE is atomic across concurrent workers, so a
+                # stale 'created' or permissions event cannot undo revocation.
+                row = db.execute(
+                    "INSERT INTO github_installation_states(installation_id,state) VALUES(%s,%s) "
+                    "ON CONFLICT(installation_id) DO UPDATE SET "
+                    "state=CASE "
+                    "WHEN github_installation_states.state='DELETED' THEN 'DELETED' "
+                    "WHEN github_installation_states.state='SUSPENDED' "
+                    "AND EXCLUDED.state='ACTIVE' AND %s <> 'unsuspend' THEN 'SUSPENDED' "
+                    "ELSE EXCLUDED.state END, updated_at=now() "
+                    "RETURNING state",
+                    (installation_id, requested, webhook.payload["action"]),
+                ).fetchone()
+                effective = row[0]
+                if effective in {"SUSPENDED", "DELETED"}:
                     db.execute("UPDATE repositories SET permission_state='REVOKED' WHERE installation_id=%s", (installation_id,))
-            return True, projection[1] if projection else None
+                return True, effective
+            return True, None

@@ -1,0 +1,391 @@
+{
+  "observed_date": "2026-10-11",
+  "owner_scope": "Five ForgeWorks products; engineering across GitHub, Railway and Supabase toward production acceptance",
+  "github": {
+    "pr": 24,
+    "candidate_sha": "0cf4be8186ddc59897409f86692ecacb9f39a2ab",
+    "merge_sha": "0def1b62391f95624cf8756b7a202b314e68aee7",
+    "merged": true,
+    "source_tree_readback": {
+      "candidate_sha": "0cf4be8186ddc59897409f86692ecacb9f39a2ab",
+      "merge_sha": "0def1b62391f95624cf8756b7a202b314e68aee7",
+      "tree": "9947cdb5c0490fb0604506e6bf3578d80689fc83",
+      "identical_tree": true
+    },
+    "pr_workflows": [
+      {
+        "id": 38100948955,
+        "name": "APIShield PostgreSQL Runtime Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "run_number": 93,
+        "jobs_url": "https://api.github.com/repos/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38100948955/jobs",
+        "logs_url": "https://api.github.com/repos/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38100948955/logs",
+        "workflow_id": 379265767
+      },
+      {
+        "id": 38100949041,
+        "name": "APIShield Disposable Sandbox Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "run_number": 76,
+        "jobs_url": "https://api.github.com/repos/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38100949041/jobs",
+        "logs_url": "https://api.github.com/repos/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38100949041/logs",
+        "workflow_id": 379531803
+      },
+      {
+        "id": 38100948942,
+        "name": "G1 Contract Verification",
+        "status": "completed",
+        "conclusion": "success",
+        "run_number": 104,
+        "jobs_url": "https://api.github.com/repos/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38100948942/jobs",
+        "logs_url": "https://api.github.com/repos/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38100948942/logs",
+        "workflow_id": 379142843
+      },
+      {
+        "id": 38100948944,
+        "name": "APIShield MVP Application CI",
+        "status": "completed",
+        "conclusion": "success",
+        "run_number": 101,
+        "jobs_url": "https://api.github.com/repos/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38100948944/jobs",
+        "logs_url": "https://api.github.com/repos/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38100948944/logs",
+        "workflow_id": 379154745
+      }
+    ],
+    "ci_log_summary": [
+      "2026-10-11T01:11:44.7259599Z ======================= 278 passed, 6 skipped in 27.76s ========================",
+      "2026-10-11T01:11:44.9630824Z ##[group]Run python scripts/verify_bootstrap.py && python scripts/verify_contracts.py && python scripts/validate_openapi_independent.py",
+      "2026-10-11T01:11:44.9631818Z \u001b[36;1mpython scripts/verify_bootstrap.py && python scripts/verify_contracts.py && python scripts/validate_openapi_independent.py\u001b[0m",
+      "2026-10-11T01:11:46.0133555Z Independent OpenAPI validator: PASS for openapi.yaml. This is not an application runtime test.",
+      "2026-10-11T01:11:49.5384217Z # tests 11",
+      "2026-10-11T01:11:49.5385178Z # pass 11",
+      "2026-10-11T01:11:49.5385647Z # fail 0",
+      "2026-10-11T01:11:49.5386629Z # skipped 0",
+      "2026-10-11T01:11:55.1718698Z # tests 42",
+      "2026-10-11T01:11:55.1719772Z # pass 42",
+      "2026-10-11T01:11:55.1720375Z # fail 0",
+      "2026-10-11T01:11:55.1721449Z # skipped 0",
+      "2026-10-11T01:11:56.8528218Z ============================== 5 passed in 1.41s ==============================="
+    ],
+    "local_regressions": {
+      "baseline": {
+        "failed": 15,
+        "passed": 3
+      },
+      "patched_new_tests": {
+        "passed": 18
+      },
+      "combined_compatibility": {
+        "passed": 66
+      }
+    },
+    "main_workflows": [
+      {
+        "id": 38101049767,
+        "name": "APIShield Disposable Sandbox Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101049767"
+      },
+      {
+        "id": 38101049784,
+        "name": "APIShield Staging Public Readiness",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101049784"
+      },
+      {
+        "id": 38101049830,
+        "name": "G1 Contract Verification",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101049830"
+      },
+      {
+        "id": 38101049777,
+        "name": "APIShield MVP Application CI",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101049777"
+      },
+      {
+        "id": 38101049791,
+        "name": "APIShield PostgreSQL Runtime Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38101049791"
+      }
+    ]
+  },
+  "railway": {
+    "deployment_attempt": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Cancelled — the user did not approve this action. No changes were made."
+        }
+      ],
+      "structuredContent": {
+        "error_code": "INVALID_ARGUMENT"
+      },
+      "isError": true
+    },
+    "release": {
+      "project": {
+        "id": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
+        "name": "ForgeWorks AI staging"
+      },
+      "environment": {
+        "id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+        "name": "staging"
+      },
+      "staged": {
+        "patchId": "d7e9d350-5dae-4464-9869-e4103521ce0b",
+        "status": "STAGED",
+        "changeCount": 17,
+        "message": null,
+        "createdAt": "2026-10-10T23:58:28.530Z",
+        "updatedAt": "2026-10-11T01:13:01.812Z"
+      },
+      "destructive": false,
+      "resources": [
+        {
+          "kind": "service",
+          "id": "16693650-fec8-48e4-b934-e032dd391808",
+          "name": "accessfix-ai",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.16693650-fec8-48e4-b934-e032dd391808.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "c396da079a707b3b2a5ad46de7579cc6594ced60",
+              "to": "087aa38071c71cde57532d1ae001c3a4ba120d36",
+              "destructive": false
+            }
+          ]
+        },
+        {
+          "kind": "service",
+          "id": "34688a14-872b-43a5-ab5b-8d2e488c7b5f",
+          "name": "datareconcile-ai",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "5c679ac742a2ed631464cadcf90e1adb10d3b086",
+              "to": "eccbf71aed0ff33296bb9d23b7ff14d9c66e5b92",
+              "destructive": false
+            },
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.34688a14-872b-43a5-ab5b-8d2e488c7b5f.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+              "to": "ivan-agentic-labs/forgeworks-datareconcile-ai",
+              "destructive": false
+            }
+          ]
+        },
+        {
+          "kind": "service",
+          "id": "57d8f010-e38e-4dbe-94bb-05cc5d855229",
+          "name": "apishield-agent",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "7508a6f26fbf2cd04a8c9ca6b8f5fc7b0ef5fd7b",
+              "to": "0def1b62391f95624cf8756b7a202b314e68aee7",
+              "destructive": false
+            },
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.57d8f010-e38e-4dbe-94bb-05cc5d855229.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-apishield-agent",
+              "to": "ivan-agentic-labs/forgeworks-apishield-agent",
+              "destructive": false
+            }
+          ]
+        },
+        {
+          "kind": "service",
+          "id": "db8b6012-8d48-4cd0-802c-225db1b0a19e",
+          "name": "specforge-ai",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "41d2b8abbefe82a5d5c502d7339cbed71c4b5f5f",
+              "to": "f521c2c3f3b6573b4d390d9f309b077d1d6d6732",
+              "destructive": false
+            },
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.db8b6012-8d48-4cd0-802c-225db1b0a19e.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-specforge-ai",
+              "to": "ivan-agentic-labs/forgeworks-specforge-ai",
+              "destructive": false
+            }
+          ]
+        },
+        {
+          "kind": "service",
+          "id": "f2d6c578-ffaf-4682-b81a-8bae13d9c7a3",
+          "name": "agenttest-lab",
+          "action": "update",
+          "changes": [
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.branch",
+              "displayName": "Branch",
+              "type": "updated",
+              "from": "main",
+              "to": "main",
+              "destructive": false
+            },
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.commitSha",
+              "displayName": "Commit Sha",
+              "type": "updated",
+              "from": "2e6ba172855dc367750e4aa2a2ab55b0e9c1ebbf",
+              "to": "11fde128de2cb4d103434fa088beb91650de5cdc",
+              "destructive": false
+            },
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.image",
+              "displayName": "Image",
+              "type": "removed",
+              "from": "",
+              "to": "",
+              "destructive": false
+            },
+            {
+              "path": "services.f2d6c578-ffaf-4682-b81a-8bae13d9c7a3.source.repo",
+              "displayName": "Repo",
+              "type": "updated",
+              "from": "ivan-agentic-labs/forgeworks-agenttest-lab",
+              "to": "ivan-agentic-labs/forgeworks-agenttest-lab",
+              "destructive": false
+            }
+          ]
+        }
+      ],
+      "sharedVariables": [],
+      "privateNetworkDisabled": null
+    },
+    "new_deployment_performed": false
+  },
+  "supabase": {
+    "forced_rls_tables": 62,
+    "active_memberships": 0,
+    "revoked_memberships": 10,
+    "unindexed_fk_findings": 0,
+    "overlapping_policy_findings": 0,
+    "leaked_password_protection": "disabled; available connector has no Auth configuration mutation"
+  },
+  "live_http": {
+    "scope": "Actual deployed anonymous HTTP only; no authenticated workflow or deployment verification",
+    "checked_at_utc": "2026-10-11T01:11:32Z–2026-10-11T01:11:40Z",
+    "products": [
+      {
+        "product": "apishield-agent",
+        "healthz": 200,
+        "readyz": 200,
+        "anonymous_job": 401
+      },
+      {
+        "product": "accessfix-ai",
+        "healthz": 200,
+        "readyz": 200,
+        "anonymous_job": 401
+      },
+      {
+        "product": "specforge-ai",
+        "healthz": 200,
+        "readyz": 200,
+        "anonymous_job": 401
+      },
+      {
+        "product": "agenttest-lab",
+        "healthz": 200,
+        "readyz": 200,
+        "anonymous_job": 401
+      },
+      {
+        "product": "datareconcile-ai",
+        "healthz": 200,
+        "readyz": 200,
+        "anonymous_job": 401
+      }
+    ],
+    "passed": 15,
+    "failed": 0
+  },
+  "production_decision": "NO-GO",
+  "remaining": [
+    "Railway deployment approval rejection",
+    "Reviewed active test identity and real authenticated business acceptance",
+    "Auth leaked-password protection configuration",
+    "Real product GitHub App/provider workflows and quality/cost proof",
+    "Live load and recovery acceptance",
+    "Domain/privacy/operational acceptance"
+  ]
+}

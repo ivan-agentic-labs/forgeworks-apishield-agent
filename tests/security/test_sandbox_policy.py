@@ -27,3 +27,33 @@ def test_proof_requires_explicit_disposable_ci_opt_in(monkeypatch):
     monkeypatch.delenv('G1_DISPOSABLE_SANDBOX',raising=False)
     with pytest.raises(SystemExit,match='Refusing'):
         module.main()
+
+
+def test_required_sandbox_image_pull_retries_transient_registry_error(monkeypatch):
+    calls, delays = [], []
+    def fake_run(command, timeout):
+        calls.append((command, timeout))
+        if len(calls) < 3:
+            raise RuntimeError("synthetic registry outage")
+        return "synthetic image pulled"
+    monkeypatch.setattr(module, "run", fake_run)
+    monkeypatch.setattr(module.time, "sleep", delays.append)
+    result = module.pull_image_with_bounded_retry("public.ecr.aws/docker/library/python:3.12-alpine")
+    assert result == "synthetic image pulled"
+    assert len(calls) == 3
+    assert delays == [2, 4]
+    assert all(command == ["docker", "pull", "public.ecr.aws/docker/library/python:3.12-alpine"] and timeout == 90
+               for command, timeout in calls)
+
+
+def test_persistent_registry_outage_is_not_counted_as_sandbox_pass(monkeypatch):
+    calls, delays = [], []
+    def failed(command, timeout):
+        calls.append((command, timeout))
+        raise RuntimeError("synthetic registry outage")
+    monkeypatch.setattr(module, "run", failed)
+    monkeypatch.setattr(module.time, "sleep", delays.append)
+    with pytest.raises(RuntimeError, match="proof BLOCKED"):
+        module.pull_image_with_bounded_retry("public.ecr.aws/docker/library/python:3.12-alpine")
+    assert len(calls) == 3
+    assert delays == [2, 4]

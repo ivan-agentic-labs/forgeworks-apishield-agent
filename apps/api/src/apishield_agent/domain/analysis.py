@@ -39,10 +39,12 @@ def _operations(doc: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
     }
 
 
-def _local_reference(doc: dict[str, Any], value: Any) -> dict[str, Any] | None:
+def _local_reference(doc: dict[str, Any], value: Any, *, schema: bool = False) -> dict[str, Any] | bool | None:
     """Resolve bounded pure local reference chains; never merge assertion siblings."""
     seen = set()
     for _ in range(32):
+        if schema and type(value) is bool:
+            return {} if value else False
         if not isinstance(value, dict):
             return None
         if "$ref" not in value:
@@ -89,8 +91,8 @@ def _schema_required(doc: dict[str, Any], path: str) -> dict[tuple, set[str] | N
                 for media, media_def in content.items():
                     if not isinstance(media_def, dict):
                         raise ValueError("CONTRACT_MEDIA_SHAPE_INVALID")
-                    schema = _local_reference(doc, media_def.get("schema") or {})
-                    if schema is None:
+                    schema = _local_reference(doc, media_def.get("schema", {}), schema=True)
+                    if schema is None or schema is False:
                         result[(path, route, method.lower(), str(code), str(media))] = None
                         continue
                     raw_required = schema.get("required", [])
@@ -119,7 +121,7 @@ def _parameters(doc: dict[str, Any], route: str, method: str, operation: dict[st
     return result
 
 
-def _media_schemas(doc: dict[str, Any], response_or_body: Any) -> dict[str, tuple[dict[str, Any], str]]:
+def _media_schemas(doc: dict[str, Any], response_or_body: Any) -> dict[str, tuple[Any, str]]:
     resolved = _local_reference(doc, response_or_body)
     if not resolved or not isinstance(resolved.get("content"), dict):
         return {}
@@ -127,9 +129,8 @@ def _media_schemas(doc: dict[str, Any], response_or_body: Any) -> dict[str, tupl
     for media, media_def in resolved["content"].items():
         if not isinstance(media_def, dict):
             continue
-        schema = _local_reference(doc, media_def.get("schema") or {})
-        if schema is not None:
-            result[str(media)] = (schema, f"/content/{_escape(media)}/schema")
+        # Keep false and unresolved schemas for the comparison/review path.
+        result[str(media)] = (media_def.get("schema", {}), f"/content/{_escape(media)}/schema")
     return result
 
 
@@ -138,11 +139,45 @@ def _record_finding(findings: list[Finding], source_digests: dict[str, str], rul
     findings.append(Finding(rule, severity, pointer, evidence, coverage))
 
 
+def _type_groups(schema: dict[str, Any]) -> set[str]:
+    """Disjoint JSON instance groups: number includes integer and fractional."""
+    allowed = {"null", "boolean", "object", "array", "number", "integer", "string"}
+    if "type" not in schema:
+        values = allowed
+    else:
+        value = schema["type"]
+        values = [value] if isinstance(value, str) else value
+        if (not isinstance(values, list) or not values
+                or any(not isinstance(item, str) or item not in allowed for item in values)
+                or len(values) != len(set(values))):
+            raise ValueError("CONTRACT_SCHEMA_TYPE_INVALID")
+        values = set(values)
+    groups = set(values) - {"number"}
+    if "number" in values:
+        groups.update({"integer", "fractional_number"})
+    return groups
+
+
 def _compare_schema_pair(findings: list[Finding], source_digests: dict[str, str], old: dict[str, Any], new: dict[str, Any], pointer: str, *, response: bool, family: str | None = None) -> None:
-    old_type, new_type = old.get("type"), new.get("type")
-    if isinstance(old_type, str) and isinstance(new_type, str) and old_type != new_type:
-        _record_finding(findings, source_digests, (family or ("RESPONSE" if response else "REQUEST")) + "_SCHEMA_TYPE_CHANGED", pointer + "/type")
+    if "nullable" in old or "nullable" in new:
+        _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer + "/nullable", "REVIEW", "UNSUPPORTED")
+    old_types, new_types = _type_groups(old), _type_groups(new)
+    if (new_types - old_types if response else old_types - new_types):
+        # Type-set inclusion alone does not solve interacting assertions.
+        _record_finding(findings, source_digests, (family or ("RESPONSE" if response else "REQUEST")) + "_SCHEMA_TYPE_CHANGED", pointer + "/type", "BREAKING", "LIMITED")
     old_enum, new_enum = old.get("enum"), new.get("enum")
+    if any("enum" in schema and not isinstance(schema["enum"], list) for schema in (old, new)):
+        raise ValueError("CONTRACT_ENUM_SHAPE_INVALID")
+    if ("enum" in old) != ("enum" in new):
+        values = old_enum if "enum" in old else new_enum
+        if any(value is not None and type(value) not in (str, bool, int, float) for value in values):
+            _record_finding(findings, source_digests, "UNSUPPORTED_ENUM_VALUE", pointer + "/enum", "REVIEW", "UNSUPPORTED")
+        elif (response and "enum" not in new) or (not response and "enum" not in old):
+            # A finite constraint was added to inputs, or removed from outputs.
+            # Other assertions may make it redundant: retain LIMITED coverage
+            # rather than claiming a complete schema-inclusion proof.
+            rule = "RESPONSE_ENUM_CONSTRAINT_REMOVED" if response else (family or "REQUEST") + "_ENUM_CONSTRAINT_ADDED"
+            _record_finding(findings, source_digests, rule, pointer + "/enum", "BREAKING", "LIMITED")
     if isinstance(old_enum, list) and isinstance(new_enum, list):
         def scalar_key(value):
             if type(value) in (int, float):
@@ -166,9 +201,18 @@ def _compare_schema_tree(findings, source_digests, before, after, old, new, poin
     if budget is None:
         budget = [512]
     budget[0] -= 1
-    old, new = _local_reference(before, old), _local_reference(after, new)
+    old, new = _local_reference(before, old, schema=True), _local_reference(after, new, schema=True)
     if old is None or new is None:
         _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer, "REVIEW", "UNSUPPORTED")
+        return
+    if old is False or new is False:
+        if old is False and new is False:
+            return
+        if (not response and new is False) or (response and old is False):
+            counterpart = new if response else old
+            coverage = "COVERED" if counterpart == {} and depth == 0 else "LIMITED"
+            rule = "RESPONSE_SCHEMA_NO_LONGER_FALSE" if response else (family or "REQUEST") + "_SCHEMA_BECAME_FALSE"
+            _record_finding(findings, source_digests, rule, pointer, "BREAKING", coverage)
         return
     pair = (id(old), id(new))
     if pair in active or depth > 32 or budget[0] < 0:
@@ -178,6 +222,25 @@ def _compare_schema_tree(findings, source_digests, before, after, old, new, poin
         _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer, "REVIEW", "UNSUPPORTED")
         return
     _compare_schema_pair(findings, source_digests, old, new, pointer, response=response, family=family)
+    # These JSON Schema/OpenAPI assertions affect accepted instances but the
+    # bounded comparator does not prove their implication or satisfiability.
+    # A changed unsupported assertion must never be silently reported as
+    # compatible simply because the supported type/enum checks are unchanged.
+    unsupported_assertions = {
+        "pattern", "format", "multipleOf", "const", "uniqueItems",
+        "contains", "minContains", "maxContains", "prefixItems",
+        "patternProperties", "propertyNames", "dependentRequired",
+        "dependentSchemas", "unevaluatedProperties", "unevaluatedItems",
+        "contentEncoding", "contentMediaType", "contentSchema",
+        "readOnly", "writeOnly",
+    }
+    absent = object()
+    for keyword in sorted(unsupported_assertions):
+        if old.get(keyword, absent) != new.get(keyword, absent):
+            _record_finding(
+                findings, source_digests, "UNSUPPORTED_SCHEMA_ASSERTION_CHANGED",
+                pointer + "/" + keyword, "REVIEW", "UNSUPPORTED",
+            )
     lower_bounds = {"minimum", "exclusiveMinimum", "minLength", "minItems", "minProperties"}
     upper_bounds = {"maximum", "exclusiveMaximum", "maxLength", "maxItems", "maxProperties"}
     for keyword in sorted(lower_bounds | upper_bounds):
@@ -230,10 +293,7 @@ def _compare_request(findings: list[Finding], source_digests: dict[str, str], be
         new_param, new_pointer = new_entry
         if new_param.get("required") is True and old_param.get("required") is not True:
             _record_finding(findings, source_digests, "REQUEST_PARAMETER_BECAME_REQUIRED", new_pointer + "/required")
-        old_schema = _local_reference(before, old_param.get("schema") or {})
-        new_schema = _local_reference(after, new_param.get("schema") or {})
-        if old_schema is not None and new_schema is not None:
-            _compare_schema_tree(findings, source_digests, before, after, old_schema, new_schema, new_pointer + "/schema", response=False, family="REQUEST_PARAMETER")
+        _compare_schema_tree(findings, source_digests, before, after, old_param.get("schema", {}), new_param.get("schema", {}), new_pointer + "/schema", response=False, family="REQUEST_PARAMETER")
     old_body = _local_reference(before, old.get("requestBody", {}))
     new_body = _local_reference(after, new.get("requestBody", {}))
     if old.get("requestBody") is not None and not isinstance(old.get("requestBody"), dict):
@@ -244,10 +304,21 @@ def _compare_request(findings: list[Finding], source_digests: dict[str, str], be
         if new_body.get("required") is True and old_body.get("required") is not True:
             _record_finding(findings, source_digests, "REQUEST_BODY_BECAME_REQUIRED", f"/paths/{_escape(route)}/{method}/requestBody/required")
         old_media, new_media = _media_schemas(before, old_body), _media_schemas(after, new_body)
+        # Removing an accepted request representation breaks clients still
+        # sending that Content-Type, even if the surviving schema is unchanged.
+        for media in sorted(set(old_media) - set(new_media)):
+            _record_finding(
+                findings, source_digests, "REQUEST_MEDIA_TYPE_REMOVED",
+                f"/paths/{_escape(route)}/{method}/requestBody/content/{_escape(media)}",
+            )
         for media in sorted(set(old_media) & set(new_media)):
             old_schema, new_schema = old_media[media][0], new_media[media][0]
             pointer = f"/paths/{_escape(route)}/{method}/requestBody/content/{_escape(media)}/schema"
             _compare_schema_tree(findings, source_digests, before, after, old_schema, new_schema, pointer, response=False)
+            old_schema = _local_reference(before, old_schema, schema=True)
+            new_schema = _local_reference(after, new_schema, schema=True)
+            if not isinstance(old_schema, dict) or not isinstance(new_schema, dict):
+                continue
             old_required, new_required = set(old_schema.get("required") or []), set(new_schema.get("required") or [])
             for field in sorted(new_required - old_required):
                 _record_finding(findings, source_digests, "REQUEST_BODY_FIELD_BECAME_REQUIRED", pointer + "/required/" + _escape(field))
@@ -270,10 +341,8 @@ def _compare_responses(findings: list[Finding], source_digests: dict[str, str], 
             _record_finding(findings, source_digests, "RESPONSE_MEDIA_TYPE_REMOVED", f"/paths/{_escape(route)}/{method}/responses/{_escape(code)}/content/{_escape(media)}")
         for media in sorted(set(old_content) & set(new_content), key=str):
             old_media, new_media = old_content[media] if isinstance(old_content[media], dict) else {}, new_content[media] if isinstance(new_content[media], dict) else {}
-            old_schema, new_schema = _local_reference(before, old_media.get("schema") or {}), _local_reference(after, new_media.get("schema") or {})
-            if old_schema is not None and new_schema is not None:
-                pointer = f"/paths/{_escape(route)}/{method}/responses/{_escape(code)}/content/{_escape(media)}/schema"
-                _compare_schema_tree(findings, source_digests, before, after, old_schema, new_schema, pointer, response=True)
+            pointer = f"/paths/{_escape(route)}/{method}/responses/{_escape(code)}/content/{_escape(media)}/schema"
+            _compare_schema_tree(findings, source_digests, before, after, old_media.get("schema", {}), new_media.get("schema", {}), pointer, response=True)
 
 
 def deterministic_openapi_diff(before_path: str | None, after_path: str | None) -> list[Finding]:
@@ -295,8 +364,23 @@ def deterministic_openapi_diff_bytes(before_bytes: bytes, after_bytes: bytes) ->
         if new is None:
             _record_finding(findings, source_digests, "OPERATION_REMOVED", pointer)
             continue
+        # Auth scheme requirements may be inherited from document-level
+        # security, overridden at operation level, or explicitly disabled with
+        # []. Changes can lock out customers and are not covered by schemas.
+        old_security = old.get("security", before.get("security", []))
+        new_security = new.get("security", after.get("security", []))
+        if old_security != new_security:
+            _record_finding(findings, source_digests,
+                            "SECURITY_REQUIREMENT_CHANGED", pointer + "/security",
+                            "REVIEW", "UNSUPPORTED")
         _compare_request(findings, source_digests, before, after, route, method, old, new)
         _compare_responses(findings, source_digests, before, after, route, method, old, new)
+    before_schemes = (before.get("components") or {}).get("securitySchemes", {})
+    after_schemes = (after.get("components") or {}).get("securitySchemes", {})
+    if before_schemes != after_schemes:
+        _record_finding(findings, source_digests,
+                        "SECURITY_SCHEME_DEFINITION_CHANGED",
+                        "/components/securitySchemes", "REVIEW", "UNSUPPORTED")
     for pointer in sorted(set(unsupported_constructs(before)) | set(unsupported_constructs(after))):
         _record_finding(findings, source_digests, "UNSUPPORTED_SCHEMA_CONSTRUCT", pointer, "REVIEW", "UNSUPPORTED")
     keys = {key[1:] for key in before_required} | {key[1:] for key in after_required}

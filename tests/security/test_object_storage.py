@@ -46,3 +46,58 @@ def test_signing_and_no_redirects(objects):
 def test_unsafe_endpoint_rejected(monkeypatch,endpoint):
     monkeypatch.setenv("S3_ENDPOINT",endpoint)
     with pytest.raises(HTTPException):ObjectStorage("apishield-agent")
+
+
+@pytest.mark.parametrize("endpoint", [
+    "https://storage.examp\tle.invalid",
+    "https://storage.example.invalid\r\n",
+    "https://storage.example.invalid\x7f",
+    "https://storage.example.invalid\\evil.invalid",
+])
+def test_storage_origin_must_not_be_silently_normalized(monkeypatch, endpoint):
+    # urllib.parse.urlsplit can silently remove ASCII control characters
+    # from the authority. Never sign requests to a modified destination.
+    for key, value in {
+        "S3_BUCKET": "private-bucket",
+        "S3_REGION": "auto",
+        "S3_ACCESS_KEY_ID": "synthetic-access-key",
+        "S3_SECRET_ACCESS_KEY": "synthetic-secret-for-offline-tests",
+    }.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("S3_ENDPOINT", endpoint)
+    with pytest.raises(HTTPException) as error:
+        ObjectStorage("apishield-agent")
+    assert error.value.status_code == 503
+    assert error.value.detail["code"] == "STORAGE_NOT_CONFIGURED"
+
+
+@pytest.mark.parametrize("userinfo", ["@", ":@"])
+def test_s3_empty_userinfo_cannot_be_silently_discarded(monkeypatch, userinfo):
+    # Python URL parsing yields empty username/password values for these forms.
+    # Ensure this fails because of authority validation, not missing credentials.
+    for key, value in {
+        "S3_BUCKET": "private-bucket",
+        "S3_REGION": "auto",
+        "S3_ACCESS_KEY_ID": "synthetic-access-key",
+        "S3_SECRET_ACCESS_KEY": "synthetic-secret-for-offline-tests",
+        "S3_URL_STYLE": "virtual-host",
+    }.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("S3_ENDPOINT", "https://" + userinfo + "storage.example.invalid")
+    with pytest.raises(HTTPException) as error:
+        ObjectStorage("apishield-agent")
+    assert error.value.status_code == 503
+    assert error.value.detail["code"] == "STORAGE_NOT_CONFIGURED"
+
+
+def test_canonical_s3_endpoint_remains_valid(monkeypatch):
+    for key, value in {
+        "S3_BUCKET": "private-bucket",
+        "S3_REGION": "auto",
+        "S3_ACCESS_KEY_ID": "synthetic-access-key",
+        "S3_SECRET_ACCESS_KEY": "synthetic-secret-for-offline-tests",
+        "S3_URL_STYLE": "virtual-host",
+    }.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("S3_ENDPOINT", "https://storage.example.invalid")
+    assert ObjectStorage("apishield-agent").host == "storage.example.invalid"
