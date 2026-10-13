@@ -13,6 +13,7 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
+from apishield_agent.infrastructure.security_catalog import REQUIRED_TENANT_TABLES
 from apishield_agent.infrastructure.postgres_store import PostgresStore, ROLE
 from apishield_agent.infrastructure.store import TENANT, USER, REPOSITORY
 from apishield_agent.main import create_app
@@ -89,6 +90,29 @@ def test_actual_postgres_api_worker_and_full_rls_boundaries(postgres, monkeypatc
     owner,runtime,webhook,other=postgres
     with pytest.raises(ValueError,match='superuser'):
         PostgresStore(owner)
+    # Real PostgreSQL catalog mutations, confined to this disposable fixture.
+    # Existing RLS policy text must not hide disabled RLS or missing FORCE RLS.
+    for table in REQUIRED_TENANT_TABLES:
+        for drift, restore in [('DISABLE ROW LEVEL SECURITY', 'ENABLE ROW LEVEL SECURITY'),
+                               ('NO FORCE ROW LEVEL SECURITY', 'FORCE ROW LEVEL SECURITY')]:
+            with psycopg.connect(owner) as migration:
+                migration.execute(psycopg.sql.SQL('ALTER TABLE {} ' + drift).format(
+                    psycopg.sql.Identifier(table)))
+            try:
+                with pytest.raises(ValueError, match='RUNTIME_TENANT_RLS_REQUIRED'):
+                    PostgresStore(runtime)
+            finally:
+                with psycopg.connect(owner) as migration:
+                    migration.execute(psycopg.sql.SQL('ALTER TABLE {} ' + restore).format(
+                        psycopg.sql.Identifier(table)))
+    with psycopg.connect(owner) as migration:
+        migration.execute('ALTER TABLE memberships RENAME TO fw_memberships_drift_probe')
+    try:
+        with pytest.raises(ValueError, match='RUNTIME_TENANT_TABLES_REQUIRED'):
+            PostgresStore(runtime)
+    finally:
+        with psycopg.connect(owner) as migration:
+            migration.execute('ALTER TABLE fw_memberships_drift_probe RENAME TO memberships')
     store=PostgresStore(runtime)
     # Force one backend so reuse, rollback and tenant/JWT cleanup are tested,
     # rather than accidentally receiving a fresh connection for each tenant.

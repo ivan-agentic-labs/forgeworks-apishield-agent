@@ -16,6 +16,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
+from apishield_agent.infrastructure.security_catalog import verify_tenant_catalog
 from apishield_agent.infrastructure.store import Store, now, later
 
 TENANT_CONTEXT = ContextVar("apishield_tenant", default=None)
@@ -98,7 +99,8 @@ class PostgresStore(Store):
             attributes = db.execute("SELECT rolsuper, rolbypassrls, rolcanlogin, rolcreaterole, rolcreatedb FROM pg_roles WHERE rolname=%s", (ROLE,)).fetchone()
             if not attributes or any(attributes.values()):
                 raise ValueError("Tenant group role must be NOLOGIN, NOSUPERUSER and NOBYPASSRLS")
-            if not db.execute("SELECT 1 FROM information_schema.columns WHERE table_name='analysis_jobs' AND column_name='lease_token'").fetchone():
+            verify_tenant_catalog(db)
+            if not db.execute("SELECT 1 FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='analysis_jobs' AND column_name='lease_token'").fetchone():
                 raise ValueError("Apply migration 002 with the migration role before starting runtime")
             if not db.execute("SELECT to_regclass('analysis_source_snapshots') AS present").fetchone()['present']:
                 raise ValueError('Apply migration 004 before starting snapshot-backed analysis runtime')
