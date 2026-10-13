@@ -90,9 +90,10 @@
       {
         "name": "APIShield Disposable Sandbox Proof",
         "status": "completed",
-        "conclusion": "failure",
+        "conclusion": "success",
         "id": 38462893571,
-        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38462893571"
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38462893571",
+        "run_attempt": 2
       },
       {
         "name": "ForgeWorks Five-Product Bounded Staging Performance Proof",
@@ -316,5 +317,67 @@
     "Measure hosted workload latency after deploying pools; no performance improvement is claimed yet",
     "Product GitHub App/installations, representative corpora/agent workloads, unified portal, hosted DR and production acceptance remain open"
   ],
-  "production_acceptance": "NOT_ACCEPTED"
+  "production_acceptance": "NOT_ACCEPTED",
+  "verification_commit": "d219f9d8e3a40d7d4fcf28cae0c1cae94375b8f8",
+  "final_code_ci": [
+    {
+      "name": "APIShield Staging Public Readiness",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463900404,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463900404"
+    },
+    {
+      "name": "G1 Contract Verification",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463900196,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463900196"
+    },
+    {
+      "name": "ForgeWorks Five-Product Bounded Staging Performance Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463900301,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463900301"
+    },
+    {
+      "name": "APIShield Disposable Sandbox Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463900114,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463900114"
+    },
+    {
+      "name": "APIShield MVP Application CI",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463900052,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463900052"
+    },
+    {
+      "name": "ForgeWorks Five-Product Live Integration Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463900136,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463900136"
+    },
+    {
+      "name": "APIShield PostgreSQL Runtime Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463900358,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463900358"
+    }
+  ],
+  "sandbox_retry": {
+    "id": 38462893571,
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 2
+  },
+  "remote_application_test_summary": [
+    "======================= 523 passed, 6 skipped in 20.81s ========================",
+    "============================== 5 passed in 0.89s ==============================="
+  ]
 }
