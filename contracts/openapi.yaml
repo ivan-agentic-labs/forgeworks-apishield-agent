@@ -258,6 +258,80 @@ paths:
           minimum: 1
           maximum: 100
           default: 50
+  /v1/analyses/{analysis_id}/evidence-export:
+    get:
+      operationId: get_v1_analyses_analysis_id_evidence_export
+      summary: Export bounded tenant-scoped metadata-only analysis evidence
+      description: Returns a canonical JSON attachment containing source/output digests, findings, proposals, approvals and existing audit event references. Raw source and patch bytes are never included. Each collection is limited to 1000 items and the response to 2 MiB; oversized exports fail rather than truncate. Current completeness is PARTIAL when actor/version/audit/retention evidence is not persisted.
+      security:
+      - BearerAuth: []
+      tags:
+      - APIShield Agent
+      x-required-scope: evidence:read
+      x-idempotent-command: false
+      responses:
+        '200':
+          description: Bounded evidence export; response is not persisted and is not an audit-completeness attestation
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+            Content-Disposition:
+              description: Attachment filename contains the validated analysis UUID
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisEvidenceBundle'
+        '401':
+          description: Unauthenticated
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Invalid analysis UUID or request validation failure
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden, missing scope, inactive membership, or revoked repository access
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Analysis is not visible in the verified tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Analysis is not terminal, stored evidence is invalid, or a concurrent repository change could not be retried safely
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Evidence exceeds the bounded item or response-size limit
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters:
+      - name: analysis_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
   /v1/analyses/{analysis_id}/proposals:
     post:
       operationId: post_v1_analyses_analysis_id_proposals
@@ -1330,6 +1404,304 @@ components:
           - 'null'
         has_more:
           type: boolean
+    AnalysisEvidenceBundle:
+      type: object
+      description: Canonical JSON manifest whose bundle_sha256 covers the UTF-8 canonical serialization of all other fields; PARTIAL is an explicit finding, not a successful completeness claim.
+      additionalProperties: false
+      required:
+      - schema_version
+      - evidence_status
+      - tenant_id
+      - analysis
+      - input_digests
+      - processing
+      - decisions
+      - output
+      - audit_events
+      - missing_components
+      - bundle_sha256
+      properties:
+        schema_version:
+          type: string
+          const: '1'
+        evidence_status:
+          type: string
+          enum:
+          - PARTIAL
+          - COMPLETE
+        tenant_id:
+          type: string
+          format: uuid
+        analysis:
+          $ref: '#/components/schemas/EvidenceAnalysis'
+        input_digests:
+          $ref: '#/components/schemas/EvidenceInputDigests'
+        processing:
+          $ref: '#/components/schemas/EvidenceProcessing'
+        decisions:
+          $ref: '#/components/schemas/EvidenceDecisions'
+        output:
+          $ref: '#/components/schemas/EvidenceOutput'
+        audit_events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceAuditEvent'
+        missing_components:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - ANALYSIS_ACTOR_OR_REQUEST_DIGEST_NOT_PERSISTED
+            - INPUT_SOURCE_DIGESTS_NOT_PERSISTED
+            - OUTPUT_DIGEST_NOT_PERSISTED
+            - TERMINAL_OUTCOME_AUDIT_EVENT_NOT_PERSISTED
+            - FINDING_RULE_VERSION_NOT_PERSISTED
+            - PROPOSAL_AUDIT_EVENT_NOT_PERSISTED
+            - APPROVAL_DECISION_AUDIT_EVENT_NOT_PERSISTED
+            - ANALYZER_VERSION_NOT_PERSISTED
+            - POLICY_VERSION_NOT_PERSISTED
+            - TWO_YEAR_RETENTION_NOT_IMPLEMENTED
+            - EXPORT_ACCESS_NOT_AUDITED
+        bundle_sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+    EvidenceAnalysis:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - repository_id
+      - base_sha
+      - head_sha
+      - created_at
+      - completed_at
+      - last_error_code
+      - actor_id
+      - request_sha256
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - SUCCEEDED
+          - FAILED_TERMINAL
+          - CANCELLED
+        repository_id:
+          type: string
+          format: uuid
+        base_sha:
+          type: string
+          pattern: ^[0-9a-fA-F]{40,64}$
+        head_sha:
+          type: string
+          pattern: ^[0-9a-fA-F]{40,64}$
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        last_error_code:
+          type:
+          - string
+          - 'null'
+        actor_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        request_sha256:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+    EvidenceInputDigests:
+      type: object
+      additionalProperties: false
+      required:
+      - base_contract_sha256
+      - head_contract_sha256
+      properties:
+        base_contract_sha256:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+        head_contract_sha256:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+    EvidenceProcessing:
+      type: object
+      additionalProperties: false
+      required:
+      - declared_capability_profile
+      - analyzer_version
+      - policy_version
+      properties:
+        declared_capability_profile:
+          type: string
+        analyzer_version:
+          type:
+          - string
+          - 'null'
+        policy_version:
+          type:
+          - string
+          - 'null'
+    EvidenceDecisions:
+      type: object
+      additionalProperties: false
+      required:
+      - findings
+      - proposals
+      properties:
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceFinding'
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceProposal'
+    EvidenceFinding:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - rule_id
+      - severity
+      - openapi_pointer
+      - evidence_digest
+      - coverage
+      properties:
+        id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+        severity:
+          type: string
+        openapi_pointer:
+          type: string
+        evidence_digest:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        coverage:
+          type: string
+    EvidenceProposal:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - created_at
+      - base_sha
+      - patch_sha256
+      - sandbox_status
+      - approval_status
+      - version
+      - approval_records
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        base_sha:
+          type: string
+          pattern: ^[0-9a-fA-F]{40,64}$
+        patch_sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        sandbox_status:
+          type: string
+        approval_status:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        approval_records:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceApproval'
+    EvidenceApproval:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - created_at
+      - patch_sha256
+      - base_sha
+      - reviewer_id
+      - expires_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        patch_sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        base_sha:
+          type: string
+          pattern: ^[0-9a-fA-F]{40,64}$
+        reviewer_id:
+          type: string
+          format: uuid
+        expires_at:
+          type: string
+          format: date-time
+    EvidenceOutput:
+      type: object
+      additionalProperties: false
+      required:
+      - result_sha256
+      properties:
+        result_sha256:
+          type:
+          - string
+          - 'null'
+          pattern: ^[0-9a-f]{64}$
+    EvidenceAuditEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - event_type
+      - aggregate_id
+      - created_at
+      - payload_sha256
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+        aggregate_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        payload_sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
     Problem:
       type: object
       description: RFC 9457 problem details, with stable application extension code and correlation request_id

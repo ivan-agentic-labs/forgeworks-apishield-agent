@@ -13,6 +13,7 @@ from pathlib import Path
 TENANT = "00000000-0000-0000-0000-000000000001"
 USER = "00000000-0000-0000-0000-000000000010"
 REPOSITORY = "11111111-1111-1111-1111-111111111111"
+EVIDENCE_MAX_ITEMS = 1000
 
 
 def now() -> str:
@@ -37,10 +38,12 @@ class Store:
         self.lock = threading.RLock()
         self._init_schema()
 
-    def conn(self, tenant=None):
+    def conn(self, tenant=None, *, repeatable_read=False):
         c = sqlite3.connect(self.path, check_same_thread=False, timeout=10)
         c.row_factory = sqlite3.Row
         c.execute("PRAGMA foreign_keys=ON")
+        if repeatable_read:
+            c.execute("BEGIN")
         return c
 
     def _init_schema(self):
@@ -109,6 +112,88 @@ class Store:
     def get_analysis(self, tenant, aid):
         with self.conn() as c:
             return c.execute("SELECT * FROM analyses WHERE tenant_id=? AND id=?", (tenant, aid)).fetchone()
+
+    def analysis_evidence_snapshot(self, tenant, aid):
+        """Read one bounded, tenant-scoped metadata snapshot for evidence export."""
+        with self.conn(tenant, repeatable_read=True) as c:
+            statement = (
+                "SELECT a.id, a.status, a.created_at, a.completed_at, a.repository_id, "
+                "a.base_sha, a.head_sha, a.capability_profile, a.last_error_code, "
+                "a.result_digest, r.permission_state AS repository_permission_state "
+                "FROM analyses a JOIN repositories r ON r.tenant_id=a.tenant_id "
+                "AND r.id=a.repository_id WHERE a.tenant_id=? AND a.id=?"
+            )
+            if hasattr(self, "dsn"):
+                statement += " FOR SHARE OF r"
+            row = c.execute(statement, (tenant, aid)).fetchone()
+            if not row:
+                return None
+            analysis = dict(row)
+            if analysis["repository_permission_state"] not in {"READ", "WRITE"}:
+                return {"analysis": analysis, "repository_revoked": True}
+
+            source_row = c.execute(
+                "SELECT before_base64, after_base64, before_sha, after_sha FROM analysis_source_snapshots "
+                "WHERE tenant_id=? AND analysis_id=?", (tenant, aid),
+            ).fetchone()
+            source = None
+            if source_row:
+                try:
+                    before_bytes = base64.b64decode(source_row["before_base64"], validate=True)
+                    after_bytes = base64.b64decode(source_row["after_base64"], validate=True)
+                    source_valid = (
+                        len(before_bytes) <= 2 * 1024 * 1024
+                        and len(after_bytes) <= 2 * 1024 * 1024
+                        and hashlib.sha256(before_bytes).hexdigest() == source_row["before_sha"]
+                        and hashlib.sha256(after_bytes).hexdigest() == source_row["after_sha"]
+                    )
+                except (ValueError, TypeError, UnicodeError):
+                    source_valid = False
+                if not source_valid:
+                    return {"analysis": analysis, "source_integrity_failed": True}
+                source = {"before_sha": source_row["before_sha"], "after_sha": source_row["after_sha"]}
+            requests = c.execute(
+                "SELECT actor, request_sha FROM idempotency WHERE tenant_id=? "
+                "AND analysis_id=? ORDER BY actor, key LIMIT 2", (tenant, aid),
+            ).fetchall()
+            findings = c.execute(
+                "SELECT id, rule_id, severity, openapi_pointer, evidence_digest, coverage "
+                "FROM findings WHERE tenant_id=? AND analysis_id=? ORDER BY id LIMIT ?",
+                (tenant, aid, EVIDENCE_MAX_ITEMS + 1),
+            ).fetchall()
+            proposals = c.execute(
+                "SELECT id, status, created_at, base_sha, patch_sha256, sandbox_status, "
+                "approval_status, version FROM proposals WHERE tenant_id=? AND analysis_id=? "
+                "ORDER BY id LIMIT ?", (tenant, aid, EVIDENCE_MAX_ITEMS + 1),
+            ).fetchall()
+            approvals = c.execute(
+                "SELECT ap.id, ap.proposal_id, ap.status, ap.created_at, ap.patch_sha256, "
+                "ap.base_sha, ap.reviewer_id, ap.expires_at FROM approvals ap "
+                "JOIN proposals p ON p.tenant_id=ap.tenant_id AND p.id=ap.proposal_id "
+                "WHERE p.tenant_id=? AND p.analysis_id=? ORDER BY ap.id LIMIT ?",
+                (tenant, aid, EVIDENCE_MAX_ITEMS + 1),
+            ).fetchall()
+            events = c.execute(
+                "SELECT e.id, e.event_type, e.aggregate_id, e.payload, e.created_at "
+                "FROM events e WHERE e.tenant_id=? AND (e.aggregate_id=? "
+                "OR e.aggregate_id IN (SELECT p.id FROM proposals p WHERE p.tenant_id=? AND p.analysis_id=?) "
+                "OR e.aggregate_id IN (SELECT ap.id FROM approvals ap JOIN proposals p "
+                "ON p.tenant_id=ap.tenant_id AND p.id=ap.proposal_id "
+                "WHERE p.tenant_id=? AND p.analysis_id=?)) ORDER BY e.id LIMIT ?",
+                (tenant, aid, tenant, aid, tenant, aid, EVIDENCE_MAX_ITEMS + 1),
+            ).fetchall()
+            collections = (findings, proposals, approvals, events)
+            if any(len(items) > EVIDENCE_MAX_ITEMS for items in collections):
+                return {"analysis": analysis, "too_large": True}
+            return {
+                "analysis": analysis,
+                "source": source,
+                "requests": [dict(item) for item in requests],
+                "findings": [dict(item) for item in findings],
+                "proposals": [dict(item) for item in proposals],
+                "approvals": [dict(item) for item in approvals],
+                "events": [dict(item) for item in events],
+            }
 
     def create_analysis(self, tenant, actor, repo, base, head, profile, idem_key, request_sha):
         aid, jid = str(uuid.uuid4()), str(uuid.uuid4())
@@ -342,4 +427,3 @@ class Store:
     def pull_request(self, tenant, rid):
         with self.conn() as c:
             return c.execute("SELECT * FROM pull_requests WHERE tenant_id=? AND id=?", (tenant, rid)).fetchone()
-

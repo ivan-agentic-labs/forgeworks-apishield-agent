@@ -34,6 +34,7 @@ from apishield_agent.infrastructure.github_sources import GitHubSources
 from apishield_agent.presentation.body_budget import BodyBudgetMiddleware
 
 ROOT = Path(__file__).resolve().parents[4]
+EVIDENCE_MAX_BYTES = 2 * 1024 * 1024
 
 
 class StrictModel(BaseModel):
@@ -78,7 +79,7 @@ class CommitUpload(StrictModel):
 
 
 def _problem(status: int, code: str, detail: str):
-    return JSONResponse(status_code=status, content={"type": "about:blank", "title": "Request rejected", "status": status, "code": code, "detail": detail, "request_id": "runtime"})
+    return JSONResponse(status_code=status, content={"type": "about:blank", "title": "Request rejected", "status": status, "code": code, "detail": detail, "request_id": "runtime"}, media_type="application/problem+json")
 
 
 def _key(key: str | None):
@@ -89,6 +90,12 @@ def _key(key: str | None):
 
 def _sha(payload) -> str:
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def _canonical_json(payload) -> bytes:
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
+
+
 def _cursor_secret() -> bytes:
     secret = os.getenv("APISHIELD_CURSOR_SECRET") or os.getenv("DEV_AUTH_SECRET", "")
     if len(secret.encode()) < 32:
@@ -211,12 +218,12 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
             "type": "about:blank", "title": "Request rejected", "status": 422,
             "code": "INVALID_REQUEST", "detail": "Request does not match the input contract",
             "request_id": "runtime",
-        })
+        }, media_type="application/problem+json")
 
     @app.exception_handler(HTTPException)
     async def http_error(_, exc: HTTPException):
         if isinstance(exc.detail, dict):
-            return JSONResponse(status_code=exc.status_code, content=exc.detail)
+            return JSONResponse(status_code=exc.status_code, content=exc.detail, media_type="application/problem+json")
         return _problem(exc.status_code, "REQUEST_REJECTED", str(exc.detail))
 
     @app.get("/v1/auth/config")
@@ -302,6 +309,148 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
         total = store.finding_count(c["tenant_id"], str(analysis_id))
         next_cursor = _encode_cursor(c["tenant_id"], str(analysis_id), limit, offset + len(items)) if offset + len(items) < total else None
         return {"items": [{"id": f["id"], "rule_id": f["rule_id"], "severity": f["severity"], "openapi_pointer": f["openapi_pointer"], "evidence_digest": f["evidence_digest"], "coverage": f["coverage"]} for f in items], "next_cursor": next_cursor, "has_more": next_cursor is not None}
+
+    @app.get("/v1/analyses/{analysis_id}/evidence-export")
+    def export_analysis_evidence(analysis_id: UUID, c: dict = Depends(require_scope("evidence:read", store))):
+        for attempt in range(2):
+            try:
+                snapshot = store.analysis_evidence_snapshot(c["tenant_id"], str(analysis_id))
+                break
+            except Exception as error:
+                if getattr(error, "sqlstate", None) != "40001":
+                    raise
+                if attempt == 1:
+                    return _problem(409, "EVIDENCE_SNAPSHOT_CONFLICT", "Repository permissions changed during the evidence snapshot; retry the read")
+        if not snapshot:
+            return _problem(404, "RESOURCE_NOT_FOUND", "Analysis evidence is not visible")
+        if snapshot.get("repository_revoked"):
+            return _problem(403, "REPOSITORY_ACCESS_REVOKED", "Repository access is not active")
+        if snapshot.get("source_integrity_failed"):
+            return _problem(409, "EVIDENCE_SOURCE_INTEGRITY_FAILURE", "Stored source bytes do not match their recorded digests")
+        if snapshot.get("too_large"):
+            return _problem(413, "EVIDENCE_EXPORT_TOO_LARGE", "Evidence exceeds the bounded item limit")
+        analysis = snapshot["analysis"]
+        if analysis["status"] not in {"SUCCEEDED", "FAILED_TERMINAL", "CANCELLED"}:
+            return _problem(409, "ANALYSIS_NOT_TERMINAL", "Evidence is available only after the analysis reaches a terminal state")
+
+        request_rows = snapshot["requests"]
+        actor_id = request_rows[0]["actor"] if len(request_rows) == 1 else None
+        request_sha = request_rows[0]["request_sha"] if len(request_rows) == 1 else None
+        source = snapshot["source"] or {}
+        approvals_by_proposal: dict[str, list[dict]] = {}
+        for approval in snapshot["approvals"]:
+            approvals_by_proposal.setdefault(approval["proposal_id"], []).append({
+                "id": approval["id"],
+                "status": approval["status"],
+                "created_at": approval["created_at"],
+                "patch_sha256": approval["patch_sha256"],
+                "base_sha": approval["base_sha"],
+                "reviewer_id": approval["reviewer_id"],
+                "expires_at": approval["expires_at"],
+            })
+        try:
+            audit_events = []
+            for event in snapshot["events"]:
+                payload = event["payload"]
+                if isinstance(payload, str):
+                    payload = json.loads(payload)
+                if not isinstance(payload, dict):
+                    raise ValueError("event payload is not an object")
+                audit_events.append({
+                    "id": event["id"],
+                    "event_type": event["event_type"],
+                    "aggregate_id": event["aggregate_id"],
+                    "created_at": event["created_at"],
+                    "payload_sha256": hashlib.sha256(_canonical_json(payload)).hexdigest(),
+                })
+        except (TypeError, ValueError, UnicodeError):
+            return _problem(409, "EVIDENCE_AUDIT_EVENT_INVALID", "Stored audit evidence is not a valid JSON object")
+
+        findings = [{
+            "id": item["id"],
+            "rule_id": item["rule_id"],
+            "severity": item["severity"],
+            "openapi_pointer": item["openapi_pointer"],
+            "evidence_digest": item["evidence_digest"],
+            "coverage": item["coverage"],
+        } for item in snapshot["findings"]]
+        proposals = [{
+            "id": item["id"],
+            "status": item["status"],
+            "created_at": item["created_at"],
+            "base_sha": item["base_sha"],
+            "patch_sha256": item["patch_sha256"],
+            "sandbox_status": item["sandbox_status"],
+            "approval_status": item["approval_status"],
+            "version": item["version"],
+            "approval_records": sorted(approvals_by_proposal.get(item["id"], []), key=lambda value: value["id"]),
+        } for item in snapshot["proposals"]]
+
+        missing = set()
+        if len(request_rows) != 1:
+            missing.add("ANALYSIS_ACTOR_OR_REQUEST_DIGEST_NOT_PERSISTED")
+        if not source.get("before_sha") or not source.get("after_sha"):
+            missing.add("INPUT_SOURCE_DIGESTS_NOT_PERSISTED")
+        if not analysis.get("result_digest"):
+            missing.add("OUTPUT_DIGEST_NOT_PERSISTED")
+        if not any(event["event_type"] == "analysis.completed" and event["aggregate_id"] == analysis["id"] for event in snapshot["events"]):
+            missing.add("TERMINAL_OUTCOME_AUDIT_EVENT_NOT_PERSISTED")
+        if findings:
+            missing.add("FINDING_RULE_VERSION_NOT_PERSISTED")
+        if proposals:
+            missing.add("PROPOSAL_AUDIT_EVENT_NOT_PERSISTED")
+        if snapshot["approvals"]:
+            missing.add("APPROVAL_DECISION_AUDIT_EVENT_NOT_PERSISTED")
+        # These are repository-level gaps: a metadata export cannot supply an
+        # analyzer/policy version or retention/access records that were never stored.
+        missing.update({
+            "ANALYZER_VERSION_NOT_PERSISTED",
+            "POLICY_VERSION_NOT_PERSISTED",
+            "TWO_YEAR_RETENTION_NOT_IMPLEMENTED",
+            "EXPORT_ACCESS_NOT_AUDITED",
+        })
+        bundle = {
+            "schema_version": "1",
+            "evidence_status": "COMPLETE" if not missing else "PARTIAL",
+            "tenant_id": c["tenant_id"],
+            "analysis": {
+                "id": analysis["id"],
+                "status": analysis["status"],
+                "repository_id": analysis["repository_id"],
+                "base_sha": analysis["base_sha"],
+                "head_sha": analysis["head_sha"],
+                "created_at": analysis["created_at"],
+                "completed_at": analysis["completed_at"],
+                "last_error_code": analysis["last_error_code"],
+                "actor_id": actor_id,
+                "request_sha256": request_sha,
+            },
+            "input_digests": {
+                "base_contract_sha256": source.get("before_sha"),
+                "head_contract_sha256": source.get("after_sha"),
+            },
+            "processing": {
+                "declared_capability_profile": analysis["capability_profile"],
+                "analyzer_version": None,
+                "policy_version": None,
+            },
+            "decisions": {"findings": findings, "proposals": proposals},
+            "output": {"result_sha256": analysis["result_digest"]},
+            "audit_events": sorted(audit_events, key=lambda value: value["id"]),
+            "missing_components": sorted(missing),
+        }
+        try:
+            bundle["bundle_sha256"] = hashlib.sha256(_canonical_json(bundle)).hexdigest()
+            body = _canonical_json(bundle)
+        except (TypeError, ValueError, UnicodeError):
+            return _problem(409, "EVIDENCE_BUNDLE_INVALID", "Stored evidence cannot be serialized safely")
+        if len(body) > EVIDENCE_MAX_BYTES:
+            return _problem(413, "EVIDENCE_EXPORT_TOO_LARGE", "Evidence export exceeds the 2 MiB response limit")
+        return Response(body, media_type="application/json", headers={
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": f'attachment; filename="apishield-evidence-{analysis_id}.json"',
+        })
 
     @app.post("/v1/analyses/{analysis_id}/proposals", status_code=201)
     def create_proposal(analysis_id: UUID, body: CreateProposal, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, c: dict = Depends(require_scope("patch:create", store))):
@@ -510,4 +659,3 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
 
 
 app = create_app(seed=os.getenv("APISHIELD_SEED_FIXTURE", "0") == "1")
-
