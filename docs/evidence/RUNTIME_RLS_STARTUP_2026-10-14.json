@@ -1,0 +1,80 @@
+{
+  "schema": "forgeworks-runtime-rls-startup-evidence-v1",
+  "date": "2026-10-14",
+  "product": "apishield-agent",
+  "implementation_commit": "48ecae22d1f2865e7a9f3f960d7e2f298a3a0d11",
+  "changes": [
+    "Require every runtime tenant table in the active schema",
+    "Reject disabled RLS or missing FORCE RLS before runtime initialization",
+    "Scope legacy information_schema migration checks to the active schema"
+  ],
+  "ci": [
+    {
+      "name": "APIShield Disposable Sandbox Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38461651803"
+    },
+    {
+      "name": "APIShield Staging Public Readiness",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38461651492"
+    },
+    {
+      "name": "G1 Contract Verification",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38461651628"
+    },
+    {
+      "name": "ForgeWorks Five-Product Live Integration Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38461651457"
+    },
+    {
+      "name": "APIShield PostgreSQL Runtime Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38461651810"
+    },
+    {
+      "name": "ForgeWorks Five-Product Bounded Staging Performance Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38461651520"
+    },
+    {
+      "name": "APIShield MVP Application CI",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38461651404"
+    }
+  ],
+  "disposable_proof": "Each required table has RLS disabled and FORCE RLS removed in turn; startup must reject each drift; missing memberships table is also rejected; protections restored in finally. PostgreSQL runtime CI passed.",
+  "hosted_supabase": {
+    "project_ref": "fljekuwplgkrpdoajyhn",
+    "catalog_tables": 62,
+    "rls_and_force_rls_tables": 62,
+    "scope": "Read-only catalog across the five product schemas; runtime role SET ROLE denied by connector. No new authenticated tenant isolation proof."
+  },
+  "railway": {
+    "project_id": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
+    "environment_id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+    "pending_patch": "606aebb5-0fe6-4980-8135-8396d4ef67d7",
+    "source_pin": "48ecae22d1f2865e7a9f3f960d7e2f298a3a0d11",
+    "release_sha": "48ecae22d1f2865e7a9f3f960d7e2f298a3a0d11",
+    "status": "STAGED_NOT_DEPLOYED",
+    "blocking_tool_result": "Cancelled — the user did not approve this action. No changes were made.",
+    "live_health": "All five healthz and readyz endpoints returned 200; currently running older releases."
+  },
+  "remaining": [
+    "Approve prepared Railway environment patch, then verify deployed revision and manifest",
+    "Hosted authenticated product acceptance and tenant isolation",
+    "Supabase leaked-password protection warning remains open",
+    "Unified portal, representative SLO, hosted DR and production acceptance remain open"
+  ],
+  "production_acceptance": "NOT_ACCEPTED",
+  "excluded_project": "SealAngel"
+}
