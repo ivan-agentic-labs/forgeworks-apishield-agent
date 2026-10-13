@@ -82,3 +82,20 @@ def test_network_error_is_reported_without_sensitive_text(plan):
 def test_unknown_target_is_rejected_without_network():
     with pytest.raises(ValueError): module.fetch('sealangel-work', '/healthz')
     with pytest.raises(ValueError): module.fetch('apishield-agent', '//external.invalid')
+
+
+@pytest.mark.parametrize('counter', [True, 1.0])
+def test_observed_manifest_types_must_match_exactly(plan, counter):
+    correct = transport(plan)
+    def mistyped(product, path):
+        status, body = correct(product, path)
+        if product == 'apishield-agent' and path == '/versionz':
+            body = copy.deepcopy(body)
+            body['runtime_manifest']['file_count'] = counter
+        return status, body
+    assert module.verify_fleet(plan, mistyped)['result'] == 'FAIL'
+
+
+def test_untrusted_error_code_prefix_cannot_expose_sensitive_data(plan):
+    def failure(*args): raise ValueError('FLEET_password=never-print-me')
+    assert 'never-print-me' not in str(module.verify_fleet(plan, failure))

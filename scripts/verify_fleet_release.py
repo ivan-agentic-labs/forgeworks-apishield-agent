@@ -95,7 +95,9 @@ def verify_product(record, request=fetch):
     status, identity = request(product, '/versionz')
     expected = {'product': product, 'environment': 'staging',
                 'revision_sha': record['revision_sha'], 'runtime_manifest': record['runtime_manifest']}
-    if status != 200 or identity != expected:
+    if (status != 200 or not isinstance(identity, dict)
+            or json.dumps(identity, sort_keys=True, separators=(',', ':')) !=
+               json.dumps(expected, sort_keys=True, separators=(',', ':'))):
         raise ValueError('FLEET_IDENTITY_MISMATCH')
     for path in ['/metricsz', BUSINESS_PATHS[product]]:
         if request(product, path)[0] != 401:
@@ -111,7 +113,9 @@ def verify_fleet(plan, request=fetch):
             return verify_product(records[product], request)
         except Exception as error:
             # Exception strings may contain URLs or other network content.
-            code = str(error) if type(error) is ValueError and str(error).startswith('FLEET_') else type(error).__name__
+            public_codes = {'FLEET_HEALTH_FAILED', 'FLEET_IDENTITY_MISMATCH',
+                            'FLEET_ANONYMOUS_BOUNDARY_FAILED', 'FLEET_RESPONSE_BUDGET'}
+            code = str(error) if type(error) is ValueError and str(error) in public_codes else type(error).__name__
             return {'product': product, 'result': 'FAIL', 'code': code}
     with ThreadPoolExecutor(max_workers=5) as executor:
         checks = list(executor.map(check, PRODUCTS))

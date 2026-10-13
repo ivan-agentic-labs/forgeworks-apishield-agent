@@ -1,0 +1,320 @@
+{
+  "schema": "forgeworks-five-repository-engineering-checkpoint-v1",
+  "date": "2026-10-14",
+  "scope": "Five ForgeWorks repositories; SealAngel excluded",
+  "work_completed": [
+    "Runtime RLS startup fences in five repositories",
+    "Bounded PostgreSQL pooling for four previously unpooled products, preserving nested tenant serialization",
+    "Sanitized retryable database saturation response for all five products",
+    "Pool lifecycle cleanup on normal and interrupted application exit",
+    "Actual disposable PostgreSQL reuse, role/tenant/JWT cleanup and post-error recovery proofs",
+    "Exact five-product public hosted release verifier, candidate manifest and manual workflow"
+  ],
+  "source_pins": [
+    {
+      "product": "apishield-agent",
+      "runtime_manifest": {
+        "file_count": 44,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "ca1813c6b374ed84b504a7a6282cb588e68fc8896dc9138662550725e6b95711"
+      },
+      "revision_sha": "7a1d16f829d80e85603ffcd83ddc40fecddbe148"
+    },
+    {
+      "product": "accessfix-ai",
+      "runtime_manifest": {
+        "file_count": 37,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "cd226a9777e79c9edd12bd3ff8ca8d30202308d47e790ea5a60f3c02ba597bf4"
+      },
+      "revision_sha": "895926525216620e87e3f7c88bef8b7b0849e731"
+    },
+    {
+      "product": "specforge-ai",
+      "runtime_manifest": {
+        "file_count": 34,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "5fed4eadc1be7b44c4686896971aca4900447c323ca8d043d7574cc35cebfbc7"
+      },
+      "revision_sha": "c0238e3656c31befc96af5e47a40d61599b2ce59"
+    },
+    {
+      "product": "agenttest-lab",
+      "runtime_manifest": {
+        "file_count": 37,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "8f6624384a8b69d127f898d0b750aad523a9c93fd70382a05cab36f9fde569a8"
+      },
+      "revision_sha": "75de8e7676a79c9b72f62b85afec40653e23deae"
+    },
+    {
+      "product": "datareconcile-ai",
+      "runtime_manifest": {
+        "file_count": 37,
+        "profile": "forgeworks-runtime-manifest-v1",
+        "sha256": "180ef48d72db4b31143af16da02589f2c20ab6d2ca1fd64339e1a63abaf4b830"
+      },
+      "revision_sha": "535d6014478da110ac96dc6f701d9c6a5a677e28"
+    }
+  ],
+  "pool_ci": {
+    "forgeworks-apishield-agent": [
+      {
+        "name": "APIShield MVP Application CI",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462893356,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38462893356"
+      },
+      {
+        "name": "APIShield Staging Public Readiness",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462893390,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38462893390"
+      },
+      {
+        "name": "APIShield PostgreSQL Runtime Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462893354,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38462893354"
+      },
+      {
+        "name": "G1 Contract Verification",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462893710,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38462893710"
+      },
+      {
+        "name": "APIShield Disposable Sandbox Proof",
+        "status": "completed",
+        "conclusion": "failure",
+        "id": 38462893571,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38462893571"
+      },
+      {
+        "name": "ForgeWorks Five-Product Bounded Staging Performance Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462893400,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38462893400"
+      },
+      {
+        "name": "ForgeWorks Five-Product Live Integration Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462893437,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38462893437"
+      }
+    ],
+    "forgeworks-accessfix-ai": [
+      {
+        "name": "AccessFix PostgreSQL Runtime Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462903019,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38462903019"
+      },
+      {
+        "name": "G1 Contract Verification",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462902987,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38462902987"
+      },
+      {
+        "name": "AccessFix Staging Public Readiness",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462902969,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38462902969"
+      },
+      {
+        "name": "AccessFix MVP Application CI",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462903058,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38462903058"
+      },
+      {
+        "name": "AccessFix Disposable Chromium Patch Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462902983,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai/actions/runs/38462902983"
+      }
+    ],
+    "forgeworks-specforge-ai": [
+      {
+        "name": "SpecForge MVP Application CI",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462912918,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-specforge-ai/actions/runs/38462912918"
+      },
+      {
+        "name": "SpecForge Staging Public Readiness",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462912937,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-specforge-ai/actions/runs/38462912937"
+      },
+      {
+        "name": "G1 Contract Verification",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462913262,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-specforge-ai/actions/runs/38462913262"
+      },
+      {
+        "name": "SpecForge PostgreSQL Runtime Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462912926,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-specforge-ai/actions/runs/38462912926"
+      }
+    ],
+    "forgeworks-agenttest-lab": [
+      {
+        "name": "AgentTest Staging Public Readiness",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462922377,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-agenttest-lab/actions/runs/38462922377"
+      },
+      {
+        "name": "G1 Contract Verification",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462922385,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-agenttest-lab/actions/runs/38462922385"
+      },
+      {
+        "name": "AgentTest MVP Application CI",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462922349,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-agenttest-lab/actions/runs/38462922349"
+      },
+      {
+        "name": "AgentTest PostgreSQL Runtime Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462922346,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-agenttest-lab/actions/runs/38462922346"
+      }
+    ],
+    "forgeworks-datareconcile-ai": [
+      {
+        "name": "G2 Disposable PostgreSQL RLS Negative Test",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462931489,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38462931489"
+      },
+      {
+        "name": "DataReconcile Staging Public Readiness",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462930956,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38462930956"
+      },
+      {
+        "name": "G1 Contract Verification",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462931296,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38462931296"
+      },
+      {
+        "name": "DataReconcile PostgreSQL Runtime Proof",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462931131,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38462931131"
+      },
+      {
+        "name": "DataReconcile MVP Application CI",
+        "status": "completed",
+        "conclusion": "success",
+        "id": 38462931045,
+        "url": "https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai/actions/runs/38462931045"
+      }
+    ]
+  },
+  "fleet_verifier_ci": [
+    {
+      "name": "APIShield Disposable Sandbox Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463624516,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463624516"
+    },
+    {
+      "name": "G1 Contract Verification",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463624467,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463624467"
+    },
+    {
+      "name": "APIShield Staging Public Readiness",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463624380,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463624380"
+    },
+    {
+      "name": "ForgeWorks Five-Product Bounded Staging Performance Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463624448,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463624448"
+    },
+    {
+      "name": "APIShield MVP Application CI",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463624631,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463624631"
+    },
+    {
+      "name": "APIShield PostgreSQL Runtime Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463624526,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463624526"
+    },
+    {
+      "name": "ForgeWorks Five-Product Live Integration Proof",
+      "status": "completed",
+      "conclusion": "success",
+      "id": 38463624415,
+      "url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38463624415"
+    }
+  ],
+  "local_full_suite": {
+    "accessfix": "394 passed, 9 scoped skips",
+    "specforge": "367 passed, 1 scoped skip",
+    "agenttest": "499 passed, 1 scoped skip",
+    "datareconcile": "430 passed, 1 scoped skip",
+    "apishield": "519 passed, 6 scoped skips, 1 browser smoke blocked by unavailable Chromium; remote application CI supplies the browser proof. Exact fleet verifier additional tests: 19 passed."
+  },
+  "dependency_hash_check": "All five runtime locks passed pip --dry-run --require-hashes",
+  "hosted": {
+    "supabase_catalog": "62/62 product tables have RLS and FORCE RLS; no schema mutation was necessary for these changes",
+    "railway_candidate": "All five source pins and FORGEWORKS_RELEASE_SHA are staged at matching verified code commits",
+    "deployment": "NOT_APPLIED: connector accept_deploy repeatedly returned Cancelled — the user did not approve this action, including after explicit owner authorization",
+    "exact_fleet_public_probe": "FAIL for all five products: FLEET_IDENTITY_MISMATCH; no new release accepted",
+    "runtime_role_probe": "SET ROLE denied by Supabase connector; no new authenticated tenant acceptance claim"
+  },
+  "remaining": [
+    "Restore Railway deployment approval execution, apply the prepared staging patch and prove exact fleet identity",
+    "Run authenticated hosted two-tenant business acceptance with dedicated provider-issued test sessions",
+    "Measure hosted workload latency after deploying pools; no performance improvement is claimed yet",
+    "Product GitHub App/installations, representative corpora/agent workloads, unified portal, hosted DR and production acceptance remain open"
+  ],
+  "production_acceptance": "NOT_ACCEPTED"
+}
