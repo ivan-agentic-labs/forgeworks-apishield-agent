@@ -31,3 +31,7 @@ APIShield remains an independently versioned backend product in its existing rep
 
 ## Acceptance gate
 No production claim until identity/tenant isolation, GitHub App granted scopes, isolated patch runner, stale approval rejection, provider effect reconciliation, audit/export, secrets containment, tested rollback/recovery and customer/reviewer acceptance are evidenced against a precise source SHA and deployment identity. Historical evidence remains under `docs/evidence/`.
+
+## Complete uploaded source
+
+Read [the complete owner documents and IR catalogue](source/README.md). These files are preserved byte-for-byte; this page is a summary. The source index records each file size and Git blob SHA.
