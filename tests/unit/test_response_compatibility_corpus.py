@@ -1,5 +1,6 @@
 from copy import deepcopy
 import json
+from pathlib import Path
 import pytest
 from apishield_agent.domain.analysis import deterministic_openapi_diff
 
@@ -29,3 +30,14 @@ def test_removed_operation_loses_response_presence_guarantees(tmp_path):
     before.write_text(json.dumps(old));after.write_text(json.dumps(new))
     findings=deterministic_openapi_diff(str(before),str(after))
     assert len(findings)==1 and findings[0].severity=='BREAKING'
+
+
+def test_golden_fixture_required_response_field_addition_is_review_only():
+    root = Path(__file__).resolve().parents[2]
+    findings = deterministic_openapi_diff(
+        str(root / 'fixtures/golden/before.yaml'),
+        str(root / 'fixtures/golden/after.yaml'),
+    )
+    assert [(item.rule_id, item.severity, item.coverage) for item in findings] == [
+        ('REQUIRED_RESPONSE_FIELD_ADDED', 'REVIEW', 'LIMITED'),
+    ]

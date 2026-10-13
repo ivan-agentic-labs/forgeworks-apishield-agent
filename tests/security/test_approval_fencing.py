@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+import pytest
 from apishield_agent.application.analysis_worker import AnalysisWorker
 from apishield_agent.infrastructure.store import Store, TENANT, USER, REPOSITORY
 from apishield_agent.main import create_app
@@ -45,6 +46,39 @@ def test_approval_replay_is_proposal_bound_and_revocation_checked(tmp_path):
         assert client.post(url,headers=key,json=body).status_code==403
         row,error=app.state.store.approve(TENANT,other['id'],other['patch_sha256'],other['base_sha'],'approve',1,USER)
         assert error=='REPOSITORY_ACCESS_REVOKED'
+
+
+def test_approval_rejects_changed_base_sha_without_recording_approval(tmp_path):
+    store = Store(str(tmp_path / 'db.sqlite'))
+    store.seed_demo(str(ROOT / 'fixtures/golden/before.yaml'), str(ROOT / 'fixtures/golden/after.yaml'))
+    proposal = prepare(store)
+
+    row, error = store.approve(
+        TENANT, proposal['id'], proposal['patch_sha256'], 'c' * 40,
+        'approve', 1, USER,
+    )
+
+    assert row['id'] == proposal['id']
+    assert error == 'STALE_ARTIFACT'
+    with store.conn() as db:
+        assert db.execute('SELECT count(*) FROM approvals WHERE proposal_id=?', (proposal['id'],)).fetchone()[0] == 0
+
+
+def test_revoked_approved_proposal_cannot_be_authorized_for_write(tmp_path):
+    store = Store(str(tmp_path / 'db.sqlite'))
+    store.seed_demo(str(ROOT / 'fixtures/golden/before.yaml'), str(ROOT / 'fixtures/golden/after.yaml'))
+    proposal = prepare(store)
+    approval, error = store.approve(
+        TENANT, proposal['id'], proposal['patch_sha256'], proposal['base_sha'],
+        'approve', 1, USER,
+    )
+    assert error is None and approval['status'] == 'APPROVED'
+
+    with store.conn() as db:
+        db.execute("UPDATE repositories SET permission_state='REVOKED' WHERE tenant_id=? AND id=?", (TENANT, REPOSITORY))
+
+    with pytest.raises(ValueError, match='REPOSITORY_ACCESS_REVOKED'):
+        store.authorized_patch_bytes(TENANT, proposal['id'])
 
 
 def test_artifact_commit_replay_is_resource_bound(tmp_path):
