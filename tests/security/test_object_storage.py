@@ -145,3 +145,30 @@ def test_supabase_s3_path_rejects_untrusted_destinations(monkeypatch, endpoint, 
     with pytest.raises(HTTPException) as err:
         ObjectStorage("apishield-agent")
     assert err.value.status_code == 503
+
+
+@pytest.mark.parametrize("environment,bucket,allowed", [
+    ("staging","fw-staging-apishield-agent",True),
+    ("staging","fw-staging-specforge-ai",False),
+    ("staging","fw-staging-agenttest-lab",False),
+    ("staging","fw-staging-datareconcile-ai",False),
+    ("staging","fw-staging-accessfix-ai",False),
+    ("staging","fw-production-apishield-agent",False),
+    ("production","fw-production-apishield-agent",True),
+    ("production","fw-staging-apishield-agent",False),
+])
+def test_supabase_bucket_bound_to_runtime_product(monkeypatch,environment,bucket,allowed):
+    for name,value in {
+        "APP_ENV":environment,
+        "S3_ENDPOINT":"https://fljekuwplgkrpdoajyhn.storage.supabase.co/storage/v1/s3",
+        "S3_BUCKET":bucket, "S3_URL_STYLE":"path","S3_REGION":"ap-northeast-2",
+        "S3_ACCESS_KEY_ID":"synthetic-access","S3_SECRET_ACCESS_KEY":"synthetic-secret",
+    }.items():
+        monkeypatch.setenv(name,value)
+    if allowed:
+        assert ObjectStorage("apishield-agent").bucket == bucket
+    else:
+        with pytest.raises(HTTPException) as err:
+            ObjectStorage("apishield-agent")
+        assert err.value.status_code == 503
+        assert err.value.detail["code"] == "STORAGE_NOT_CONFIGURED"
