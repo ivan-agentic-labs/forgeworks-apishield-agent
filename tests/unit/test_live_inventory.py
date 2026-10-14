@@ -123,6 +123,17 @@ class FleetObservationTests(unittest.TestCase):
         self.assertEqual(mod.exit_status(observed), 1)
         self.assertEqual(mod.exit_status(observed, strict=True), 1)
 
+    def test_candidate_reader_returns_validated_document_shape(self):
+        import json
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as folder:
+            file = Path(folder) / "candidate.json"
+            expected = candidate()
+            file.write_text(json.dumps(expected))
+            observed = mod.load_candidate(file)
+            self.assertEqual(observed, expected)
+            self.assertEqual(mod.observe(observed, transport(expected))["candidate_relation"], "MATCH")
+
     def test_candidate_reader_rejects_invalid_and_oversized_files(self):
         from tempfile import TemporaryDirectory
         with TemporaryDirectory() as folder:
