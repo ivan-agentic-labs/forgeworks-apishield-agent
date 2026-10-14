@@ -32,7 +32,9 @@ def load_candidate(path: Path = CANDIDATE) -> dict:
         raw = stream.read(MAX_PLAN_BYTES + 1)
     if len(raw) > MAX_PLAN_BYTES:
         raise ValueError("CANDIDATE_TOO_LARGE")
-    return validate_plan(json.loads(raw, object_pairs_hook=unique_object))
+    candidate = json.loads(raw, object_pairs_hook=unique_object)
+    validate_plan(candidate)
+    return candidate
 
 
 def snapshot_from_report(report: dict) -> dict:

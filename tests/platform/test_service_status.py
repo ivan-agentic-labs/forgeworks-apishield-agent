@@ -81,7 +81,7 @@ class ServiceStatusTests(unittest.TestCase):
             f = place / "plan.json"
             target = place / "target.json"
             f.write_text(json.dumps(mock_plan()))
-            self.assertEqual(len(module.load_candidate(f)), 5)
+            self.assertEqual(len(module.load_candidate(f)["products"]), 5)
             target.write_text("{}")
             f.unlink()
             f.symlink_to(target)
