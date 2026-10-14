@@ -26,6 +26,8 @@ jobs:
           persist-credentials: false
       - name: Syntax check browser JavaScript
         run: node --check apps/portal/app.js
+      - name: Exercise frontend fleet transitions and fail-closed status
+        run: node --test tests/platform/test_portal_js.mjs
       - name: Enforce offline catalog, origin and security boundaries
         run: python -m unittest discover -s tests/platform -p 'test_*.py' -v
       - name: Verify five fixed live staging service identities with no credentials

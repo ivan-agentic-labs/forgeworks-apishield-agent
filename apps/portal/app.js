@@ -52,6 +52,13 @@
     catalogStatus.textContent = 'Katalog ditampilkan; ini bukan bukti kesiapan backend.';
   }
 
+  function resetServiceLabels() {
+    for (const label of serviceLabels.values()) {
+      label.textContent = 'Staging: belum terverifikasi';
+      label.dataset.state = 'unavailable';
+    }
+  }
+
   async function load() {
     try {
       const response = await fetch('./products.json', {cache:'no-store', credentials:'same-origin', redirect:'error'});
@@ -68,6 +75,7 @@
 
   check.addEventListener('click', async () => {
     check.disabled = true;
+    resetServiceLabels();
     status.textContent = 'Menghubungi BFF pada origin ini…';
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 6000);
@@ -105,6 +113,11 @@
         }
         seen.add(item.product);
       }
+      const allReady = fleet.services.every(item => item.status === 'ready');
+      if (!['PASS','DEGRADED'].includes(fleet.result)
+          || (fleet.result === 'PASS') !== allReady
+          || (fleet.result === 'PASS') !== fleetResponse.ok)
+        throw new Error('STAGING_FLEET_INCONSISTENT');
       fleet.services.forEach(item => {
         const label = serviceLabels.get(item.product);
         if (label) {
@@ -118,6 +131,7 @@
         status.textContent = '5/5 identitas staging cocok. Login, otorisasi dan production acceptance tetap diperlukan.';
       }
     } catch {
+      resetServiceLabels();
       status.textContent = 'Pemantauan staging belum tersedia atau gagal. Akses produk tetap nonaktif.';
     } finally {
       clearTimeout(timeout);
