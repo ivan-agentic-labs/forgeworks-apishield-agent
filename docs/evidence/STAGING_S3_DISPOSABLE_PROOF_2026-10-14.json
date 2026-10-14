@@ -1,0 +1,28 @@
+{
+  "schema": "forgeworks-staging-disposable-object-storage-evidence-v1",
+  "product": "apishield-agent",
+  "environment": "staging",
+  "result": "PASS",
+  "observed_at": "2026-10-14T08:08:35.496954331Z",
+  "railway_project_id": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
+  "railway_environment_id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
+  "supabase_project_ref": "fljekuwplgkrpdoajyhn",
+  "storage_bucket": "fw-staging-apishield-agent",
+  "deployment_id": "791c9db8-fb9a-4efe-b028-890444545c98",
+  "revision_sha": "1e053ece42ae2c40ebd57b3a260a3fc8ab737ad7",
+  "evidence_source": "Railway deployment deploy logs filtered for exact STORAGE_PROBE_PASS",
+  "observed_log": "STORAGE_PROBE_PASS: upload, integrity, deletion and verified absence",
+  "verified_operations": [
+    "synthetic-random-object-put",
+    "read-after-write-integrity",
+    "delete",
+    "read-after-delete-not-found"
+  ],
+  "limits": [
+    "Probe operates on disposable randomly generated synthetic identifiers, not customer data",
+    "Successful probe does not establish bucket-scoped key isolation, long-term retention, full recovery, malware scanning, or customer acceptance",
+    "Supabase S3 project credentials can require separate least-privilege review",
+    "Production acceptance is not established"
+  ],
+  "production_acceptance": "NOT_ACCEPTED"
+}
