@@ -34,9 +34,9 @@
       "runtime_manifest": {
         "file_count": 37,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "871d702a177f54978f1dbb4b5f577c2f0ffa12947e0fc5a4c6b3dcf9fd42f386"
+        "sha256": "d944327428a5a8967a3f6f571c54de938765a4723d8915ecbab2707e1a89e0e0"
       },
-      "revision_sha": "b86d396e3bf60cd1f0e324d74dcfc973c9681634"
+      "revision_sha": "9e739a048da49a2d2434fd8138d21210ddc9e7c9"
     },
     {
       "product": "datareconcile-ai",
