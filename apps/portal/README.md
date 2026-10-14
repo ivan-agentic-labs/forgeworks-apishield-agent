@@ -82,3 +82,11 @@ membership, perform session revocation or authorize real traffic. Any
 application using it must FIRST independently authenticate and validate that
 snapshot, and must enforce authorization again at the backend. `can_forward`
 remains hardcoded false even when the offline preflight is true.
+
+## Credential-free local monitoring
+
+The preview frontend uses `credentials: 'omit'` for catalog and operational
+status fetches, and the preview server rejects Cookie and Authorization
+headers. No BFF session, login or customer data can be used here. A future
+authenticated portal must implement independent verified sessions and CSRF
+protections instead of weakening the preview security assumptions.

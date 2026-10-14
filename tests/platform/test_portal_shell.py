@@ -33,7 +33,8 @@ class PortalShellTests(unittest.TestCase):
         self.assertNotIn("innerHTML", js)
         self.assertNotIn("Bearer ", js)
         self.assertIn("textContent",js)
-        self.assertIn("credentials:'same-origin'",js)
+        self.assertEqual(js.count("credentials:'omit'"), 3)
+        self.assertNotIn("credentials:'same-origin'", js)
         self.assertIn("'/api/platform/status'",js)
 
     def test_catalog_is_not_marked_as_a_live_product(self):

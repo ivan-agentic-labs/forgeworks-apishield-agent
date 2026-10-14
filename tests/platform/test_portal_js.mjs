@@ -42,7 +42,8 @@ async function fixture(responses) {
     createElement() { return new Element(); },
     createDocumentFragment() { return new Element(); },
   };
-  const fetch = async (url) => {
+  const fetch = async (url, options) => {
+    assert.equal(options?.credentials, 'omit', 'preview must not send browser credentials');
     if (url === './products.json') return {
       ok:true, text:async()=>JSON.stringify(products),
     };

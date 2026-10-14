@@ -61,7 +61,7 @@
 
   async function load() {
     try {
-      const response = await fetch('./products.json', {cache:'no-store', credentials:'same-origin', redirect:'error'});
+      const response = await fetch('./products.json', {cache:'no-store', credentials:'omit', redirect:'error'});
       if (!response.ok) throw new Error('CATALOG_UNAVAILABLE');
       const text = await response.text();
       if (text.length > 10000) throw new Error('CATALOG_TOO_LARGE');
@@ -81,7 +81,7 @@
     const timeout = setTimeout(() => controller.abort(), 6000);
     try {
       const response = await fetch('/api/platform/status', {
-        method:'GET', credentials:'same-origin', cache:'no-store',
+        method:'GET', credentials:'omit', cache:'no-store',
         redirect:'error', signal:controller.signal,
         headers:{Accept:'application/json'}
       });
@@ -94,7 +94,7 @@
         throw new Error('PLATFORM_STATUS_UNRECOGNIZED');
       status.textContent = 'Server pratinjau merespons; menguji lima layanan staging…';
       const fleetResponse = await fetch('/api/platform/services', {
-        method:'GET', credentials:'same-origin', cache:'no-store', redirect:'error',
+        method:'GET', credentials:'omit', cache:'no-store', redirect:'error',
         signal:controller.signal, headers:{Accept:'application/json'}
       });
       const fleetText = await fleetResponse.text();
