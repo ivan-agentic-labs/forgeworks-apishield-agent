@@ -47,9 +47,12 @@ class BoundedLoadEvidenceTests(TestCase):
                 probe.main()
 
     def test_upstream_error_must_fail_even_when_other_services_pass(self):
+        seen = {"ready": 0}
         def fake(host, path, status):
             if host == probe.DOMAINS["SpecForge"] and path == "/readyz":
-                raise AssertionError("synthetic failure")
+                seen["ready"] += 1
+                if seen["ready"] > 1:
+                    raise AssertionError("synthetic failure")
             return 5.0
         with patch.object(probe, "request", side_effect=fake), redirect_stdout(StringIO()):
             with self.assertRaisesRegex(AssertionError, "latency check failed"):
