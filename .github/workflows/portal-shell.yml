@@ -28,3 +28,5 @@ jobs:
         run: node --check apps/portal/app.js
       - name: Enforce offline catalog, origin and security boundaries
         run: python -m unittest discover -s tests/platform -p 'test_*.py' -v
+      - name: Verify five fixed live staging service identities with no credentials
+        run: python apps/portal/service_status.py --live-staging
