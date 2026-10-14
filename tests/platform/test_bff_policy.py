@@ -53,7 +53,7 @@ class BFFReadAdmissionTests(unittest.TestCase):
             valid.replace(RESOURCE, "../" + RESOURCE),
             valid.replace(RESOURCE, "%2e%2e"),
             valid.replace(RESOURCE, "%2f" + RESOURCE),
-            valid.replace(RESOURCE, RESOURCE.upper()),
+            valid.replace(RESOURCE, "123E4567-E89B-42D3-A456-426614174000"),
             valid.replace(RESOURCE, "\\etc"),
             valid + ";ignored",
             valid + "\nsecret",
