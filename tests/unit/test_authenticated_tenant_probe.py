@@ -7,6 +7,7 @@ from io import StringIO
 import json
 from pathlib import Path
 import sys
+import time
 import unittest
 
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
@@ -14,8 +15,13 @@ sys.path.insert(0, str(SCRIPTS))
 import probe_authenticated_tenant_isolation as probe  # noqa: E402
 
 
-def fake_jwt(user, tenant):
+def fake_jwt(user, tenant, **overrides):
+    now = int(time.time())
     claims = {
+        "iss": probe.STAGING_SUPABASE_ISSUER,
+        "aud": "authenticated",
+        "iat": now,
+        "exp": now + 3600,
         "sub": user, "session_id": "00000000-0000-4000-8000-000000000099",
         "role": "authenticated", "is_anonymous": False,
         "app_metadata": {"forgeworks": {
@@ -23,6 +29,7 @@ def fake_jwt(user, tenant):
             for entry in probe.PRODUCTS
         }},
     }
+    claims.update(overrides)
     b64 = lambda v: base64.urlsafe_b64encode(json.dumps(v).encode()).rstrip(b"=").decode()
     return b64({"alg": "HS256", "typ": "JWT"}) + "." + b64(claims) + ".synthetic"
 
@@ -53,6 +60,26 @@ class AuthenticatedG3ProbeTests(unittest.TestCase):
         del env["FORGEWORKS_G3_AUTH_ACCEPTANCE"]
         with self.assertRaises(probe.AcceptanceError):
             probe.build_plan(env)
+
+    def test_stale_wrong_issuer_or_invalid_audience_fails_before_network(self):
+        now = int(time.time())
+        user = "00000000-0000-4000-8000-000000000001"
+        tenant = "00000000-0000-4000-8000-000000000003"
+        cases = (
+            {"exp": now - 1},
+            {"exp": now + 10},
+            {"iat": now + 3600},
+            {"iss": "https://sealangel.example.invalid/auth/v1"},
+            {"aud": "other-product"},
+            {"exp": True},
+            {"nbf": now + 3600},
+        )
+        for overrides in cases:
+            with self.subTest(overrides=overrides):
+                env = fixture_env()
+                env["FORGEWORKS_G3_TENANT_A_TOKEN"] = fake_jwt(user, tenant, **overrides)
+                with self.assertRaises(probe.AcceptanceError):
+                    probe.build_plan(env)
 
     def test_missing_resource_identity_fails_before_network(self):
         env = fixture_env()
