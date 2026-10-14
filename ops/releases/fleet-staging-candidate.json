@@ -18,7 +18,7 @@
         "profile": "forgeworks-runtime-manifest-v1",
         "sha256": "cd226a9777e79c9edd12bd3ff8ca8d30202308d47e790ea5a60f3c02ba597bf4"
       },
-      "revision_sha": "895926525216620e87e3f7c88bef8b7b0849e731"
+      "revision_sha": "50affc6e61d8517c6e888901bae49b51299a294b"
     },
     {
       "product": "specforge-ai",
@@ -27,7 +27,7 @@
         "profile": "forgeworks-runtime-manifest-v1",
         "sha256": "5fed4eadc1be7b44c4686896971aca4900447c323ca8d043d7574cc35cebfbc7"
       },
-      "revision_sha": "c0238e3656c31befc96af5e47a40d61599b2ce59"
+      "revision_sha": "314a239aee667808c612ebb79294ebe760ac7c77"
     },
     {
       "product": "agenttest-lab",
@@ -36,7 +36,7 @@
         "profile": "forgeworks-runtime-manifest-v1",
         "sha256": "8f6624384a8b69d127f898d0b750aad523a9c93fd70382a05cab36f9fde569a8"
       },
-      "revision_sha": "75de8e7676a79c9b72f62b85afec40653e23deae"
+      "revision_sha": "11957fe1f728cdcc932fdf5e7455d7df1e16536d"
     },
     {
       "product": "datareconcile-ai",
@@ -45,7 +45,7 @@
         "profile": "forgeworks-runtime-manifest-v1",
         "sha256": "180ef48d72db4b31143af16da02589f2c20ab6d2ca1fd64339e1a63abaf4b830"
       },
-      "revision_sha": "535d6014478da110ac96dc6f701d9c6a5a677e28"
+      "revision_sha": "fd3294551ebc35e891f50fc191a17e9d22e13880"
     }
   ]
 }
