@@ -77,9 +77,9 @@
       if (text.length > 4096) throw new Error('PLATFORM_STATUS_TOO_LARGE');
       const payload = JSON.parse(text);
       if (!payload || payload.schema !== 'forgeworks-portal-status-v1'
-          || payload.environment !== 'staging' || payload.status !== 'reachable')
+          || !['development','staging'].includes(payload.environment) || payload.status !== 'reachable')
         throw new Error('PLATFORM_STATUS_UNRECOGNIZED');
-      status.textContent = 'BFF staging merespons. Verifikasi auth dan production acceptance tetap diperlukan.';
+      status.textContent = 'BFF pratinjau merespons. Verifikasi auth dan production acceptance tetap diperlukan.';
     } catch {
       status.textContent = 'BFF belum tersedia atau tidak dapat diverifikasi. Akses produk tetap nonaktif.';
     } finally {

@@ -19,7 +19,7 @@ been deployed as the public portal and is deliberately not production-ready.
 From the repository root:
 
 ```bash
-python -m http.server 8080 --bind 127.0.0.1 --directory apps/portal
+python apps/portal/dev_server.py --port 8080
 ```
 
 Open http://127.0.0.1:8080. The status check will correctly report an absent
@@ -29,7 +29,7 @@ BFF. Never expose this preview directly as a customer production application.
 
 ```bash
 node --check apps/portal/app.js
-python -m unittest discover -s tests/platform -p 'test_portal_shell.py' -v
+python -m unittest discover -s tests/platform -p 'test_portal_*.py' -v
 ```
 
 ## Next gates
