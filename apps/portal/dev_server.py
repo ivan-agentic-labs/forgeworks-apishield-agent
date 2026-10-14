@@ -62,6 +62,12 @@ def handler_factory(root: Path = ASSETS, snapshot_provider=None):
             except ValueError:
                 self._send(400, b"Invalid target\n", "text/plain; charset=utf-8", head)
                 return
+            # Reject encoded separators, backslashes and path parameters before
+            # route matching; the preview has no need for URI decoding.
+            if (not self.path.isascii() or len(self.path) > 256
+                    or any(c in self.path for c in "%\\;\x00\r\n\t")):
+                self._send(400, b"Ambiguous target\n", "text/plain; charset=utf-8", head)
+                return
             if path.scheme or path.netloc or path.query or path.fragment:
                 self._send(400, b"Invalid target\n", "text/plain; charset=utf-8", head)
                 return
