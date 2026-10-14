@@ -1,6 +1,11 @@
 name: ForgeWorks Exact Five-Product Hosted Release Proof
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ops/releases/fleet-staging-candidate.json'
+      - '.github/workflows/fleet-release-identity.yml'
 permissions:
   contents: read
 jobs:

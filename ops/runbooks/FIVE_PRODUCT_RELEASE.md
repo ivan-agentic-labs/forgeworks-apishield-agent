@@ -13,3 +13,16 @@ The coordinated probe is `python scripts/verify_fleet_release.py`. It performs b
 The ordinary public readiness workflows can pass while old code is still live. They must not be used as proof that this candidate deployed. The exact fleet workflow intentionally runs manually after deployment; until the staged patch is applied it should fail.
 
 Supabase and Railway SealAngel connections/resources are excluded. This probe does not establish a unified user-facing domain or portal, authenticated business results, private telemetry access, a latency SLO, hosted DR or production readiness.
+
+## Automated exact release proof (2026-10-14)
+
+The fleet candidate is updated only from an observed five-service /versionz inventory,
+not from commit names or successful deployment status alone. The bounded, read-only
+[scripting inventory](../../scripts/observe_fleet_runtime.py) reports DRIFT independently
+of healthy routing; its scheduled workflow does not turn staging into production.
+
+Changes to the fleet candidate now trigger the exact five-product release proof
+on main. It validates *every* expected revision and runtime fingerprint as well as
+anonymous boundaries. A candidate should only be changed after the source and
+runtime values are reviewed. Workflow success proves public identity, **not**
+authenticated tenant isolation, customer acceptance, SLO or disaster recovery.
