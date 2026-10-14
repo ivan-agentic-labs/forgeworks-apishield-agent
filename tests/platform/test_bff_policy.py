@@ -101,6 +101,19 @@ class BFFReadAdmissionTests(unittest.TestCase):
             self.assertTrue(policy.preflight_read(route, grant,
                                                    workspace_id=RESOURCE, now=1000))
             self.assertFalse(policy.can_forward(route, trusted_identity=grant))
+            forged = (
+                {"upstream_path": "https://attacker.invalid/resource"},
+                {"upstream_path": "/v1/other/" + RESOURCE},
+                {"resource_id": "00000000-0000-4000-8000-000000000002"},
+                {"requires_verified_session": False},
+                {"forward_enabled": True},
+                {"method": "POST"},
+            )
+            for altered_route in forged:
+                with self.subTest(product=product, altered_route=altered_route):
+                    self.assertFalse(policy.preflight_read(
+                        dataclasses.replace(route, **altered_route),
+                        grant, workspace_id=RESOURCE, now=1000))
             altered = (
                 {"tenant_id": "00000000-0000-4000-8000-000000000002"},
                 {"product": "another-service"},

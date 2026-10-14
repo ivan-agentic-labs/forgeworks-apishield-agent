@@ -121,6 +121,14 @@ def preflight_read(route: ReadRoute, snapshot: ReviewedSessionSnapshot,
             or route.required_scope not in snapshot.scopes
             or snapshot.member_role not in {"viewer", "editor", "owner", "admin"}):
         return False
+    # Never treat a hand-crafted ReadRoute as an authorized upstream URL.
+    # Exact allowlist round-trip is mandatory even in this offline preflight.
+    try:
+        canonical = plan_read("/api/" + route.product + route.upstream_path)
+    except RouteDenied:
+        return False
+    if route != canonical:
+        return False
     for value in (workspace_id, snapshot.tenant_id, snapshot.subject,
                   snapshot.session_id):
         if type(value) is not str or not _UUID.fullmatch(value):

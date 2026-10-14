@@ -69,3 +69,16 @@ parameters and excessive targets. These are defense-in-depth controls for the
 local development-only server. They are **not** an authenticated customer proxy,
 a deployed gateway, or production acceptance. All checks run in the offline
 portal regression suite and preserve the five fixed read-only status routes.
+
+## Offline BFF authorization preflight (not active)
+
+The versioned read-only plan now records the actual product-specific backend
+scope for each of the five allowed routes: `analysis:read`, `scan:read`,
+`spec:read`, `evaluation:read` and `report:read`. A pure, offline
+`preflight_read` checks a **hypothetical server-reviewed** membership and
+session snapshot for tenant match, role, scope, expiration, and immutable
+allowlisted route identity. It does not verify a bearer token, consult live
+membership, perform session revocation or authorize real traffic. Any
+application using it must FIRST independently authenticate and validate that
+snapshot, and must enforce authorization again at the backend. `can_forward`
+remains hardcoded false even when the offline preflight is true.
