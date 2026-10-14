@@ -44,3 +44,11 @@ python -m unittest discover -s tests/platform -p 'test_portal_*.py' -v
    independent acceptance only after the owner makes those decisions.
 
 This package changes no existing API routes and has no effect on live Railway.
+
+## BFF admission policy (offline only)
+
+`bff_policy.py` contains a testable five-product, GET-only routing policy.
+All forwarding remains disabled, even with caller-provided identity claims;
+this is a deliberately safe partial implementation and is not a real gateway.
+The test workflow rejects URL ambiguity, path injection and unauthorized
+verbs before a backend transport could ever exist.

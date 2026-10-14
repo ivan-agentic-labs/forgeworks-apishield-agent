@@ -33,3 +33,15 @@ All five APIs must keep their existing independent repositories, RLS,
 rollback plans and CI. This is a contract, not a shortcut to a production
 rollout. Require authenticated own-tenant and cross-tenant tests before
 enabling any business route; gateway readiness alone cannot satisfy G1-E.
+
+## Offline route admission implementation (2026-10-14)
+
+`apps/portal/bff_policy.py` is a pure, non-networking admission plan for
+five fixed GET resource routes. It strictly rejects unknown products,
+ambiguous or percent-encoded targets, URL/host injection, other HTTP verbs,
+noncanonical UUIDs and unapproved routes. The returned plan marks
+`forward_enabled=False`, and `can_forward` always denies even if an untrusted
+caller passes an alleged identity or role. This module is intentionally not an
+authenticated BFF and is not attached to any production HTTP handler. A real
+proxy must implement and independently verify session, tenant membership,
+service audience, CSRF/cookie semantics, request budgets, and private egress.
