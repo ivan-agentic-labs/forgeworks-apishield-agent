@@ -46,7 +46,7 @@ def plan_read(raw_target: str, *, method: str = "GET") -> ReadRoute:
         or "//" in raw_target or raw_target.endswith("/")):
         raise RouteDenied("AMBIGUOUS_TARGET")
     pieces = raw_target.split("/")
-    if len(pieces) not in (5, 6) or pieces[:2] != ["", "api"]:
+    if len(pieces) not in (6, 7) or pieces[:2] != ["", "api"]:
         raise RouteDenied("UNKNOWN_ROUTE")
     product = pieces[2]
     if product not in _PRODUCTS or pieces[3] != "v1":
