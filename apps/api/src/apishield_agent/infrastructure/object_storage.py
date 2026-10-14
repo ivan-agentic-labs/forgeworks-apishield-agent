@@ -37,7 +37,17 @@ class ObjectStorage:
         if any(ord(ch) <= 0x20 or ord(ch) == 0x7f or ch == "\\" for ch in self.endpoint):
             reject("STORAGE_NOT_CONFIGURED", 503)
         parsed=urllib.parse.urlsplit(self.endpoint)
-        if parsed.scheme != "https" or not parsed.hostname or "@" in parsed.netloc or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment or parsed.port:
+        if parsed.scheme != "https" or not parsed.hostname or "@" in parsed.netloc or parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.port:
+            reject("STORAGE_NOT_CONFIGURED",503)
+        # Supabase S3 requires its documented /storage/v1/s3 prefix.
+        # Only exact hosted project origins may use this prefix; no
+        # request-configurable paths, arbitrary proxy hosts or redirects.
+        self.prefix = parsed.path
+        if self.prefix and not (
+            self.prefix == "/storage/v1/s3"
+            and re.fullmatch(r"[a-z0-9]{20}(?:\.storage)?\.supabase\.co", parsed.hostname)
+            and self.style == "path"
+        ):
             reject("STORAGE_NOT_CONFIGURED",503)
         if not re.fullmatch(r"[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]",self.bucket) or not self.access or not self.secret or self.style not in {"path","virtual-host"}:
             reject("STORAGE_NOT_CONFIGURED",503)
@@ -52,7 +62,7 @@ class ObjectStorage:
 
     def signed_request(self, method, key, body=None, timestamp=None):
         host=self.host if self.style=="path" else self.bucket+"."+self.host
-        path="/"+(self.bucket+"/" if self.style=="path" else "")+urllib.parse.quote(key,safe="/-_.~")
+        path=self.prefix+"/"+(self.bucket+"/" if self.style=="path" else "")+urllib.parse.quote(key,safe="/-_.~")
         now=timestamp or datetime.now(timezone.utc)
         stamp=now.strftime("%Y%m%dT%H%M%SZ");date=now.strftime("%Y%m%d")
         digest=hashlib.sha256(body or b"").hexdigest()

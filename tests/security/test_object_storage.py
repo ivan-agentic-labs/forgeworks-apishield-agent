@@ -101,3 +101,47 @@ def test_canonical_s3_endpoint_remains_valid(monkeypatch):
         monkeypatch.setenv(key, value)
     monkeypatch.setenv("S3_ENDPOINT", "https://storage.example.invalid")
     assert ObjectStorage("apishield-agent").host == "storage.example.invalid"
+
+
+def test_supabase_s3_hosted_path_prefix_is_signed_exactly(monkeypatch):
+    values = {
+        "S3_ENDPOINT": "https://fljekuwplgkrpdoajyhn.storage.supabase.co/storage/v1/s3",
+        "S3_BUCKET": "fw-staging-apishield-agent",
+        "S3_REGION": "ap-northeast-2",
+        "S3_URL_STYLE": "path",
+        "S3_ACCESS_KEY_ID": "synthetic-access-key",
+        "S3_SECRET_ACCESS_KEY": "synthetic-secret-for-offline-tests",
+    }
+    for key, value in values.items():
+        monkeypatch.setenv(key, value)
+    store = ObjectStorage("apishield-agent")
+    request = store.signed_request("PUT", "apishield-agent/abc", b"payload",
+                                   datetime(2026,10,14,tzinfo=timezone.utc))
+    assert request.full_url == (
+        "https://fljekuwplgkrpdoajyhn.storage.supabase.co/storage/v1/s3/"
+        "fw-staging-apishield-agent/apishield-agent/abc"
+    )
+    assert "20261014/ap-northeast-2/s3/aws4_request" in request.get_header("Authorization")
+    assert request.get_header("X-amz-content-sha256") == hashlib.sha256(b"payload").hexdigest()
+
+
+@pytest.mark.parametrize("endpoint,style", [
+    ("https://storage.example.invalid/storage/v1/s3", "path"),
+    ("https://fljekuwplgkrpdoajyhn.storage.supabase.co/storage/v1/s3/evil", "path"),
+    ("https://fljekuwplgkrpdoajyhn.storage.supabase.co/storage/v1/s3", "virtual-host"),
+    ("https://fljekuwplgkrpdoajyhn.storage.supabase.co/%73torage/v1/s3", "path"),
+    ("https://x.supabase.co/storage/v1/s3", "path"),
+])
+def test_supabase_s3_path_rejects_untrusted_destinations(monkeypatch, endpoint, style):
+    for key, value in {
+        "S3_BUCKET": "fw-staging-apishield-agent",
+        "S3_REGION": "ap-northeast-2",
+        "S3_ACCESS_KEY_ID": "synthetic-access-key",
+        "S3_SECRET_ACCESS_KEY": "synthetic-secret-for-offline-tests",
+        "S3_URL_STYLE": style,
+        "S3_ENDPOINT": endpoint,
+    }.items():
+        monkeypatch.setenv(key, value)
+    with pytest.raises(HTTPException) as err:
+        ObjectStorage("apishield-agent")
+    assert err.value.status_code == 503
