@@ -4,6 +4,7 @@ from __future__ import annotations
 from http.server import ThreadingHTTPServer
 import importlib.util
 import json
+import http.client
 from pathlib import Path
 from threading import Thread
 import unittest
@@ -74,6 +75,40 @@ class PortalPreviewTests(unittest.TestCase):
     def test_query_strings_and_invalid_host_are_denied(self):
         self.assertEqual(self.request("/products.json?token=not-a-real-token")[0],400)
         self.assertEqual(self.request("/",headers={"Host":"attacker.invalid"})[0],421)
+
+
+    def test_duplicate_host_headers_are_rejected(self):
+        conn = http.client.HTTPConnection("127.0.0.1", self.server.server_port, timeout=3)
+        try:
+            conn.putrequest("GET", "/", skip_host=True)
+            conn.putheader("Host", f"127.0.0.1:{self.server.server_port}")
+            conn.putheader("Host", "attacker.invalid")
+            conn.endheaders()
+            response = conn.getresponse()
+            self.assertEqual(response.status, 421)
+            self.assertEqual(response.getheader("Cache-Control"), "no-store")
+            response.read()
+        finally:
+            conn.close()
+
+    def test_preview_never_accepts_credentials_or_request_bodies(self):
+        for forbidden in ("Authorization", "Cookie", "Transfer-Encoding", "Content-Length"):
+            with self.subTest(header=forbidden):
+                value = "chunked" if forbidden == "Transfer-Encoding" else "1"
+                if forbidden == "Authorization":
+                    value = "Bearer fake-preview-credential"
+                code, _, body = self.request("/", headers={forbidden: value})
+                self.assertEqual(code, 400)
+                self.assertNotIn(b"fake-preview-credential", body)
+
+    def test_ambiguous_routes_fail_before_static_asset_lookup(self):
+        for target in (
+            "/%2e%2e/index.html", "/app.js%2fprivate", "/styles.css;ignored",
+            "/app.js\\\\private", "/" + "a" * 260,
+            "/api/platform/status%0d%0aHost:evil.invalid",
+        ):
+            with self.subTest(target=target):
+                self.assertEqual(self.request(target)[0], 400)
 
     def test_head_has_headers_but_no_body(self):
         code, headers, body = self.request("/app.js",method="HEAD")

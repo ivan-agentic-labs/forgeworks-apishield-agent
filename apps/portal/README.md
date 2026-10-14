@@ -60,3 +60,12 @@ The test workflow rejects URL ambiguity, path injection and unauthorized
 verbs before a backend transport could ever exist.
 
 All fleet checks are selected-source identity and anonymous-boundary checks. They do **not** establish authentication, business functionality, production deployment or SLO.
+
+## Local preview request boundary (2026-10-14)
+
+The preview rejects repeated or non-loopback Host headers, authorization/cookie
+credentials, GET/HEAD request-body framing, encoded path separators, path
+parameters and excessive targets. These are defense-in-depth controls for the
+local development-only server. They are **not** an authenticated customer proxy,
+a deployed gateway, or production acceptance. All checks run in the offline
+portal regression suite and preserve the five fixed read-only status routes.

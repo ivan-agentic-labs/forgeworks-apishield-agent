@@ -53,9 +53,21 @@ def handler_factory(root: Path = ASSETS, snapshot_provider=None):
                 self.wfile.write(body)
 
         def _serve(self, head: bool = False):
-            host = self.headers.get("Host", "")
-            if host != f"127.0.0.1:{self.server.server_port}" and host != f"localhost:{self.server.server_port}":
+            hosts = self.headers.get_all("Host", [])
+            # Exactly one local Host is required; repeated Host headers can
+            # produce conflicting request interpretations in intermediaries.
+            if (len(hosts) != 1 or hosts[0] not in
+                    {f"127.0.0.1:{self.server.server_port}",
+                     f"localhost:{self.server.server_port}"}):
                 self._send(421, b"Invalid preview origin\n", "text/plain; charset=utf-8", head)
+                return
+            # This server is a static preview, not a session endpoint.
+            # Reject credentials and ambiguous request-body framing entirely.
+            if (self.headers.get("Authorization") is not None
+                    or self.headers.get("Cookie") is not None
+                    or self.headers.get("Transfer-Encoding") is not None
+                    or self.headers.get("Content-Length") is not None):
+                self._send(400, b"Preview headers forbidden\n", "text/plain; charset=utf-8", head)
                 return
             try:
                 path = urlsplit(self.path)
