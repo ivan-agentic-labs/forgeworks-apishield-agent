@@ -50,7 +50,9 @@ def load_candidate(path: Path = CANDIDATE) -> dict:
         data = stream.read(MAX_BYTES + 1)
     if len(data) > MAX_BYTES:
         raise ValueError("CANDIDATE_TOO_LARGE")
-    return validate_plan(json.loads(data, object_pairs_hook=unique_object))
+    plan = json.loads(data, object_pairs_hook=unique_object)
+    validate_plan(plan)
+    return plan
 
 
 def observe(candidate: dict, request=fetch) -> dict:
