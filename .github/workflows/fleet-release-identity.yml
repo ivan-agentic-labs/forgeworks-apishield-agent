@@ -20,4 +20,14 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify all five exact source revisions and manifests
-        run: python scripts/verify_fleet_release.py
+        run: |
+          set -o pipefail
+          python scripts/verify_fleet_release.py | tee fleet-release-proof.json
+      - name: Archive machine-readable exact release evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forgeworks-exact-release-proof
+          path: fleet-release-proof.json
+          if-no-files-found: warn
+          retention-days: 30

@@ -30,4 +30,14 @@ jobs:
       - name: Test inventory with offline fault injection
         run: python -m unittest discover -s tests/unit -p 'test_live_inventory.py' -v
       - name: Observe five pinned staging origins without credentials
-        run: python -W error scripts/observe_fleet_runtime.py --require-match
+        run: |
+          set -o pipefail
+          python -W error scripts/observe_fleet_runtime.py --require-match | tee fleet-runtime-inventory.json
+      - name: Archive machine-readable staging inventory evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forgeworks-staging-runtime-inventory
+          path: fleet-runtime-inventory.json
+          if-no-files-found: warn
+          retention-days: 30
