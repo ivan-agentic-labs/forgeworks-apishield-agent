@@ -27,7 +27,7 @@ STATUS = json.dumps({
 }).encode("utf-8")
 
 
-def handler_factory(root: Path = ASSETS):
+def handler_factory(root: Path = ASSETS, snapshot_provider=None):
     root = root.resolve(strict=True)
 
     class PreviewHandler(BaseHTTPRequestHandler):
@@ -68,6 +68,25 @@ def handler_factory(root: Path = ASSETS):
             if path.path == "/api/platform/status":
                 self._send(200, STATUS, "application/json; charset=utf-8", head)
                 return
+            if path.path == "/api/platform/services":
+                if snapshot_provider is None:
+                    self._send(503, b'{"status":"not_configured"}', "application/json; charset=utf-8", head)
+                    return
+                try:
+                    snapshot = snapshot_provider()
+                    if (type(snapshot) is not dict
+                            or snapshot.get("schema") != "forgeworks-portal-staging-services-v1"
+                            or snapshot.get("environment") != "staging"):
+                        raise ValueError("INVALID_SNAPSHOT")
+                    payload = json.dumps(snapshot, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+                    if len(payload) > 4096:
+                        raise ValueError("EXCESSIVE_SNAPSHOT")
+                except Exception:
+                    self._send(503, b'{"status":"unavailable"}', "application/json; charset=utf-8", head)
+                    return
+                self._send(200 if snapshot.get("result") == "PASS" else 503,
+                           payload, "application/json; charset=utf-8", head)
+                return
             if path.path not in ROUTES:
                 self._send(404, b"Not found\n", "text/plain; charset=utf-8", head)
                 return
@@ -101,10 +120,19 @@ def handler_factory(root: Path = ASSETS):
 def main() -> None:
     parser = argparse.ArgumentParser(description="Local, read-only portal preview (loopback only)")
     parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--probe-staging", action="store_true",
+                        help="Explicitly allow fixed-origin, read-only staging observation")
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535:
         parser.error("Port must be 1024..65535")
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_factory())
+    provider = None
+    if args.probe_staging:
+        import sys
+        sys.path.insert(0, str(ASSETS))
+        from service_status import SnapshotCache
+        provider = SnapshotCache(ttl=30).snapshot
+    server = ThreadingHTTPServer(("127.0.0.1", args.port),
+                                 handler_factory(snapshot_provider=provider))
     print(f"Local preview: http://127.0.0.1:{args.port} (no customer or real credentials)", flush=True)
     try:
         server.serve_forever(poll_interval=0.2)

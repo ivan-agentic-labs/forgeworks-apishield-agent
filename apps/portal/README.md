@@ -8,8 +8,11 @@ been deployed as the public portal and is deliberately not production-ready.
 - Security-lean HTML: restrictive static CSP, no third-party scripts, no
   localStorage/sessionStorage of tokens, no arbitrary remote URLs.
 - Explicit status checking on a fixed same-origin `GET /api/platform/status`.
-  The BFF endpoint is NOT implemented; a 404/network error is presented as
-  unavailable. "reachable" never means production accepted.
+  The loopback preview serves development-only status; this is not an
+  authenticated business BFF. "reachable" never means production accepted.
+- Opt-in, bounded server-side five-product staging monitoring on
+  `GET /api/platform/services`, with strict release identity verification,
+  fixed HTTPS targets, no redirects, credentials, or arbitrary proxy URL.
 - No login, tenant state, direct cross-origin provider calls, billing, SSO or
   customer content. Navigation to the five reserved application routes is
   intentionally disabled until BFF and service authorization exist.
@@ -19,17 +22,20 @@ been deployed as the public portal and is deliberately not production-ready.
 From the repository root:
 
 ```bash
-python apps/portal/dev_server.py --port 8080
+python apps/portal/dev_server.py --port 8080 --probe-staging
 ```
 
-Open http://127.0.0.1:8080. The status check will correctly report an absent
-BFF. Never expose this preview directly as a customer production application.
+Open http://127.0.0.1:8080. The preview can read the five fixed staging
+origins only when explicitly opted in; no business endpoints are proxied.
+Without `--probe-staging`, the services endpoint returns HTTP 503 and makes
+no upstream calls. Never expose this preview as a customer production app.
 
 ## Tests
 
 ```bash
 node --check apps/portal/app.js
 python -m unittest discover -s tests/platform -p 'test_portal_*.py' -v
+python apps/portal/service_status.py --live-staging  # Requires network; staging only
 ```
 
 ## Next gates
@@ -52,3 +58,5 @@ All forwarding remains disabled, even with caller-provided identity claims;
 this is a deliberately safe partial implementation and is not a real gateway.
 The test workflow rejects URL ambiguity, path injection and unauthorized
 verbs before a backend transport could ever exist.
+
+All fleet checks are selected-source identity and anonymous-boundary checks. They do **not** establish authentication, business functionality, production deployment or SLO.

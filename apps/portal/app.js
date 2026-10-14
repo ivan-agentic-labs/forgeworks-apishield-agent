@@ -6,6 +6,7 @@
   const count = document.getElementById('module-count');
   const status = document.getElementById('connection-status');
   const check = document.getElementById('check-connection');
+  const serviceLabels = new Map();
 
   function isCatalog(products) {
     return Array.isArray(products) && products.length === IDS.length
@@ -38,7 +39,11 @@
       gate.textContent = 'Akses portal belum diaktifkan';
       // Do not create links to reserved /app routes until BFF routing,
       // authentication, and per-service authorization have been verified.
-      card.append(ord, heading, detail, domain, gate);
+      const probe = document.createElement('span');
+      probe.className = 'service-status';
+      probe.textContent = 'Status staging belum diperiksa';
+      serviceLabels.set(item.id, probe);
+      card.append(ord, heading, detail, domain, probe, gate);
       fragment.append(card);
     });
     moduleHost.replaceChildren(fragment);
@@ -79,9 +84,41 @@
       if (!payload || payload.schema !== 'forgeworks-portal-status-v1'
           || !['development','staging'].includes(payload.environment) || payload.status !== 'reachable')
         throw new Error('PLATFORM_STATUS_UNRECOGNIZED');
-      status.textContent = 'BFF pratinjau merespons. Verifikasi auth dan production acceptance tetap diperlukan.';
+      status.textContent = 'Server pratinjau merespons; menguji lima layanan staging…';
+      const fleetResponse = await fetch('/api/platform/services', {
+        method:'GET', credentials:'same-origin', cache:'no-store', redirect:'error',
+        signal:controller.signal, headers:{Accept:'application/json'}
+      });
+      const fleetText = await fleetResponse.text();
+      if (fleetText.length > 4096) throw new Error('STAGING_FLEET_RESPONSE_TOO_LARGE');
+      const fleet = JSON.parse(fleetText);
+      if (!fleet || fleet.schema !== 'forgeworks-portal-staging-services-v1'
+          || fleet.environment !== 'staging' || !Array.isArray(fleet.services)
+          || fleet.services.length !== IDS.length || fleet.business_access !== 'NOT_ENABLED'
+          || fleet.production_acceptance !== 'NOT_ACCEPTED')
+        throw new Error('STAGING_FLEET_RESPONSE_INVALID');
+      const seen = new Set();
+      for (const item of fleet.services) {
+        if (!item || !IDS.includes(item.product) || seen.has(item.product)
+            || !['ready','unavailable'].includes(item.status)) {
+          throw new Error('STAGING_FLEET_PRODUCTS_INVALID');
+        }
+        seen.add(item.product);
+      }
+      fleet.services.forEach(item => {
+        const label = serviceLabels.get(item.product);
+        if (label) {
+          label.textContent = item.status === 'ready' ? 'Staging: tersedia' : 'Staging: tidak tersedia';
+          label.dataset.state = item.status;
+        }
+      });
+      if (!fleetResponse.ok || fleet.result !== 'PASS') {
+        status.textContent = 'Setidaknya satu layanan staging tidak terverifikasi. Akses bisnis tetap nonaktif.';
+      } else {
+        status.textContent = '5/5 identitas staging cocok. Login, otorisasi dan production acceptance tetap diperlukan.';
+      }
     } catch {
-      status.textContent = 'BFF belum tersedia atau tidak dapat diverifikasi. Akses produk tetap nonaktif.';
+      status.textContent = 'Pemantauan staging belum tersedia atau gagal. Akses produk tetap nonaktif.';
     } finally {
       clearTimeout(timeout);
       check.disabled = false;

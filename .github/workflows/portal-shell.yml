@@ -5,6 +5,8 @@ on:
     paths:
       - 'apps/portal/**'
       - 'tests/platform/**'
+      - 'scripts/verify_fleet_release.py'
+      - 'ops/releases/fleet-staging-candidate.json'
       - '.github/workflows/portal-shell.yml'
   pull_request:
     paths:
