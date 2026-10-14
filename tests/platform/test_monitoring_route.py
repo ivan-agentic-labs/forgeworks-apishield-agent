@@ -71,6 +71,45 @@ class MonitoringRouteTests(unittest.TestCase):
         finally:
             server.shutdown();server.server_close();thread.join(timeout=2)
 
+
+    def test_untrusted_collector_cannot_leak_unknown_fields_or_fake_ready(self):
+        # Collector failures must not bypass the explicit browser snapshot schema.
+        for poison in (
+            {**snapshot(), "debug_token": "synthetic-should-never-leak"},
+            {**snapshot(), "production_acceptance": "ACCEPTED"},
+            {**snapshot(), "business_access": "ENABLED"},
+            {**snapshot(), "services": [{**snapshot()["services"][0],
+               "trace_secret": "synthetic-should-never-leak"}] + snapshot()["services"][1:]},
+            {**snapshot(), "services": list(reversed(snapshot()["services"]))},
+            {**snapshot(), "services": [{**snapshot()["services"][0],
+               "status": "unavailable"}] + snapshot()["services"][1:]},
+            {**snapshot(), "services": []},
+        ):
+            with self.subTest(payload=str(poison)[:90]):
+                server,thread=serve(lambda value=poison: value)
+                try:
+                    code,_,body=request(server,"/api/platform/services")
+                    self.assertEqual(code,503)
+                    self.assertEqual(json.loads(body),{"status":"unavailable"})
+                    self.assertNotIn(b"synthetic-should-never-leak",body)
+                finally:
+                    server.shutdown();server.server_close();thread.join(timeout=2)
+
+    def test_degraded_browser_response_must_be_self_consistent(self):
+        degraded=snapshot()
+        degraded["result"]="DEGRADED"
+        degraded["services"][2]["status"]="unavailable"
+        server,thread=serve(lambda:degraded)
+        try:
+            code,headers,body=request(server,"/api/platform/services")
+            self.assertEqual(code,503)
+            report=json.loads(body)
+            self.assertEqual(report["result"],"DEGRADED")
+            self.assertEqual(report["services"][2]["status"],"unavailable")
+            self.assertEqual(headers["Cache-Control"],"no-store")
+        finally:
+            server.shutdown();server.server_close();thread.join(timeout=2)
+
     def test_upstream_fault_cannot_expose_internals(self):
         def fail():
             raise RuntimeError("Bearer invented-session-secret")

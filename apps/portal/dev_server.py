@@ -27,6 +27,41 @@ STATUS = json.dumps({
 }).encode("utf-8")
 
 
+PRODUCT_ORDER = (
+    "apishield-agent", "accessfix-ai", "specforge-ai", "agenttest-lab",
+    "datareconcile-ai",
+)
+
+
+def public_services_snapshot(candidate):
+    """Whitelist exact browser-visible fields, never pass collector objects through."""
+    expected = {"schema", "environment", "result", "services",
+                "business_access", "production_acceptance"}
+    if (type(candidate) is not dict or set(candidate) != expected
+            or candidate["schema"] != "forgeworks-portal-staging-services-v1"
+            or candidate["environment"] != "staging"
+            or candidate["result"] not in ("PASS", "DEGRADED")
+            or candidate["business_access"] != "NOT_ENABLED"
+            or candidate["production_acceptance"] != "NOT_ACCEPTED"
+            or type(candidate["services"]) is not list
+            or len(candidate["services"]) != len(PRODUCT_ORDER)):
+        raise ValueError("INVALID_PUBLIC_SNAPSHOT")
+    services = []
+    for name, item in zip(PRODUCT_ORDER, candidate["services"]):
+        if (type(item) is not dict or set(item) != {"product", "status"}
+                or item["product"] != name
+                or item["status"] not in ("ready", "unavailable")):
+            raise ValueError("INVALID_PUBLIC_PRODUCT")
+        services.append({"product": name, "status": item["status"]})
+    ready = all(item["status"] == "ready" for item in services)
+    if (candidate["result"] == "PASS") != ready:
+        raise ValueError("INCONSISTENT_PUBLIC_SNAPSHOT")
+    return {"schema": "forgeworks-portal-staging-services-v1",
+            "environment": "staging", "result": candidate["result"],
+            "services": services, "business_access": "NOT_ENABLED",
+            "production_acceptance": "NOT_ACCEPTED"}
+
+
 def handler_factory(root: Path = ASSETS, snapshot_provider=None):
     root = root.resolve(strict=True)
 
@@ -91,11 +126,7 @@ def handler_factory(root: Path = ASSETS, snapshot_provider=None):
                     self._send(503, b'{"status":"not_configured"}', "application/json; charset=utf-8", head)
                     return
                 try:
-                    snapshot = snapshot_provider()
-                    if (type(snapshot) is not dict
-                            or snapshot.get("schema") != "forgeworks-portal-staging-services-v1"
-                            or snapshot.get("environment") != "staging"):
-                        raise ValueError("INVALID_SNAPSHOT")
+                    snapshot = public_services_snapshot(snapshot_provider())
                     payload = json.dumps(snapshot, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
                     if len(payload) > 4096:
                         raise ValueError("EXCESSIVE_SNAPSHOT")
