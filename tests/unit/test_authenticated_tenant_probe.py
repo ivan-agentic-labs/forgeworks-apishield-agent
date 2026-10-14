@@ -7,6 +7,7 @@ from io import StringIO
 import json
 from pathlib import Path
 import sys
+import tempfile
 import time
 import unittest
 
@@ -150,6 +151,53 @@ class AuthenticatedG3ProbeTests(unittest.TestCase):
         self.assertNotIn(token_b, output.getvalue())
         self.assertNotIn(path_a, output.getvalue())
         self.assertNotIn(path_b, output.getvalue())
+
+    def test_exact_release_preflight_passes_only_for_pinned_hosted_identity(self):
+        from pathlib import Path
+        import verify_fleet_release as fleet
+        sample = {
+            "schema": "forgeworks-fleet-staging-candidate-v1",
+            "environment": "staging",
+            "products": [
+                {"product": product, "revision_sha": "a" * 40,
+                 "runtime_manifest": {"profile": "forgeworks-runtime-manifest-v1",
+                                      "file_count": 1, "sha256": "b" * 64}}
+                for product in fleet.PRODUCTS
+            ],
+        }
+        success = {
+            "result": "PASS", "environment": "staging",
+            "production_acceptance": "NOT_ACCEPTED",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "candidate.json"
+            target.write_text(json.dumps(sample), encoding="utf-8")
+            probe.require_exact_staging_release(target, verifier=lambda plan: success)
+            for failure in [
+                {**success, "result": "FAIL"},
+                {**success, "environment": "production"},
+                {**success, "production_acceptance": "ACCEPTED"},
+                None,
+            ]:
+                with self.subTest(failure=failure):
+                    with self.assertRaises(probe.AcceptanceError):
+                        probe.require_exact_staging_release(target, verifier=lambda plan: failure)
+            sample["products"][0]["revision_sha"] = "main"
+            target.write_text(json.dumps(sample), encoding="utf-8")
+            with self.assertRaises(probe.AcceptanceError):
+                probe.require_exact_staging_release(target, verifier=lambda plan: success)
+
+    def test_exact_release_preflight_rejects_symlink_or_oversized_plan(self):
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "candidate.json"
+            target.write_bytes(b"x" * (65536 + 1))
+            with self.assertRaises(probe.AcceptanceError):
+                probe.require_exact_staging_release(target, verifier=lambda plan: {})
+            symlink = Path(directory) / "alias.json"
+            symlink.symlink_to(target)
+            with self.assertRaises(probe.AcceptanceError):
+                probe.require_exact_staging_release(symlink, verifier=lambda plan: {})
 
     def test_unpinned_host_and_absolute_paths_fail_before_transport(self):
         with self.assertRaises(probe.AcceptanceError):
