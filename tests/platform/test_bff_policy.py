@@ -76,6 +76,54 @@ class BFFReadAdmissionTests(unittest.TestCase):
                 with self.subTest(path=corrupted), self.assertRaises(policy.RouteDenied):
                     policy.plan_read(corrupted)
 
+
+    def test_backend_required_scopes_are_specific_per_product(self):
+        scopes = {
+            "apishield-agent": "analysis:read",
+            "accessfix-ai": "scan:read",
+            "specforge-ai": "spec:read",
+            "agenttest-lab": "evaluation:read",
+            "datareconcile-ai": "report:read",
+        }
+        for product, (kind, suffix) in CASES.items():
+            route = policy.plan_read(self.path(product, kind, suffix))
+            self.assertEqual(route.required_scope, scopes[product])
+
+    def test_preflight_checks_workspace_role_scope_session_and_expiry(self):
+        import dataclasses
+        for product, (kind, suffix) in CASES.items():
+            route = policy.plan_read(self.path(product, kind, suffix))
+            grant = policy.ReviewedSessionSnapshot(
+                product=product, tenant_id=RESOURCE, subject=RESOURCE,
+                session_id=RESOURCE, scopes=frozenset({route.required_scope}),
+                member_role="viewer", membership_active=True,
+                session_active=True, expires_at=2000)
+            self.assertTrue(policy.preflight_read(route, grant,
+                                                   workspace_id=RESOURCE, now=1000))
+            self.assertFalse(policy.can_forward(route, trusted_identity=grant))
+            altered = (
+                {"tenant_id": "00000000-0000-4000-8000-000000000002"},
+                {"product": "another-service"},
+                {"scopes": frozenset({"other:read"})},
+                {"scopes": ["other:read"]},
+                {"member_role": "guest"},
+                {"session_active": False},
+                {"membership_active": False},
+                {"expires_at": 1000},
+                {"expires_at": "9999"},
+                {"subject": "malformed"},
+                {"session_id": "malformed"},
+            )
+            for changes in altered:
+                with self.subTest(product=product, mutation=changes):
+                    invalid = dataclasses.replace(grant, **changes)
+                    self.assertFalse(policy.preflight_read(route, invalid,
+                                                           workspace_id=RESOURCE, now=1000))
+            self.assertFalse(policy.preflight_read(route, grant,
+                workspace_id="00000000-0000-4000-8000-000000000002", now=1000))
+            self.assertFalse(policy.preflight_read(route, dict(tenant_id=RESOURCE),
+                                                   workspace_id=RESOURCE, now=1000))
+
     def test_claims_or_untrusted_session_cannot_activate_proxy(self):
         route = policy.plan_read(self.path("specforge-ai", "spec-revisions", "openapi"))
         for untrusted in (None, True, {}, {"is_admin": True}, {"tenant_id": RESOURCE}, "trusted"):
