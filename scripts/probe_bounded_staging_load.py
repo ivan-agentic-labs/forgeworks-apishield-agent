@@ -79,6 +79,7 @@ def main() -> None:
              for path, count, status in COUNTS
              for _ in range(count)]
     results: dict[str, list[float]] = {name: [] for name in DOMAINS}
+    by_endpoint = {name: {path: [] for path, _, _ in COUNTS} for name in DOMAINS}
     errors = []
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
         futures = {pool.submit(request, host, path, status): (name, path)
@@ -86,7 +87,9 @@ def main() -> None:
         for future in as_completed(futures):
             name, path = futures[future]
             try:
-                results[name].append(future.result())
+                duration = future.result()
+                results[name].append(duration)
+                by_endpoint[name][path].append(duration)
             except AssertionError as exc:
                 errors.append({"service": name, "path": path, "error": str(exc)})
     report = {
@@ -99,12 +102,24 @@ def main() -> None:
             "p95_ms": round(percentile(values, .95), 1) if values else None,
             "max_ms": round(max(values), 1) if values else None,
         } for name, values in results.items()},
+        "endpoint_latency_ms": {name: {path: {
+            "samples": len(values),
+            "p50": round(statistics.median(values), 1) if values else None,
+            "p95": round(percentile(values, .95), 1) if values else None,
+            "max": round(max(values), 1) if values else None,
+        } for path, values in records.items()} for name, records in by_endpoint.items()},
+        "latency_threshold_ms": MAX_P95_MS,
         "error_count": len(errors),
         "errors": errors[:8],
     }
     print(json.dumps(report, indent=2, sort_keys=True), flush=True)
-    if errors or any(len(values) != 15 or percentile(values, .95) > MAX_P95_MS
-                     for values in results.values()):
+    if errors or any(
+        len(results[name]) != sum(count for _, count, _ in COUNTS)
+        or any(len(by_endpoint[name][path]) != count
+               or percentile(by_endpoint[name][path], .95) > MAX_P95_MS
+               for path, count, _ in COUNTS)
+        for name in DOMAINS
+    ):
         raise AssertionError("Bounded staging readiness or latency check failed")
     print("PASS 75 read-only live HTTPS probes, zero errors and bounded p95 on all five products.")
     print("LIMITATION: this cannot establish authenticated performance, sustained throughput or production capacity.")
