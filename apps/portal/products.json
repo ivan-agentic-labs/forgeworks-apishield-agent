@@ -1,0 +1,37 @@
+[
+  {
+    "id": "apishield-agent",
+    "title": "APIShield Agent",
+    "description": "Analisis perubahan API dan proposal patch yang terikat persetujuan.",
+    "domain": "API compatibility",
+    "platform_route": "/app/apishield-agent"
+  },
+  {
+    "id": "accessfix-ai",
+    "title": "AccessFix AI",
+    "description": "Audit aksesibilitas website, usulan perbaikan dan retest.",
+    "domain": "Accessibility",
+    "platform_route": "/app/accessfix-ai"
+  },
+  {
+    "id": "specforge-ai",
+    "title": "SpecForge AI",
+    "description": "Requirement terstruktur, OpenAPI, traceability dan acceptance test.",
+    "domain": "Specifications",
+    "platform_route": "/app/specforge-ai"
+  },
+  {
+    "id": "agenttest-lab",
+    "title": "AgentTest Lab",
+    "description": "Evaluasi regresi agent dengan dataset dan verdict terverifikasi.",
+    "domain": "Agent evaluation",
+    "platform_route": "/app/agenttest-lab"
+  },
+  {
+    "id": "datareconcile-ai",
+    "title": "DataReconcile AI",
+    "description": "Rekonsiliasi transaksi presisi, exception review dan audit.",
+    "domain": "Reconciliation",
+    "platform_route": "/app/datareconcile-ai"
+  }
+]

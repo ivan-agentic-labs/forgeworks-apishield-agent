@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title>ForgeWorks | Platform</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Lewati navigasi</a>
+  <header class="masthead">
+    <div class="brand" aria-label="ForgeWorks Platform"><span class="mark" aria-hidden="true">F</span><span>ForgeWorks <small>PLATFORM</small></span></div>
+    <span class="environment">Portal shell • Belum diintegrasikan</span>
+  </header>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow">SATU WORKSPACE, LIMA PRODUK</p>
+      <h1 id="hero-title">Engineering workflows. Satu platform.</h1>
+      <p class="lede">Navigasi terpadu untuk API, accessibility, specification, agent evaluation, dan reconciliation. Akses bisnis tetap dikendalikan masing-masing layanan.</p>
+      <div class="notice" role="note">
+        <strong>Status implementasi</strong>
+        <span>Ini adalah frontend shell. Login terpadu, gateway/BFF, billing, dan workspace authorization belum tersedia pada paket ini. Jangan gunakan untuk data pelanggan.</span>
+      </div>
+    </section>
+    <section aria-labelledby="modules-heading">
+      <div class="section-heading"><div><p class="eyebrow">WORKSPACE / MODULES</p><h2 id="modules-heading">Lima produk</h2></div><p class="count" id="module-count">Memuat katalog…</p></div>
+      <div id="modules" class="modules" aria-live="polite" aria-busy="true"></div>
+      <p class="catalog-status" id="catalog-status" role="status" aria-live="polite"></p>
+    </section>
+    <section class="connection" aria-labelledby="integration-heading">
+      <div><p class="eyebrow">PLATFORM STATUS</p><h2 id="integration-heading">Status koneksi BFF</h2><p>Endpoint operasional hanya boleh diakses dari origin portal yang sama. Tidak ada token yang dikirim ke lima backend langsung dari browser.</p></div>
+      <div class="connection-actions"><p id="connection-status" role="status" aria-live="polite">Belum diperiksa.</p><button type="button" id="check-connection">Periksa BFF</button></div>
+    </section>
+  </main>
+  <footer><span>ForgeWorks Platform • Internal engineering preview</span><span>Staging shell ≠ production acceptance</span></footer>
+</body>
+</html>

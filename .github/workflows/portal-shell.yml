@@ -1,0 +1,28 @@
+name: ForgeWorks Unified Portal Shell Verification
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/portal/**'
+      - 'tests/platform/**'
+      - '.github/workflows/portal-shell.yml'
+  pull_request:
+    paths:
+      - 'apps/portal/**'
+      - 'tests/platform/**'
+      - '.github/workflows/portal-shell.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  portal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Syntax check browser JavaScript
+        run: node --check apps/portal/app.js
+      - name: Enforce offline catalog, origin and security boundaries
+        run: python -m unittest discover -s tests/platform -p 'test_portal_shell.py' -v
