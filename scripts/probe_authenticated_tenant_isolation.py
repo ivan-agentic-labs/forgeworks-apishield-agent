@@ -12,12 +12,16 @@ import base64
 import json
 import os
 import sys
+import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request
 from uuid import UUID
 
 from verify_cross_product_staging import PRODUCTS, FAKE_RESOURCE, TIMEOUT_SECONDS, _NO_REDIRECT_OPENER
 
+
+STAGING_SUPABASE_ISSUER = "https://fljekuwplgkrpdoajyhn.supabase.co/auth/v1"
+TOKEN_CLOCK_SKEW_SECONDS = 30
 
 PRODUCT_ALIASES = {
     "apishield-agent": "APISHIELD",
@@ -59,6 +63,21 @@ def _token_claims(value: str) -> dict:
         raise AcceptanceError("Malformed test access token") from error
     if not isinstance(result, dict) or result.get("role") != "authenticated" or result.get("is_anonymous") is True:
         raise AcceptanceError("A real authenticated test account is required")
+    # Preflight only: unverified JWT claims cannot grant permissions. The hosted
+    # API still validates the signature, session and server-owned membership.
+    now = int(time.time())
+    if result.get("iss") != STAGING_SUPABASE_ISSUER or result.get("aud") != "authenticated":
+        raise AcceptanceError("Test token must belong to the dedicated ForgeWorks staging issuer")
+    issued_at, expires_at = result.get("iat"), result.get("exp")
+    if (type(issued_at) is not int or type(expires_at) is not int
+            or issued_at > now + TOKEN_CLOCK_SKEW_SECONDS
+            or expires_at <= now + TOKEN_CLOCK_SKEW_SECONDS
+            or expires_at <= issued_at):
+        raise AcceptanceError("Expired or invalid staging test session")
+    not_before = result.get("nbf")
+    if not_before is not None and (
+            type(not_before) is not int or not_before > now + TOKEN_CLOCK_SKEW_SECONDS):
+        raise AcceptanceError("Staging test token not yet valid")
     _uuid(result.get("sub"))
     _uuid(result.get("session_id"))
     return result  # Unverified metadata: NEVER used as authorization proof.
