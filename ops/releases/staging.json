@@ -2,49 +2,37 @@
   "schema": "forgeworks-staging-release-v1",
   "product": "apishield-agent",
   "environment": "staging",
-  "revision_sha": "93d049f4c711a19005b28e6edd462fe9aa7d3172",
+  "revision_sha": "1839d276a0bccc3382e9e64ddc83e02675d58679",
   "runtime_manifest": {
-    "file_count": 42,
     "profile": "forgeworks-runtime-manifest-v1",
-    "sha256": "53be97930a0d3c4b17235a8177ffb89311505a34ac986948a4e32b7fba3667a5"
+    "file_count": 44,
+    "sha256": "ca1813c6b374ed84b504a7a6282cb588e68fc8896dc9138662550725e6b95711"
   },
   "railway_project_id": "1b35f35d-ad5b-4b93-ad20-ed68251b4589",
   "railway_environment_id": "0395e7ac-10f8-4004-8bb7-ddee901343c7",
   "railway_service_id": "57d8f010-e38e-4dbe-94bb-05cc5d855229",
-  "deployment_id": "82173df1-a89a-447a-b1a1-2a2ec36fc2ab",
+  "deployment_id": "a61c827e-7cd2-434c-8ec8-556fd30c868d",
   "deployment_status": "SUCCESS",
-  "verified_at": "2026-10-12T19:04:24Z",
+  "observed_at": "2026-10-14T05:55:00Z",
   "ci_urls": [
-    "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38293638342",
-    "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38293638420",
-    "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38293638360",
-    "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38293638352"
+    "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38518444750",
+    "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38519369397"
   ],
   "hosted_probe": {
-    "environment": "staging",
-    "limits": "Runtime identity and anonymous boundaries only; no authenticated business acceptance",
-    "private_metrics": "PASS",
-    "product": "apishield-agent",
     "result": "PASS",
-    "revision_sha": "93d049f4c711a19005b28e6edd462fe9aa7d3172",
-    "runtime_manifest": {
-      "file_count": 42,
-      "profile": "forgeworks-runtime-manifest-v1",
-      "sha256": "53be97930a0d3c4b17235a8177ffb89311505a34ac986948a4e32b7fba3667a5"
-    }
+    "scope": "Exact five-service public identity/readiness and anonymous metrics/business boundary",
+    "proof_url": "https://github.com/ivan-agentic-labs/forgeworks-apishield-agent/actions/runs/38519369397",
+    "private_metrics": "NOT_VERIFIED",
+    "authenticated_tenant": "NOT_VERIFIED"
   },
   "production_acceptance": "NOT_ACCEPTED",
-  "limits": [
-    "Selected runtime source identity and scoped authentication/revocation verified.",
-    "GitHub-backed analysis admission is unavailable until a real source/worker configuration exists.",
-    "Observed latency improved, but measured client latency remains high; no production SLO or full product/DR/legal acceptance."
-  ],
   "rollback": {
-    "revision_sha": "00ecc7182d7f555b7a122e2f69d991d1c71a2558",
-    "deployment_id": "64f7b6cf-c0d5-4e0a-86f8-5c2adf3e670b",
-    "previous_region": "iad",
-    "instruction": "Restore source pin, matching FORGEWORKS_RELEASE_SHA and previous region together. Source rollback does not undo database changes."
+    "previous_revision_sha": "93d049f4c711a19005b28e6edd462fe9aa7d3172",
+    "previous_deployment_id": "82173df1-a89a-447a-b1a1-2a2ec36fc2ab",
+    "notes": "Restore previous source SHA and matching FORGEWORKS_RELEASE_SHA together. Database rollback is separate."
   },
-  "deployment_region": "asia-southeast1-eqsg3a",
-  "authenticated_evidence": "docs/evidence/HOSTED_POOL_ADMISSION_2026-10-13.json"
+  "limits": [
+    "No authenticated cross-tenant or real business integration acceptance",
+    "No live disaster recovery, provider audit, production SLO or privacy/legal acceptance"
+  ]
 }
