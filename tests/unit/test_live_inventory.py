@@ -104,6 +104,36 @@ class FleetObservationTests(unittest.TestCase):
                 return status, value
             self.assertEqual(mod.observe(plan, bad)["products"][4]["result"], "ERROR")
 
+    def test_strict_mode_fails_on_drift_but_diagnostic_mode_reports_it(self):
+        plan = candidate()
+        proper = transport(plan)
+        def drift(product, path):
+            status, value = proper(product, path)
+            if product == "specforge-ai" and path == "/versionz":
+                value = {**value, "revision_sha": "d" * 40}
+            return status, value
+        observed = mod.observe(plan, drift)
+        self.assertEqual(mod.exit_status(observed), 0)
+        self.assertEqual(mod.exit_status(observed, strict=True), 1)
+        self.assertEqual(mod.exit_status(mod.observe(plan, proper), strict=True), 0)
+
+    def test_strict_and_diagnostic_fail_on_unavailable_runtime(self):
+        plan = candidate()
+        observed = mod.observe(plan, lambda *_: (_ for _ in ()).throw(OSError("sensitive detail")))
+        self.assertEqual(mod.exit_status(observed), 1)
+        self.assertEqual(mod.exit_status(observed, strict=True), 1)
+
+    def test_candidate_reader_rejects_invalid_and_oversized_files(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as folder:
+            file = Path(folder) / "candidate.json"
+            file.write_text("{invalid")
+            with self.assertRaises(ValueError):
+                mod.load_candidate(file)
+            file.write_bytes(b"x" * (mod.MAX_BYTES + 1))
+            with self.assertRaises(ValueError):
+                mod.load_candidate(file)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -91,20 +91,30 @@ def observe(candidate: dict, request=fetch) -> dict:
     }
 
 
+def exit_status(report: dict, strict: bool = False) -> int:
+    """Strict scheduled probes must not be green on observed release drift."""
+    if any(x["result"] == "ERROR" for x in report["products"]):
+        return 1
+    if strict and report["candidate_relation"] != "MATCH":
+        return 1
+    return 0
+
+
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Bounded read-only staging fleet inventory")
+    parser.add_argument("--require-match", action="store_true",
+                        help="Fail if any live revision or runtime fingerprint differs from the reviewed candidate")
+    options = parser.parse_args()
     try:
-        candidate = json.loads(CANDIDATE.read_bytes(), object_pairs_hook=unique_object)
+        candidate = load_candidate()
         report = observe(candidate)
     except (OSError, ValueError, TypeError):
         print('FAILED_FLEET_INVENTORY_CONFIGURATION', file=sys.stderr)
         return 2
     print(json.dumps(report, sort_keys=True))
-    # Drift is an observation and must be reported (never silently passed).
-    # Status 1 is reserved for inaccessible/invalid runtime; planned drift
-    # intentionally does not break general app CI.
-    if any(x["result"] == "ERROR" for x in report["products"]):
-        return 1
-    return 0
+    return exit_status(report, strict=options.require_match)
 
 
 if __name__ == "__main__":

@@ -30,4 +30,4 @@ jobs:
       - name: Test inventory with offline fault injection
         run: python -m unittest discover -s tests/unit -p 'test_live_inventory.py' -v
       - name: Observe five pinned staging origins without credentials
-        run: python -W error scripts/observe_fleet_runtime.py
+        run: python -W error scripts/observe_fleet_runtime.py --require-match
