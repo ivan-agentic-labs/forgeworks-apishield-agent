@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+from pathlib import Path
 import sys
 import time
 from urllib.error import HTTPError, URLError
@@ -18,6 +19,9 @@ from urllib.request import Request
 from uuid import UUID
 
 from verify_cross_product_staging import PRODUCTS, FAKE_RESOURCE, TIMEOUT_SECONDS, _NO_REDIRECT_OPENER
+from verify_fleet_release import (
+    MAX_PLAN_BYTES, unique_object, validate_plan, verify_fleet,
+)
 
 
 STAGING_SUPABASE_ISSUER = "https://fljekuwplgkrpdoajyhn.supabase.co/auth/v1"
@@ -153,8 +157,39 @@ def verify_pair(label: str, host: str, path_a: str, path_b: str,
     print(f"PASS {label}: two real authorized reads + two denied cross-tenant reads")
 
 
+def require_exact_staging_release(
+    path: Path | None = None, *, verifier=verify_fleet,
+) -> None:
+    """Reject stale/mismatched hosted release before contacting business endpoints.
+
+    This is independent public-only release evidence, never an auth bypass.
+    A fresh hosted identity proof is required each time the G3 probe runs.
+    """
+    candidate = path or (
+        Path(__file__).resolve().parents[1] / "ops/releases/fleet-staging-candidate.json"
+    )
+    if candidate.is_symlink() or not candidate.is_file():
+        raise AcceptanceError("Pinned staging release candidate is unavailable")
+    with candidate.open("rb") as handle:
+        raw = handle.read(MAX_PLAN_BYTES + 1)
+    if len(raw) > MAX_PLAN_BYTES:
+        raise AcceptanceError("Pinned staging release candidate exceeds limit")
+    try:
+        plan = json.loads(raw, object_pairs_hook=unique_object)
+        validate_plan(plan)
+    except (ValueError, TypeError, UnicodeError) as exc:
+        raise AcceptanceError("Invalid pinned staging release candidate") from exc
+    result = verifier(plan)
+    if (not isinstance(result, dict) or result.get("result") != "PASS"
+            or result.get("environment") != "staging"
+            or result.get("production_acceptance") != "NOT_ACCEPTED"):
+        raise AcceptanceError("Hosted staging release identity or boundaries are not verified")
+
+
 def run() -> None:
     token_a, token_b, plans = build_plan(dict(os.environ))
+    # An HTTP 200 from a healthy *old* deployment is not G3 evidence.
+    require_exact_staging_release()
     for label, host, path_a, path_b, _ in plans:
         verify_pair(label, host, path_a, path_b, token_a, token_b)
     print("PASS five-product owner-authorized read-only tenant isolation acceptance")
