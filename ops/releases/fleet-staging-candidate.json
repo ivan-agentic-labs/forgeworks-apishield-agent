@@ -7,9 +7,9 @@
       "runtime_manifest": {
         "file_count": 44,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "6d730b6806f81222f67724e2103388eb7e821769bbdcd1bb8985bc29ad8ca86a"
+        "sha256": "380d2bee16b3d98a1daa5c00428ce6b55440c4d566a739b267429daac8492a1d"
       },
-      "revision_sha": "b8cdc0c7a8ac50dfd469cc5e9a8933639f4cefc2"
+      "revision_sha": "8bb4680deea0a8387163f0c66b75ac4a8df2c189"
     },
     {
       "product": "accessfix-ai",
@@ -25,27 +25,27 @@
       "runtime_manifest": {
         "file_count": 34,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "2a17fd8dcb4a9452893e9e6c5f1c66081254711d5454f8d1bdca05e92c9cb4d0"
+        "sha256": "af9cbd96fb1d57feba6e75bff3d0b120d264f5848e22373b7f1ebd6bfd06c64d"
       },
-      "revision_sha": "25b52f8b28eddcb373c06ceac6e98358a1be8533"
+      "revision_sha": "e51c26eb69e9dc7d3a1be1f5ed78658bc860f353"
     },
     {
       "product": "agenttest-lab",
       "runtime_manifest": {
         "file_count": 37,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "6a3538ee56bfc845a8bf888a235932105c0efd27ee054d86abe15c506517e553"
+        "sha256": "48bc807f65543d1b266ac47e63a9fa724241631c62bf339d2f0adf7cbff13f89"
       },
-      "revision_sha": "d05d0f2205ab4b226cb9aeeef03407156b1042d8"
+      "revision_sha": "6fe6fab0e7e6950ae8d374b8a0e04e62b6477015"
     },
     {
       "product": "datareconcile-ai",
       "runtime_manifest": {
         "file_count": 37,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "d78af08b509599b927de07ecc7b13f071026a958c1df90035615d2667cc3206d"
+        "sha256": "9023d8d4a3dd7959eede20b1f87a9532d7655918a30652c61e2c0c21c049bb44"
       },
-      "revision_sha": "270066386b24d17702b82bcc144531bbbadf5b61"
+      "revision_sha": "a2eec8bbb83da1d69528373f1e14a919762c2d6e"
     }
   ]
 }
