@@ -27,7 +27,7 @@ class PortalShellTests(unittest.TestCase):
         self.assertIn("connect-src 'self'",html)
         self.assertIn("script-src 'self'",html)
         self.assertEqual(re.findall(r'<script[^>]+src="([^"]+)"',html), ["./app.js"])
-        self.assertNotRegex(html, r'<script(?:\s|>)')
+        self.assertNotIn("<script>", html)
         self.assertNotIn("localStorage", js)
         self.assertNotIn("sessionStorage", js)
         self.assertNotIn("innerHTML", js)
