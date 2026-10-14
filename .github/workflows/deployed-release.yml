@@ -23,7 +23,7 @@ jobs:
       - name: Resolve validated pinned deployment revision
         id: release
         run: |
-          python -c 'import json,os,re; sha=json.load(open("ops/releases/staging.json"))["revision_sha"]; assert isinstance(sha,str) and re.fullmatch("[0-9a-f]{40}",sha); open(os.environ["GITHUB_OUTPUT"],"a").write("sha="+sha+"\\n")'
+          python -c 'import json,os,re; sha=json.load(open("ops/releases/staging.json"))["revision_sha"]; assert isinstance(sha,str) and re.fullmatch("[0-9a-f]{40}",sha); open(os.environ["GITHUB_OUTPUT"],"a").write("sha="+sha+"\n")'
       - name: Checkout exact deployed revision for manifest verification
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
