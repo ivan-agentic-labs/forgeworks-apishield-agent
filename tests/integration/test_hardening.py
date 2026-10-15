@@ -62,6 +62,12 @@ def test_proposal_approval_idempotency_stale_version_and_artifact_digest(tmp_pat
         assert client.get(f"/v1/proposals/{proposal['id']}/patch", headers=headers("analysis:read", "patch-read-key-002")).status_code == 403
 
         approval_body = {"patch_sha256": proposal["patch_sha256"], "base_sha": BASE, "decision": "approve", "expected_version": 1}
+        stale_base = client.post(
+            f"/v1/proposals/{proposal['id']}/approvals",
+            headers=headers("patch:approve", "approval-key-stale-base"),
+            json={**approval_body, "base_sha": "c" * 40},
+        )
+        assert stale_base.status_code == 409 and stale_base.json()["code"] == "STALE_ARTIFACT"
         approval = client.post(f"/v1/proposals/{proposal['id']}/approvals", headers=headers("patch:approve", "approval-key-000010"), json=approval_body)
         assert approval.status_code == 201
         replay = client.post(f"/v1/proposals/{proposal['id']}/approvals", headers=headers("patch:approve", "approval-key-000010"), json=approval_body)
@@ -90,4 +96,11 @@ def test_proposal_approval_idempotency_stale_version_and_artifact_digest(tmp_pat
             json={"approval_id": approval.json()["id"], "target_branch": "main"},
         )
         assert github.status_code == 403 and github.json()["code"] == "GITHUB_WRITE_DISABLED"
-
+        duplicate_github = client.post(
+            f"/v1/proposals/{proposal['id']}/pull-requests",
+            headers=headers("github:write", "github-key-000010"),
+            json={"approval_id": approval.json()["id"], "target_branch": "main"},
+        )
+        assert duplicate_github.status_code == 403 and duplicate_github.json()["code"] == "GITHUB_WRITE_DISABLED"
+        with client.app.state.store.conn() as db:
+            assert db.execute("SELECT count(*) FROM pull_requests").fetchone()[0] == 0
