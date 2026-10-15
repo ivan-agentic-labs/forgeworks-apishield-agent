@@ -32,6 +32,7 @@ from apishield_agent.presentation.auth import require_scope
 from apishield_agent.infrastructure.github_sources import GitHubSources
 
 from apishield_agent.presentation.body_budget import BodyBudgetMiddleware
+from apishield_agent.presentation.response_security import SecurityResponseHeadersMiddleware
 
 ROOT = Path(__file__).resolve().parents[4]
 EVIDENCE_MAX_BYTES = 2 * 1024 * 1024
@@ -198,6 +199,7 @@ def create_app(db_path: str | None = None, seed: bool = False) -> FastAPI:
 
     app = FastAPI(title="APIShield Agent MVP", version="0.2.0", lifespan=lifespan)
     app.add_middleware(BodyBudgetMiddleware)
+    app.add_middleware(SecurityResponseHeadersMiddleware)
     from apishield_agent.presentation.operations import register_operations
     register_operations(app, ROOT, "apishield-agent")
     cors_origins = [origin.strip() for origin in os.getenv("APISHIELD_CORS_ORIGINS", "").split(",") if origin.strip()]
