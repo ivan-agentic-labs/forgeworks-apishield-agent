@@ -44,6 +44,11 @@ def load_contract(body):
         document = yaml.load(body, Loader=UniqueLoader)
         if not isinstance(document, dict) or not isinstance(document.get('paths'), dict):
             raise ValueError('CONTRACT_INPUT_INVALID')
+        # A malformed path must never silently disappear from the impact diff.
+        # OpenAPI path-item keys are absolute /-prefixed strings.
+        for route, item in document['paths'].items():
+            if not isinstance(route, str) or not route.startswith('/') or not isinstance(item, dict):
+                raise ValueError('CONTRACT_PATH_INVALID')
         pending = [(document, 0)]
         count = 0
         while pending:
