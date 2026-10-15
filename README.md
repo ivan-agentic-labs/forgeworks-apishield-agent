@@ -1,10 +1,37 @@
 # APIShield Agent
 
-**Status: synthetic MVP deployed to Railway staging, with scoped CI evidence. Not production-ready; G1-E and authenticated customer acceptance remain open.**
+> **Understand breaking API changes before downstream integrations fail.**
 
-API change impact analysis, verified patch proposals and GitHub PR approval workflows.
+**Part of ForgeWorks** | Python API + PostgreSQL engineering MVP | **Production readiness: NOT verified**
 
-The first executable slice accepts an authorized analysis request, persists a tenant-scoped job, runs a deterministic OpenAPI fixture diff through a local worker, and exposes findings/status. It does not perform GitHub writes, arbitrary code execution, AI provider calls, or customer-data processing.
+APIShield Agent is an engineering project aimed at backend teams, platform engineers, and organizations maintaining api consumers. The repository demonstrates bounded, testable workflows today; its broader product specification is a roadmap, **not a claim that every feature has shipped**.
+
+## What works in the current engineering scope
+
+- Tenant-scoped analysis jobs accept a development-authorized request and compare deterministic OpenAPI fixtures, recording job state and findings.
+- An offline TypeScript caller profile can propose bounded source diffs for literal global-fetch endpoint relocations; it is not an integrated auto-fix engine.
+- GitHub App webhook intake checks signatures and replay constraints, but repository reads and pull-request writes remain disabled.
+
+These capabilities are described in the repository's source, local development flow, and [scoped evidence register](docs/verification/CURRENT_GATE_EVIDENCE.md). Treat fixture or CI results as evidence for those exact scenarios, not as independently verified customer behavior.
+
+## What remains before production
+
+- Real authorized repository ingestion, end-to-end caller impact analysis, sandbox build/test of proposed changes, and approval-bound draft pull requests.
+- Authenticated customer workflows and production security/operational acceptance.
+
+**Delivery/evidence boundary:** Engineering documents refer to synthetic CI and Railway staging. A staging deployment claim, passing test, signed template, or source revision fingerprint is **not** a substitute for a live authenticated customer journey, independent security review, production operations, or a trusted release acceptance receipt. The current README does **not** assert that those gates passed. Consult the [hosted release verification runbook](ops/runbooks/RUNTIME_RELEASE_VERIFICATION.md).
+
+## Technical overview
+
+| Area | Current engineering approach |
+| --- | --- |
+| API/runtime | Python service with versioned REST/OpenAPI contracts |
+| Persistence | PostgreSQL MVP adapter and tenant isolation checks in disposable verification environments |
+| Local development | Explicit development-only authentication, short-lived synthetic tokens, bounded fixture data |
+| Quality controls | Automated tests, contract validation, evidence artifacts, review gates |
+| Hosted acceptance | Separate release identity and operational checks; not equivalent to production signoff |
+
+See [product scope](docs/product/PRODUCT_SCOPE.md), [architecture documents](docs/architecture/), and [API/event contracts](contracts/openapi.yaml) for details. Never send secrets or real customer data to local fixtures.
 
 ## MVP run and test
 
@@ -41,7 +68,7 @@ python scripts/verify_contracts.py
 python scripts/validate_openapi_independent.py
 ```
 
-CI runs on main and verifies the complete test tree, OpenAPI/event contracts, generated TypeScript client, implemented PostgreSQL MVP runtime, tenant RLS/concurrency and disposable logical backup/restore. These are scoped synthetic proofs; full G1-E and production operations remain open.
+The configured CI covers the test suite, OpenAPI/event contracts, generated TypeScript client, PostgreSQL MVP runtime, tenant RLS/concurrency, and disposable logical backup/restore. See the linked evidence register and the latest GitHub Actions run for the scope and outcome of each verification. Passing synthetic checks does not establish production or customer acceptance.
 
 ## Non-goals at this stage
 No production deployment, customer data, code-execution agent, customer production access, financial mutation, license assertion or fake passing tests.
@@ -67,14 +94,26 @@ A bounded [TypeScript caller profile](docs/architecture/TYPESCRIPT_CALLER_PROFIL
 
 See [runtime identity, private telemetry and production acceptance](ops/runbooks/RUNTIME_RELEASE_VERIFICATION.md). Hosted releases expose a bounded source fingerprint and require a separate server-only metrics credential. Production startup requires separate infrastructure and an actual trusted, signed acceptance receipt. An unsigned template or passing synthetic CI does not establish production acceptance.
 
+## ForgeWorks platform direction
 
-## Current owner specification and unified application
+Five independent service repositories are intended to become **one user-facing ForgeWorks application**, with a shared portal and explicit service boundaries. This integration is a **target architecture**, not an already verified unified deployment. See [one-app/five-services decision](docs/platform/ONE_APP_FIVE_SERVICES.md).
 
-- **Owner design revision (2026-10-13):** [product specification](docs/specifications/PRODUCT_SPECIFICATION_2026-10-13.md). This is a **design target**, not proof every feature exists.
-- **Five ForgeWorks products, one future application/domain:** [architecture](docs/platform/ONE_APP_FIVE_SERVICES.md). SealAngel Work is a separate planned repository/application/domain; neither domain name is configured by this documentation.
-- **Actual implemented and verified behavior:** keep using [current scoped evidence](docs/verification/CURRENT_GATE_EVIDENCE.md) and the [hosted runbook](ops/runbooks/RUNTIME_RELEASE_VERIFICATION.md). Local tests, staging claims and production acceptance are different gates.
-- The 2026-10-09 G2 bootstrap record remains historical and must not be mistaken for today's repository status.
+- APIShield Agent: [forgeworks-apishield-agent](https://github.com/ivan-agentic-labs/forgeworks-apishield-agent)
+- AccessFix AI: [forgeworks-accessfix-ai](https://github.com/ivan-agentic-labs/forgeworks-accessfix-ai)
+- SpecForge AI: [forgeworks-specforge-ai](https://github.com/ivan-agentic-labs/forgeworks-specforge-ai)
+- AgentTest Lab: [forgeworks-agenttest-lab](https://github.com/ivan-agentic-labs/forgeworks-agenttest-lab)
+- DataReconcile AI: [forgeworks-datareconcile-ai](https://github.com/ivan-agentic-labs/forgeworks-datareconcile-ai)
 
-## Complete owner document package
+[SealAngel Work](https://github.com/ivan-agentic-labs/sealangel-work) is a **separate application**, not a sixth ForgeWorks module.
 
-[Full specifications and IR catalogue](docs/specifications/source/README.md) from the owner upload are included in this repository. Use the source files for full design detail and the adjacent product specification for the engineering summary. File hashes are recorded in the source index.
+## Specification and evidence index
+
+- [Current owner-approved product specification (2026-10-13)](docs/specifications/PRODUCT_SPECIFICATION_2026-10-13.md): future target, not an implementation checklist marked complete.
+- [Full source specifications and IR catalogue](docs/specifications/source/README.md): preserved source documents and recorded hashes.
+- [Scoped G1/G2 evidence and outstanding acceptance](docs/verification/CURRENT_GATE_EVIDENCE.md): what was checked and the limitations.
+- [Hosted runtime/release runbook](ops/runbooks/RUNTIME_RELEASE_VERIFICATION.md): conditions for independently proving an accepted deployment.
+- The October 9 bootstrap evidence is historical; do not present it as a fresh hosted acceptance.
+
+## Documentation integrity
+
+This README is a navigational and engineering summary. If it conflicts with verified source behavior or a dated evidence receipt, prefer the scoped evidence and inspect the actual code/test result. Do not interpret a design document, CI fixture, or staging reference as proof of production readiness.
