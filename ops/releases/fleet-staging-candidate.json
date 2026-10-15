@@ -5,47 +5,47 @@
     {
       "product": "apishield-agent",
       "runtime_manifest": {
-        "file_count": 44,
+        "file_count": 45,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "f56d0c31665def75996f43437fac02d128654f02e046730e3d8df9a49d7fa4ee"
+        "sha256": "3c7140c684eae2e05dab684dd285be671f822b87ecb596488700cafd63bd14c5"
       },
-      "revision_sha": "1e053ece42ae2c40ebd57b3a260a3fc8ab737ad7"
+      "revision_sha": "c2afe8fbf2501d7a72f92271c022604d17895232"
     },
     {
       "product": "accessfix-ai",
       "runtime_manifest": {
         "file_count": 37,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "03aa35bb7beeaa40985f26f7b7dcf345fcfd341956d032965b326aaa25599fa0"
+        "sha256": "2558505ce7311c68fc5a932828ec61c3471be36b337f135bf5b6e5370e38d142"
       },
-      "revision_sha": "023265e7e34b9328f6bb14c41d862ff4e05f6783"
+      "revision_sha": "e808803d0d8dedcc08844f93512cb62bd29df06d"
     },
     {
       "product": "specforge-ai",
       "runtime_manifest": {
         "file_count": 34,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "d55c606ed0b0e69ed68965b8ff349ceb4a8bb010efb8aa9c119f53b56b2a287a"
+        "sha256": "57f42f2555fe5bb30a88c3cecd7c64e0263fe5e7a2c79b363d35e92917d40696"
       },
-      "revision_sha": "cc27bc23f764f4dbbc53e41689029da24e819179"
+      "revision_sha": "0adee95869d7caa892a37e789dc6fc22fb7e3fea"
     },
     {
       "product": "agenttest-lab",
       "runtime_manifest": {
         "file_count": 37,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "d944327428a5a8967a3f6f571c54de938765a4723d8915ecbab2707e1a89e0e0"
+        "sha256": "d2b625712c7b4daa3b6deaf1bffe3dfe9559ab76b4b79fd40d87ae26074bc362"
       },
-      "revision_sha": "9e739a048da49a2d2434fd8138d21210ddc9e7c9"
+      "revision_sha": "b45debc867c6ea566b5abd94e3aee38212d8b8d5"
     },
     {
       "product": "datareconcile-ai",
       "runtime_manifest": {
         "file_count": 37,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "eafe476aa2924c06c2fd7c622731b7abd33cb93148e50fc630f1bda44aeb1998"
+        "sha256": "582cd81f5b3ad3ce66d756f3ae35cd22c4a2029a43b4b5930afcce4d2c215658"
       },
-      "revision_sha": "70ee65026b244006c70197f580119c0421820a01"
+      "revision_sha": "58aeb764e56274fc99ba08d598eb6cf599d7db60"
     }
   ]
 }
