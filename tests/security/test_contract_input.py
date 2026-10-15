@@ -52,3 +52,17 @@ def test_unsupported_reference_is_counted_in_api_and_event(tmp_path):
     with app.state.store.conn() as db:
         event=db.execute("SELECT payload FROM events WHERE aggregate_id=?",(row['id'],)).fetchone()
         assert json.loads(event['payload'])['unsupported_count']==1
+
+
+@pytest.mark.parametrize('body', [
+    b'paths:\n  1: {get: {}}\n',
+    b'paths:\n  relative/path: {get: {}}\n',
+    b'paths:\n  /valid: []\n',
+])
+def test_malformed_path_cannot_disappear_from_impact_analysis(body):
+    with pytest.raises(ValueError, match='CONTRACT_PATH_INVALID'):
+        load_contract(body)
+
+
+def test_well_formed_path_item_remains_accepted():
+    assert '/valid' in load_contract(b'paths:\n  /valid:\n    get: {}\n')['paths']
