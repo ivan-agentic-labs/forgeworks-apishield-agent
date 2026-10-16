@@ -181,3 +181,23 @@ def test_nested_unsupported_assertion_uses_escaped_json_pointer():
         and f.pointer.endswith("/properties/a~1b~0c/pattern")
         for f in diff(old, new)
     )
+
+def test_optional_response_property_removal_requires_review():
+    before = contract({"type": "object", "properties": {
+        "optional/id~value": {"type": "string"},
+        "retained": {"type": "integer"},
+    }})
+    after = deepcopy(before)
+    del schema(after)["properties"]["optional/id~value"]
+    finding = [f for f in diff(before, after) if f.rule_id == "RESPONSE_PROPERTY_REMOVED"]
+    assert len(finding) == 1
+    assert finding[0].pointer.endswith("/properties/optional~1id~0value")
+    assert finding[0].severity == "REVIEW"
+    assert finding[0].coverage == "LIMITED"
+
+
+def test_request_optional_property_removal_does_not_claim_breaking_response():
+    before = contract({"type": "object", "properties": {"field": {"type": "string"}}}, True)
+    after = deepcopy(before)
+    del schema(after, True)["properties"]["field"]
+    assert not any(f.rule_id == "RESPONSE_PROPERTY_REMOVED" for f in diff(before, after))
