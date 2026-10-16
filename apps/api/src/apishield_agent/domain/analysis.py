@@ -288,6 +288,23 @@ def _compare_schema_tree(findings, source_digests, before, after, old, new, poin
 
 
 def _compare_request(findings: list[Finding], source_digests: dict[str, str], before: dict[str, Any], after: dict[str, Any], route: str, method: str, old: dict[str, Any], new: dict[str, Any]) -> None:
+    # Missing or cyclic parameter references must not disappear from the
+    # compatibility report just because the resolved parameter list omits them.
+    for doc, operation in ((before, old), (after, new)):
+        path_item = doc["paths"][route]
+        for owner, pointer in (
+            (path_item, f"/paths/{_escape(route)}"),
+            (operation, f"/paths/{_escape(route)}/{method}"),
+        ):
+            entries = owner.get("parameters", [])
+            if not isinstance(entries, list):
+                raise ValueError("CONTRACT_PARAMETER_SHAPE_INVALID")
+            for index, raw in enumerate(entries):
+                if _local_reference(doc, raw) is None:
+                    _record_finding(
+                        findings, source_digests, "UNRESOLVED_REQUEST_PARAMETER",
+                        f"{pointer}/parameters/{index}", "REVIEW", "UNSUPPORTED",
+                    )
     old_params, new_params = _parameters(before, route, method, old), _parameters(after, route, method, new)
     for key in sorted(set(old_params) | set(new_params)):
         old_entry, new_entry = old_params.get(key), new_params.get(key)
@@ -309,6 +326,10 @@ def _compare_request(findings: list[Finding], source_digests: dict[str, str], be
         raise ValueError("CONTRACT_REQUEST_BODY_SHAPE_INVALID")
     if new.get("requestBody") is not None and not isinstance(new.get("requestBody"), dict):
         raise ValueError("CONTRACT_REQUEST_BODY_SHAPE_INVALID")
+    if old_body is None or new_body is None:
+        _record_finding(findings, source_digests, "UNRESOLVED_REQUEST_BODY_REFERENCE",
+                        f"/paths/{_escape(route)}/{method}/requestBody",
+                        "REVIEW", "UNSUPPORTED")
     if old_body is not None and new_body is not None:
         if new_body.get("required") is True and old_body.get("required") is not True:
             _record_finding(findings, source_digests, "REQUEST_BODY_BECAME_REQUIRED", f"/paths/{_escape(route)}/{method}/requestBody/required")
