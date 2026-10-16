@@ -116,6 +116,45 @@ class ServiceStatusTests(unittest.TestCase):
         cache.snapshot()
         self.assertEqual(len(calls), 2)
 
+    def test_current_staging_availability_does_not_reuse_stale_release_candidate(self):
+        plan = mock_plan()
+        request = public_transport(plan)
+
+        def newly_deployed(product, path):
+            code, body = request(product, path)
+            if path == "/versionz":
+                body = dict(body, revision_sha="f" * 40)
+            return code, body
+
+        live = module.gather_current(newly_deployed)
+        self.assertEqual(live["result"], "PASS")
+        self.assertEqual(len(live["services"]), 5)
+        self.assertTrue(all(row["status"] == "ready" for row in live["services"]))
+        self.assertEqual(live["business_access"], "NOT_ENABLED")
+        self.assertEqual(live["production_acceptance"], "NOT_ACCEPTED")
+        self.assertNotIn("f" * 40, str(live))
+
+    def test_current_monitor_denies_open_metrics_or_protected_business_data(self):
+        plan = mock_plan()
+        for path in ("/metricsz", module.verify_fleet.__globals__["BUSINESS_PATHS"]["accessfix-ai"]):
+            with self.subTest(path=path):
+                status = module.gather_current(public_transport(plan, ("accessfix-ai", path)))
+                self.assertEqual(status["result"], "DEGRADED")
+                self.assertEqual(status["services"][1]["status"], "unavailable")
+                self.assertEqual([row["status"] for row in status["services"]].count("ready"), 4)
+
+    def test_current_monitor_rejects_invalid_runtime_identity(self):
+        transport = public_transport(mock_plan())
+        def invalid_version(product, path):
+            code, body = transport(product, path)
+            if path == "/versionz" and product == "agenttest-lab":
+                return code, dict(body, revision_sha="not-a-sha")
+            return code, body
+        report = module.gather_current(invalid_version)
+        self.assertEqual(report["result"], "DEGRADED")
+        self.assertEqual(report["services"][3]["status"], "unavailable")
+
+
     def test_cache_rejects_forged_business_access_and_contradictory_health(self):
         valid = module.snapshot_from_report(
             module.verify_fleet(mock_plan(), public_transport(mock_plan()))
