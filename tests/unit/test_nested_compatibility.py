@@ -201,3 +201,31 @@ def test_request_optional_property_removal_does_not_claim_breaking_response():
     after = deepcopy(before)
     del schema(after, True)["properties"]["field"]
     assert not any(f.rule_id == "RESPONSE_PROPERTY_REMOVED" for f in diff(before, after))
+
+def test_unresolved_response_ref_is_reported_as_unverified_coverage():
+    before = contract({"type": "object"})
+    after = deepcopy(before)
+    before["paths"]["/items"]["post"]["responses"]["200"] = {
+        "$ref": "#/components/responses/MissingResponse"
+    }
+    findings = diff(before, after)
+    assert any(
+        f.rule_id == "UNRESOLVED_RESPONSE_REFERENCE"
+        and f.coverage == "UNSUPPORTED"
+        and f.severity == "REVIEW"
+        and f.pointer == "/paths/~1items/post/responses/200"
+        for f in findings
+    )
+
+
+def test_resolved_local_response_references_remain_comparable():
+    before = contract({"type": "object", "properties": {"ok": {"type": "string"}}})
+    before["components"] = {"responses": {"Result": deepcopy(before["paths"]["/items"]["post"]["responses"]["200"])}}
+    before["paths"]["/items"]["post"]["responses"]["200"] = {
+        "$ref": "#/components/responses/Result"
+    }
+    after = deepcopy(before)
+    after["components"]["responses"]["Result"]["content"]["application/json"]["schema"]["properties"]["ok"]["type"] = "integer"
+    findings = diff(before, after)
+    assert any(f.rule_id == "RESPONSE_SCHEMA_TYPE_CHANGED" for f in findings)
+    assert not any(f.rule_id == "UNRESOLVED_RESPONSE_REFERENCE" for f in findings)
