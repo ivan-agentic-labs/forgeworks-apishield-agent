@@ -66,3 +66,25 @@ def test_malformed_path_cannot_disappear_from_impact_analysis(body):
 
 def test_well_formed_path_item_remains_accepted():
     assert '/valid' in load_contract(b'paths:\n  /valid:\n    get: {}\n')['paths']
+
+
+@pytest.mark.parametrize('item,error_code', [
+    (b'GET: {}', 'CONTRACT_PATH_ITEM_INVALID'),
+    (b'postt: {}', 'CONTRACT_PATH_ITEM_INVALID'),
+    (b'123: {}', 'CONTRACT_PATH_ITEM_INVALID'),
+    (b'get: []', 'CONTRACT_OPERATION_INVALID'),
+    (b'post: null', 'CONTRACT_OPERATION_INVALID'),
+])
+def test_malformed_http_operation_cannot_be_ignored_during_contract_diff(item, error_code):
+    source = b'paths:\n  /valid:\n    ' + item + b'\n'
+    with pytest.raises(ValueError, match=error_code):
+        load_contract(source)
+
+
+def test_openapi_path_extension_and_metadata_are_supported():
+    document = load_contract(
+        b'paths:\n  /valid:\n    summary: Public endpoint\n'
+        b'    x-contract-owner: platform\n'
+        b'    post:\n      responses:\n        "201": {description: Created}\n'
+    )
+    assert document["paths"]["/valid"]["post"]["responses"]["201"]["description"] == "Created"
