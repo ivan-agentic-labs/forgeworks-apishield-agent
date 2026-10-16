@@ -46,9 +46,18 @@ def load_contract(body):
             raise ValueError('CONTRACT_INPUT_INVALID')
         # A malformed path must never silently disappear from the impact diff.
         # OpenAPI path-item keys are absolute /-prefixed strings.
+        operations = {'get', 'put', 'post', 'delete', 'head', 'options', 'patch', 'trace'}
+        metadata = {'$ref', 'summary', 'description', 'servers', 'parameters'}
         for route, item in document['paths'].items():
             if not isinstance(route, str) or not route.startswith('/') or not isinstance(item, dict):
                 raise ValueError('CONTRACT_PATH_INVALID')
+            # Uppercase or misspelled operations must not vanish from the diff.
+            for field, value in item.items():
+                if not isinstance(field, str) or (field not in operations
+                        and field not in metadata and not field.startswith('x-')):
+                    raise ValueError('CONTRACT_PATH_ITEM_INVALID')
+                if field in operations and not isinstance(value, dict):
+                    raise ValueError('CONTRACT_OPERATION_INVALID')
         pending = [(document, 0)]
         count = 0
         while pending:
