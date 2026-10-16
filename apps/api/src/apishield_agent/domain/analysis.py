@@ -290,6 +290,7 @@ def _compare_schema_tree(findings, source_digests, before, after, old, new, poin
 def _compare_request(findings: list[Finding], source_digests: dict[str, str], before: dict[str, Any], after: dict[str, Any], route: str, method: str, old: dict[str, Any], new: dict[str, Any]) -> None:
     # Missing or cyclic parameter references must not disappear from the
     # compatibility report just because the resolved parameter list omits them.
+    unresolved_seen: set[str] = set()
     for doc, operation in ((before, old), (after, new)):
         path_item = doc["paths"][route]
         for owner, pointer in (
@@ -300,10 +301,12 @@ def _compare_request(findings: list[Finding], source_digests: dict[str, str], be
             if not isinstance(entries, list):
                 raise ValueError("CONTRACT_PARAMETER_SHAPE_INVALID")
             for index, raw in enumerate(entries):
-                if _local_reference(doc, raw) is None:
+                finding_pointer = f"{pointer}/parameters/{index}"
+                if _local_reference(doc, raw) is None and finding_pointer not in unresolved_seen:
+                    unresolved_seen.add(finding_pointer)
                     _record_finding(
                         findings, source_digests, "UNRESOLVED_REQUEST_PARAMETER",
-                        f"{pointer}/parameters/{index}", "REVIEW", "UNSUPPORTED",
+                        finding_pointer, "REVIEW", "UNSUPPORTED",
                     )
     old_params, new_params = _parameters(before, route, method, old), _parameters(after, route, method, new)
     for key in sorted(set(old_params) | set(new_params)):
