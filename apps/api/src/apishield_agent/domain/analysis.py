@@ -342,6 +342,13 @@ def _compare_responses(findings: list[Finding], source_digests: dict[str, str], 
     for code in sorted(set(old_responses) & set(new_responses), key=str):
         old_response, new_response = _local_reference(before, old_responses[code]), _local_reference(after, new_responses[code])
         if old_response is None or new_response is None:
+            # Unsupported, cyclic or missing local response references are
+            # not evidence that a response is backward compatible.
+            _record_finding(
+                findings, source_digests, "UNRESOLVED_RESPONSE_REFERENCE",
+                f"/paths/{_escape(route)}/{method}/responses/{_escape(code)}",
+                "REVIEW", "UNSUPPORTED",
+            )
             continue
         old_content, new_content = old_response.get("content") or {}, new_response.get("content") or {}
         if not isinstance(old_content, dict) or not isinstance(new_content, dict):
