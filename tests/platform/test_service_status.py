@@ -116,6 +116,40 @@ class ServiceStatusTests(unittest.TestCase):
         cache.snapshot()
         self.assertEqual(len(calls), 2)
 
+    def test_cache_rejects_forged_business_access_and_contradictory_health(self):
+        valid = module.snapshot_from_report(
+            module.verify_fleet(mock_plan(), public_transport(mock_plan()))
+        )
+        mutations = []
+        elevated = dict(valid)
+        elevated["business_access"] = "ENABLED"
+        mutations.append(elevated)
+        accepted = dict(valid)
+        accepted["production_acceptance"] = "ACCEPTED"
+        mutations.append(accepted)
+        extra = dict(valid)
+        extra["services"] = valid["services"] + [{"product": "unexpected", "status": "ready"}]
+        mutations.append(extra)
+        conflicting = dict(valid)
+        conflicting["services"] = [dict(item) for item in valid["services"]]
+        conflicting["services"][0]["status"] = "unavailable"
+        mutations.append(conflicting)
+        swapped = dict(valid)
+        swapped["services"] = list(reversed(valid["services"]))
+        mutations.append(swapped)
+        invented = dict(valid)
+        invented["extra_status"] = "verified"
+        mutations.append(invented)
+        for mutated in mutations:
+            with self.subTest(mutated=mutated):
+                cache = module.SnapshotCache(collector=lambda value=mutated: value)
+                result = cache.snapshot()
+                self.assertEqual(result["result"], "DEGRADED")
+                self.assertEqual(result["business_access"], "NOT_ENABLED")
+                self.assertEqual(result["production_acceptance"], "NOT_ACCEPTED")
+                self.assertTrue(all(x["status"] == "unavailable" for x in result["services"]))
+
+
     def test_collector_errors_stay_generic_and_fail_closed(self):
         def failure():
             raise RuntimeError("Authorization: Bearer forbidden-to-log")
