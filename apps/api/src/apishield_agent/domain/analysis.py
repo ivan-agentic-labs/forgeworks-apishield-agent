@@ -270,6 +270,15 @@ def _compare_schema_tree(findings, source_digests, before, after, old, new, poin
                 _record_finding(findings, source_digests, "REQUEST_BODY_FIELD_BECAME_REQUIRED", pointer + "/required/" + str(b.index(name)))
     if not response and new.get("additionalProperties") is False and old.get("additionalProperties", True) is not False:
         _record_finding(findings, source_digests, "REQUEST_ADDITIONAL_PROPERTIES_DISALLOWED", pointer + "/additionalProperties")
+    if response:
+        # Even an optional response property can be consumed by clients.
+        # Removing its declaration is not proof of a runtime break, but must
+        # not disappear from the compatibility review.
+        for name in sorted(set(old_props) - set(new_props), key=str):
+            _record_finding(
+                findings, source_digests, "RESPONSE_PROPERTY_REMOVED",
+                pointer + "/properties/" + _escape(name), "REVIEW", "LIMITED",
+            )
     for name in sorted(set(old_props) & set(new_props), key=str):
         if budget[0] < 0:
             break
