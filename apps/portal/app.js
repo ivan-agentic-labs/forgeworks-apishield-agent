@@ -128,7 +128,7 @@
       if (!fleetResponse.ok || fleet.result !== 'PASS') {
         status.textContent = 'Setidaknya satu layanan staging tidak terverifikasi. Akses bisnis tetap nonaktif.';
       } else {
-        status.textContent = '5/5 identitas staging cocok. Login, otorisasi dan production acceptance tetap diperlukan.';
+        status.textContent = '5/5 layanan staging terjangkau dan akses anonim dibatasi. Identitas release yang disetujui, login, serta acceptance bisnis tetap perlu diuji.';
       }
     } catch {
       resetServiceLabels();
