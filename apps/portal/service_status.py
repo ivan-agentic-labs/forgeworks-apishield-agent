@@ -18,8 +18,9 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from verify_fleet_release import (  # noqa: E402
-    MAX_PLAN_BYTES, PRODUCTS, unique_object, validate_plan, verify_fleet,
+    MAX_PLAN_BYTES, PRODUCTS, BUSINESS_PATHS, fetch, unique_object, validate_plan, verify_fleet,
 )
+from observe_fleet_runtime import valid_identity  # noqa: E402
 
 CANDIDATE = ROOT / "ops/releases/fleet-staging-candidate.json"
 ALLOWED_RESULT = {"PASS", "FAIL"}
@@ -80,10 +81,46 @@ def gather(request=None) -> dict:
     return snapshot_from_report(report)
 
 
+def gather_current(request=None) -> dict:
+    """Observe current hosted services, not the separately reviewed release candidate.
+
+    This is *availability only*: a verified public runtime identity, healthy
+    readiness, and denied anonymous access. It does NOT confer business access
+    or certify the deployed revision for production.
+    """
+    transport = fetch if request is None else request
+    services = []
+    for product in PRODUCTS:
+        status = "unavailable"
+        try:
+            health_code, health = transport(product, "/healthz")
+            ready_code, ready = transport(product, "/readyz")
+            version_code, version = transport(product, "/versionz")
+            runtime = valid_identity(product, version) if version_code == 200 else None
+            metrics_code, _ = transport(product, "/metricsz")
+            business_code, _ = transport(product, BUSINESS_PATHS[product])
+            if (health_code == 200 and type(health) is dict and health.get("status") == "ok"
+                    and ready_code == 200 and type(ready) is dict and ready.get("status") == "ready"
+                    and runtime is not None and metrics_code == 401 and business_code == 401):
+                status = "ready"
+        except Exception:
+            # Never log upstream details, tokens, release hashes or error bodies.
+            pass
+        services.append({"product": product, "status": status})
+    return {
+        "schema": "forgeworks-portal-staging-services-v1",
+        "environment": "staging",
+        "result": "PASS" if all(x["status"] == "ready" for x in services) else "DEGRADED",
+        "services": services,
+        "business_access": "NOT_ENABLED",
+        "production_acceptance": "NOT_ACCEPTED",
+    }
+
+
 class SnapshotCache:
     """One bounded fleet probe per TTL across concurrent preview requests."""
 
-    def __init__(self, ttl: int = 30, collector=gather, clock=time.monotonic):
+    def __init__(self, ttl: int = 30, collector=gather_current, clock=time.monotonic):
         if type(ttl) is not int or not 5 <= ttl <= 300:
             raise ValueError("INVALID_CACHE_TTL")
         self.ttl = ttl
