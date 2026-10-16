@@ -229,3 +229,40 @@ def test_resolved_local_response_references_remain_comparable():
     findings = diff(before, after)
     assert any(f.rule_id == "RESPONSE_SCHEMA_TYPE_CHANGED" for f in findings)
     assert not any(f.rule_id == "UNRESOLVED_RESPONSE_REFERENCE" for f in findings)
+
+def test_unresolved_operation_parameter_is_reported_even_if_unchanged():
+    before = contract({"type": "object"})
+    before["paths"]["/items"]["post"]["parameters"] = [
+        {"$ref": "#/components/parameters/Missing"}
+    ]
+    findings = diff(before, deepcopy(before))
+    unresolved = [finding for finding in findings
+                  if finding.rule_id == "UNRESOLVED_REQUEST_PARAMETER"]
+    assert len(unresolved) == 1
+    assert unresolved[0].coverage == "UNSUPPORTED"
+    assert unresolved[0].pointer == "/paths/~1items/post/parameters/0"
+
+
+def test_unresolved_request_body_is_not_reported_as_compatible():
+    before = contract({"type": "object"}, request=True)
+    before["paths"]["/items"]["post"]["requestBody"] = {
+        "$ref": "#/components/requestBodies/Missing"
+    }
+    findings = diff(before, deepcopy(before))
+    assert any(f.rule_id == "UNRESOLVED_REQUEST_BODY_REFERENCE"
+               and f.coverage == "UNSUPPORTED"
+               for f in findings)
+
+
+def test_resolved_local_request_references_keep_full_coverage():
+    before = contract({"type": "object"}, request=True)
+    old_body = before["paths"]["/items"]["post"]["requestBody"]
+    before["components"] = {
+        "requestBodies": {"Upload": old_body},
+        "parameters": {"Tenant": {"name": "tenant", "in": "header", "schema": {"type": "string"}}},
+    }
+    before["paths"]["/items"]["post"]["requestBody"] = {"$ref": "#/components/requestBodies/Upload"}
+    before["paths"]["/items"]["parameters"] = [{"$ref": "#/components/parameters/Tenant"}]
+    findings = diff(before, deepcopy(before))
+    assert not any(f.rule_id in {"UNRESOLVED_REQUEST_PARAMETER",
+                                 "UNRESOLVED_REQUEST_BODY_REFERENCE"} for f in findings)
