@@ -100,10 +100,28 @@ class SnapshotCache:
                 return deepcopy(self.value)
             try:
                 current = self.collector()
+                # Never cache or display a forged green result, extra
+                # service, or elevated access marker from an invalid collector.
                 if (type(current) is not dict
-                        or current.get("schema") != "forgeworks-portal-staging-services-v1"
-                        or current.get("environment") != "staging"
-                        or current.get("result") not in {"PASS", "DEGRADED"}):
+                        or set(current) != {"schema", "environment", "result", "services",
+                                            "business_access", "production_acceptance"}
+                        or current["schema"] != "forgeworks-portal-staging-services-v1"
+                        or current["environment"] != "staging"
+                        or current["business_access"] != "NOT_ENABLED"
+                        or current["production_acceptance"] != "NOT_ACCEPTED"
+                        or type(current["services"]) is not list
+                        or len(current["services"]) != len(PRODUCTS)):
+                    raise ValueError("INVALID_COLLECTOR_SNAPSHOT")
+                for index, service in enumerate(current["services"]):
+                    if (type(service) is not dict
+                            or set(service) != {"product", "status"}
+                            or service["product"] != PRODUCTS[index]
+                            or service["status"] not in {"ready", "unavailable"}):
+                        raise ValueError("INVALID_COLLECTOR_SNAPSHOT")
+                expected_result = ("PASS" if all(
+                    service["status"] == "ready" for service in current["services"]
+                ) else "DEGRADED")
+                if current["result"] != expected_result:
                     raise ValueError("INVALID_COLLECTOR_SNAPSHOT")
             except Exception:
                 # Do not leak the exception; internal outage cannot become a PASS.
