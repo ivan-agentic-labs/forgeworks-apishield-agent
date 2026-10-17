@@ -25,9 +25,9 @@
       "runtime_manifest": {
         "file_count": 34,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "70aead341112e25eb49382b0729a7080d01374fee3e387a480067942b6dedfd5"
+        "sha256": "21d3df820e45f8fb7c03bf3733a97b666b945621fbeb1773891419651d16f86e"
       },
-      "revision_sha": "c377289aafd2b8379f0830993b51d9545411bd8e"
+      "revision_sha": "fd94f1cf689c8162da896a8afb3fac1e9ee180f0"
     },
     {
       "product": "agenttest-lab",
