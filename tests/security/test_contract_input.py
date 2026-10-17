@@ -88,3 +88,12 @@ def test_openapi_path_extension_and_metadata_are_supported():
         b'    post:\n      responses:\n        "201": {description: Created}\n'
     )
     assert document["paths"]["/valid"]["post"]["responses"]["201"]["description"] == "Created"
+
+
+@pytest.mark.parametrize('body', [
+    b'paths: {}\ncreated: 2026-10-17\n',
+    b'paths: {}\npayload: !!binary aGVsbG8=\n',
+])
+def test_yaml_specific_non_json_scalars_are_rejected_before_analysis(body):
+    with pytest.raises(ValueError, match='CONTRACT_NON_JSON_VALUE'):
+        load_contract(body)
