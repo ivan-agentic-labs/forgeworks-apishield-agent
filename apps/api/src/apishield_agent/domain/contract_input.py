@@ -74,6 +74,13 @@ def load_contract(body):
                 pending.extend((item, depth + 1) for item in value)
             elif isinstance(value, float) and not math.isfinite(value):
                 raise ValueError('CONTRACT_NONFINITE_NUMBER')
+            elif isinstance(value, str) and any(0xD800 <= ord(char) <= 0xDFFF for char in value):
+                raise ValueError('CONTRACT_INVALID_UNICODE')
+            elif type(value) not in (str, int, float, bool, type(None)):
+                # SafeLoader interprets YAML timestamps and !!binary as Python
+                # date/bytes objects. They are not JSON values and must not
+                # later crash the contract analyzer or evidence serializer.
+                raise ValueError('CONTRACT_NON_JSON_VALUE')
         return document
     except (yaml.YAMLError, UnicodeError, RecursionError, TypeError) as error:
         raise ValueError('CONTRACT_INPUT_INVALID') from error
