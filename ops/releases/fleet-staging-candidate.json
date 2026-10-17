@@ -7,45 +7,45 @@
       "runtime_manifest": {
         "file_count": 45,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "3c7140c684eae2e05dab684dd285be671f822b87ecb596488700cafd63bd14c5"
+        "sha256": "856c9c4116d17e50a1595965e8767db8d946e449fc9f2ec9f7a88f676f33ee81"
       },
-      "revision_sha": "c2afe8fbf2501d7a72f92271c022604d17895232"
+      "revision_sha": "8544414f8b50ba0ceb21a86b8c6a272bd95bd920"
     },
     {
       "product": "accessfix-ai",
       "runtime_manifest": {
-        "file_count": 37,
+        "file_count": 38,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "2558505ce7311c68fc5a932828ec61c3471be36b337f135bf5b6e5370e38d142"
+        "sha256": "10cc96e1140fcdd7e76ee3775b1f6ea0954a66d366f0ffad2d003d21dc248678"
       },
-      "revision_sha": "e808803d0d8dedcc08844f93512cb62bd29df06d"
+      "revision_sha": "f851003206885c8d98fe4dec855c359478cde66a"
     },
     {
       "product": "specforge-ai",
       "runtime_manifest": {
         "file_count": 34,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "57f42f2555fe5bb30a88c3cecd7c64e0263fe5e7a2c79b363d35e92917d40696"
+        "sha256": "70aead341112e25eb49382b0729a7080d01374fee3e387a480067942b6dedfd5"
       },
-      "revision_sha": "0adee95869d7caa892a37e789dc6fc22fb7e3fea"
+      "revision_sha": "c377289aafd2b8379f0830993b51d9545411bd8e"
     },
     {
       "product": "agenttest-lab",
       "runtime_manifest": {
         "file_count": 37,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "d2b625712c7b4daa3b6deaf1bffe3dfe9559ab76b4b79fd40d87ae26074bc362"
+        "sha256": "3543d1d34eb1627562a25d6ba342bfa6e4977ea5fcd3421972267abf543c9c90"
       },
-      "revision_sha": "b45debc867c6ea566b5abd94e3aee38212d8b8d5"
+      "revision_sha": "59aa3ad2b4cdbf1c855b9d3f2a9a80e6f49377a6"
     },
     {
       "product": "datareconcile-ai",
       "runtime_manifest": {
         "file_count": 37,
         "profile": "forgeworks-runtime-manifest-v1",
-        "sha256": "582cd81f5b3ad3ce66d756f3ae35cd22c4a2029a43b4b5930afcce4d2c215658"
+        "sha256": "ad56470cc74e49c6e009f8270834a8f70dd21283fa9acb78593bb7924b02cf8b"
       },
-      "revision_sha": "58aeb764e56274fc99ba08d598eb6cf599d7db60"
+      "revision_sha": "ae590097f59f2f546d2d3544131a57ed602eba55"
     }
   ]
 }
