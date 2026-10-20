@@ -35,7 +35,7 @@ def postgres(monkeypatch):
         # The CI service is fresh and dedicated. Never drop an existing schema.
         if db.execute("SELECT to_regclass('analysis_jobs')").fetchone()[0]:
             pytest.fail('Runtime proof requires a fresh empty database')
-        for name in ['001_apishield_mvp.sql','002_apishield_runtime.sql','003_github_webhook_inbox.sql','004_analysis_source_snapshots.sql']:
+        for name in ['001_apishield_mvp.sql','002_apishield_runtime.sql','003_github_webhook_inbox.sql','004_analysis_source_snapshots.sql','005_github_webhook_rls_policies.sql']:
             db.execute((ROOT/'migrations/versions'/name).read_text())
         db.execute((ROOT/'infra/environments/staging/003_fk_lookup_index.sql').read_text())
         definition = db.execute("SELECT pg_get_indexdef('idx_analysis_jobs_tenant_repository'::regclass)").fetchone()[0]

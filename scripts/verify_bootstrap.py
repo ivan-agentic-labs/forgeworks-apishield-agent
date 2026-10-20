@@ -24,7 +24,7 @@ for p in root.glob(".github/workflows/*.yml"):
 for p in root.glob("migrations/versions/*.sql"):
     # Versioned MVP migrations are implementation artifacts; review-only candidates
     # remain under docs/verification/sql-candidates and must not be copied here.
-    if p.name not in {"001_apishield_mvp.sql", "002_apishield_runtime.sql", "003_github_webhook_inbox.sql", "004_analysis_source_snapshots.sql"}:
+    if p.name not in {"001_apishield_mvp.sql", "002_apishield_runtime.sql", "003_github_webhook_inbox.sql", "004_analysis_source_snapshots.sql", "005_github_webhook_rls_policies.sql"}:
         errors.append(f"unapproved migration: {p.relative_to(root)}")
 patterns = {
     "private key": r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
@@ -36,7 +36,7 @@ patterns = {
 scanned = 0
 for p in root.rglob("*"):
     rel = p.relative_to(root)
-    if not p.is_file() or any(x in {".git", "__pycache__", ".venv", "node_modules", ".pytest_cache"} for x in rel.parts):
+    if not p.is_file() or any(x in {".git", "__pycache__", "node_modules", ".pytest_cache"} or x.startswith(".venv") for x in rel.parts):
         continue
     if p.name == ".env" or (p.name.startswith(".env.") and p.name != ".env.example"):
         errors.append(f"environment file: {rel}")
