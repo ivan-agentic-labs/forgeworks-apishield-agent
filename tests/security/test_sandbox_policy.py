@@ -57,3 +57,24 @@ def test_persistent_registry_outage_is_not_counted_as_sandbox_pass(monkeypatch):
         module.pull_image_with_bounded_retry("public.ecr.aws/docker/library/python:3.12-alpine")
     assert len(calls) == 3
     assert delays == [2, 4]
+
+
+def test_pinned_sandbox_image_falls_back_to_same_digest_mirror(monkeypatch):
+    pulled = []
+    def fake_pull(ref):
+        pulled.append(ref)
+        if ref.startswith("public.ecr.aws/"):
+            raise RuntimeError("synthetic registry outage")
+        return "ok"
+    monkeypatch.setattr(module, "pull_image_with_bounded_retry", fake_pull)
+    ref = module.pull_pinned_sandbox_image()
+    assert ref == "docker.io/library/python@" + module.SANDBOX_IMAGE_DIGEST
+    assert all(r.endswith("@" + module.SANDBOX_IMAGE_DIGEST) for r in pulled)
+
+
+def test_pinned_sandbox_image_all_sources_down_is_blocked(monkeypatch):
+    def failed(ref):
+        raise RuntimeError("synthetic registry outage")
+    monkeypatch.setattr(module, "pull_image_with_bounded_retry", failed)
+    with pytest.raises(RuntimeError, match="every pinned source; proof BLOCKED"):
+        module.pull_pinned_sandbox_image()

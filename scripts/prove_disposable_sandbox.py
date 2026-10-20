@@ -59,7 +59,9 @@ raise SystemExit(0 if all(checks.values()) else 1)
 def run(command, timeout):
     result = subprocess.run(command, text=True, capture_output=True, timeout=timeout, check=False)
     if result.returncode:
-        raise RuntimeError('Disposable sandbox command failed; inspect the CI step, not customer content')
+        error = RuntimeError('Disposable sandbox command failed; inspect the CI step, not customer content')
+        error.stderr_tail = (result.stderr or '')[-600:]
+        raise error
     if len(result.stdout) > 65536:
         raise RuntimeError('Disposable proof output exceeded its fixed limit')
     return result.stdout
@@ -76,9 +78,38 @@ def pull_image_with_bounded_retry(image):
         try:
             return run(['docker', 'pull', image], 90)
         except RuntimeError as exc:
+            tail = getattr(exc, 'stderr_tail', '')
+            if tail and command_is_pull(image):
+                print(f'docker pull attempt {attempt + 1} failed: {tail.strip()}', file=sys.stderr)
             if attempt == 2:
                 raise RuntimeError('Required sandbox image pull failed after 3 bounded attempts; proof BLOCKED') from exc
             time.sleep(2 * (attempt + 1))
+
+
+def command_is_pull(image):
+    return any(image.startswith(source) for source in SANDBOX_IMAGE_SOURCES)
+
+
+# Same multi-arch index digest is published on both registries (verified 2026-10-20).
+SANDBOX_IMAGE_DIGEST = 'sha256:1b668429b3511ab407d8e00648891631b0b1a4d7e15e3ca70f38ab5b91ad4ab4'
+SANDBOX_IMAGE_SOURCES = ('public.ecr.aws/docker/library/python', 'docker.io/library/python')
+
+
+def pull_pinned_sandbox_image():
+    """Pull the digest-pinned sandbox image, falling back to an equivalent mirror.
+
+    Every source is pinned to the same immutable digest, so a fallback can never
+    substitute different content. Persistent failure on all sources stays BLOCKED.
+    """
+    last = None
+    for source in SANDBOX_IMAGE_SOURCES:
+        ref = f'{source}@{SANDBOX_IMAGE_DIGEST}'
+        try:
+            pull_image_with_bounded_retry(ref)
+            return ref
+        except RuntimeError as exc:
+            last = exc
+    raise RuntimeError('Required sandbox image unavailable from every pinned source; proof BLOCKED') from last
 
 
 def sandbox_command(image_id, name):
@@ -97,10 +128,10 @@ def main():
         raise SystemExit('Refusing execution outside explicitly opted-in disposable GitHub Actions')
     if not shutil.which('docker'):
         raise SystemExit('Docker unavailable: BLOCKED, not PASS')
-    # Pull a named upstream version, then execute only its resolved immutable ID.
-    # This records provenance but is NOT an independently approved image digest.
-    pull_image_with_bounded_retry('public.ecr.aws/docker/library/python:3.12-alpine')
-    image = json.loads(run(['docker','image','inspect','public.ecr.aws/docker/library/python:3.12-alpine'],10))[0]
+    # Pull a digest-pinned upstream image (python:3.12-alpine), then execute only its
+    # resolved immutable ID. Pinning records provenance; it is not an approval audit.
+    ref = pull_pinned_sandbox_image()
+    image = json.loads(run(['docker','image','inspect',ref],10))[0]
     image_id=image['Id'];name='fw-synthetic-sandbox-'+uuid.uuid4().hex
     try:
         checks=json.loads(run(sandbox_command(image_id,name),20))
